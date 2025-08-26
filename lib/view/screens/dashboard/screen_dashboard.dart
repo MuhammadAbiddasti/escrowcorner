@@ -1,8 +1,12 @@
-import 'package:dacotech/view/screens/dashboard/complete_transaction_controller.dart';
-import 'package:dacotech/view/screens/escrow_system/escrow_controller.dart';
-import 'package:dacotech/view/controller/wallet_controller.dart';
-import 'package:dacotech/view/screens/managers/screen_managers.dart';
-import 'package:dacotech/widgets/custom_appbar/custom_appbar.dart';
+import 'package:escrowcorner/view/screens/dashboard/complete_transaction_controller.dart';
+import 'package:escrowcorner/view/screens/escrow_system/escrow_controller.dart';
+import 'package:escrowcorner/view/controller/wallet_controller.dart';
+import 'package:escrowcorner/view/screens/deposit/screen_deposit.dart';
+import 'package:escrowcorner/view/screens/withdraw/screen_withdrawal.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
+import 'package:escrowcorner/view/screens/managers/screen_managers.dart';
+import 'package:escrowcorner/widgets/custom_appbar/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -14,37 +18,40 @@ import '../escrow_system/request_escrow/request_escrow_controller.dart';
 import '../escrow_system/send_escrow/send_escrow_controller.dart';
 import '../managers/controller_managers.dart';
 import '../managers/manager_permission_controller.dart';
-import 'dashboard_controller.dart';
+import 'dashboard_controller.dart' as dash;
 import '../../controller/get_controller.dart';
 import '../../controller/logo_controller.dart';
+import '../../../widgets/language_selector/language_selector_widget.dart';
 import '../user_profile/user_profile_controller.dart';
+import '../../controller/language_controller.dart';
+import '../../../widgets/common_header/common_header.dart';
 
-class ScreenDashboard extends StatelessWidget {
+class ScreenDashboard extends StatefulWidget {
+  @override
+  _ScreenDashboardState createState() => _ScreenDashboardState();
+}
+
+class _ScreenDashboardState extends State<ScreenDashboard> {
   final WalletController walletController = Get.put(WalletController());
-  final SendEscrowsController sendEscrowController =
-      Get.put(SendEscrowsController());
-  final ReceivedEscrowsController receivedEscrowController =
-      Get.put(ReceivedEscrowsController());
-  final RequestEscrowController requestEscrowController =
-      Get.put(RequestEscrowController());
+  final SendEscrowsController sendEscrowController = Get.put(SendEscrowsController());
+  final ReceivedEscrowsController receivedEscrowController = Get.put(ReceivedEscrowsController());
+  final RequestEscrowController requestEscrowController = Get.put(RequestEscrowController());
   final MenubuttonController controller = Get.put(MenubuttonController());
   final LogoController logoController = Get.put(LogoController());
   final InfoController infoController = Get.put(InfoController());
-  final HomeController homeController = Get.put(HomeController());
-  final CompleteTransactionController completeController =
-      Get.put(CompleteTransactionController());
-  final UserProfileController userProfileController =
-      Get.put(UserProfileController());
-  final UserEscrowsController escrowController =
-      Get.put(UserEscrowsController());
-  final SendEscrowsController senderEscrowController =
-      Get.put(SendEscrowsController());
+  final dash.HomeController homeController = Get.put(dash.HomeController(), tag: 'dashboard_home_controller');
+  final CompleteTransactionController completeController = Get.put(CompleteTransactionController());
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
+  final UserEscrowsController escrowController = Get.put(UserEscrowsController());
+  final SendEscrowsController senderEscrowController = Get.put(SendEscrowsController());
   final ManagersController managerController = Get.put(ManagersController());
-  final ManagersPermissionController permissionController =
-      Get.put(ManagersPermissionController());
+  final ManagersPermissionController permissionController = Get.put(ManagersPermissionController());
+  final LanguageController languageController = Get.find<LanguageController>();
+
+  final GlobalKey popupMenuKey = GlobalKey();
 
   void initState() {
-    //super.initState();
+    super.initState();
     if (!Get.isRegistered<WalletController>()) {
       Get.put(WalletController());
     }
@@ -56,8 +63,6 @@ class ScreenDashboard extends StatelessWidget {
     //userProfileController.fetchUserDetails(co);
   }
 
-  final GlobalKey popupMenuKey = GlobalKey();
-
   void onInit() {
     walletController.walletBalance.value;
     homeController.fetchFilteredData("today");
@@ -65,360 +70,471 @@ class ScreenDashboard extends StatelessWidget {
     completeController.fetchCompleteTransaction("today");
     homeController.fetchPendingMoneyRequests('today');
     homeController.fetchPendingData('today');
+    homeController.fetchBalanceData("today");
     sendEscrowController.fetchSendEscrows();
     walletController.fetchWalletBalance(userProfileController.walletId.value);
     receivedEscrowController.fetchReceiverEscrows();
     requestEscrowController.fetchRequestEscrows();
-    permissionController
-        .fetchManagerPermissions(userProfileController.userId.value);
+    permissionController.fetchManagerPermissions(userProfileController.userId.value);
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
-    final isManager = userProfileController.isManager.value == '1';
-    final isNotManager = userProfileController.isManager.value == '0';
-    final kycStatus = userProfileController.kyc.value == '3';
-    final allowedModules = permissionController.modulePermissions;
-    List<String> selectedCurrencies = [
-      'XAF',
-    ]; // Example: it could be ['USD'], ['BTC'], or a combination
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(
-          managerId: userProfileController.userId.value,
-        ),
-        actions: [
-          AppBarProfileButton(),
+      appBar: CommonHeader(
+        title: "Dashboard",
+        managerId: userProfileController.userId.value,
+      ),
+      body: Stack(
+        children: [
+          // Main content
+          RefreshIndicator(
+            onRefresh: () async {
+              userProfileController.fetchUserDetails();
+              walletController.fetchWalletBalance(userProfileController.walletId.value);
+              walletController.walletBalance.value;
+              homeController.fetchFilteredData("today");
+              completeController.fetchCompleteTransaction("today");
+              homeController.fetchPendingMoneyRequests('today');
+              homeController.fetchPendingData('today');
+              homeController.fetchBalanceData("today");
+              homeController.fetchDashboardSettings(); // Fetch dashboard settings
+              sendEscrowController.fetchSendEscrows();
+              receivedEscrowController.fetchReceiverEscrows();
+              requestEscrowController.fetchRequestEscrows();
+            },
+            child: SingleChildScrollView(
+              child: Obx(() {
+                final isManager = userProfileController.isManager.value == '1';
+                final isNotManager = userProfileController.isManager.value == '0';
+                final kycStatus = userProfileController.kyc.value == '3';
+                final allowedModules = permissionController.modulePermissions;
+                return Column(
+                  children: [
+                    if (isManager &&
+                        allowedModules.containsKey('Dashboard') &&
+                        allowedModules['Dashboard']!.contains('view_dashboard'))
+                      Column(
+                        children: [
+                          Obx(() {
+                            return controller.isWalletCreated.value
+                                ? NewContainer(controller)
+                                : Column(
+                                    children: [
+                                      Container(
+                                        height: MediaQuery.of(context).size.height * .35,
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                            color: Color(0xffCDE0EF),
+                                            borderRadius: BorderRadius.only(
+                                                bottomLeft: Radius.circular(30),
+                                                bottomRight: Radius.circular(30)),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                  offset: Offset(1, 1),
+                                                  blurRadius: 6,
+                                                  color: Colors.grey)
+                                            ]),
+                                        child: Obx(() {
+                                          if (homeController.isDashboardSettingsLoading.value) {
+                                            return Center(
+                                              child: CircularProgressIndicator(),
+                                            );
+                                          }
+                                          
+                                          return homeController.dashboardImage.value.startsWith('http')
+                                              ? Image.network(
+                                                  homeController.dashboardImage.value,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return Image.asset(
+                                                      'assets/images/dashboard.png',
+                                                      fit: BoxFit.cover,
+                                                    );
+                                                  },
+                                                )
+                                              : Image.asset(
+                                                  homeController.dashboardImage.value,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return Image.asset(
+                                                      'assets/images/dashboard.png',
+                                                      fit: BoxFit.cover,
+                                                    );
+                                                  },
+                                                );
+                                        }),
+                                      ),
+                                      // Welcome text and Create Wallet button below image
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              languageController.getTranslation('welcome_back') + " ${userProfileController.userName.value} !",
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 20,
+                                                  fontFamily: 'Nunito',
+                                                  color: Colors.black87),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            SizedBox(height: 20),
+                                            CustomButton(
+                                                height: 37,
+                                                width: MediaQuery.of(context).size.width * 0.55,
+                                                text: languageController.getTranslation('create_a_wallet'),
+                                                onPressed: () {
+                                                  walletController.fetchWalletCurrencies();
+                                                  controller.createWallet();
+                                                }),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                          }),
+                          SizedBox(
+                            height: 20,
+                          ),
+                          CustomBtcContainer(),
+                          Obx(
+                            () => GestureDetector(
+                              onTap: () {
+                                // Open the PopupMenuButton programmatically
+                                final dynamic state = popupMenuKey.currentState;
+                                state.showButtonMenu();
+                              },
+                              child: Container(
+                                height: 42,
+                                width: MediaQuery.of(context).size.width * .9,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30),
+                                  color: Colors.white,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      _getTranslatedOption(homeController.selectedOption.value),
+                                      style: TextStyle(fontSize: 16),
+                                    ),
+                                    PopupMenuButton<String>(
+                                      key: popupMenuKey,
+                                      icon: Icon(Icons.expand_more),
+                                      onSelected: (String value) {
+                                        homeController.selectedOption.value =
+                                            value; // Update the selected option
+                                        completeController
+                                            .fetchCompleteTransaction(value);
+                                        homeController.fetchBalanceData(value.toLowerCase());
+                                      },
+                                      itemBuilder: (BuildContext context) =>
+                                          <PopupMenuEntry<String>>[
+                                        PopupMenuItem<String>(
+                                          value: 'Today',
+                                          child: Text(languageController.getTranslation('today')),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'This Week',
+                                          child: Text(languageController.getTranslation('this_week')),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'This Month',
+                                          child: Text(languageController.getTranslation('this_month')),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'This Year',
+                                          child: Text(languageController.getTranslation('this_year')),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ).paddingSymmetric(horizontal: 15),
+                              ).paddingOnly(top: 10, bottom: 10),
+                            ),
+                          ),
+                          buildDynamicBalanceContainers(),
+                          buildPendingMoneyRequestsList(
+                              homeController.pendingMoneyRequests),
+                          buildWellDoneContainer(),
+                          buildPendingTransactionList(homeController),
+                          SizedBox(
+                            height: 20,
+                          ),
+                          buildTransactionList(homeController),
+                          Obx(() => infoController.isVisible.value
+                              ? buildInfoContainer(infoController)
+                              : Container().paddingOnly(top: 20, bottom: 10)),
+                          CustomBottomContainerPostLogin()
+                        ],
+                      )
+                    else if (isManager)
+                      Column(
+                        children: [
+                          Container(
+                            height: MediaQuery.of(context).size.height * 0.1,
+                            width: MediaQuery.of(context).size.width,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Center(
+                              child: Text(
+                                languageController.getTranslation('no_permission_message'),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ).paddingSymmetric(horizontal: 20, vertical: 70),
+                          CustomBottomContainerPostLogin().paddingOnly(top:
+                              MediaQuery.of(context).size.height * 0.49),
+                        ],
+                      ),
+                    if (isNotManager)
+                      Column(
+                        children: [
+                          Obx(() {
+                            return controller.isWalletCreated.value
+                                ? NewContainer(controller)
+                                : Column(
+                                    children: [
+                                      Container(
+                                        height: MediaQuery.of(context).size.height * .35,
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                            color: Color(0xffCDE0EF),
+                                            borderRadius: BorderRadius.only(
+                                                bottomLeft: Radius.circular(30),
+                                                bottomRight: Radius.circular(30)),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                  offset: Offset(1, 1),
+                                                  blurRadius: 6,
+                                                  color: Colors.grey)
+                                            ]),
+                                        child: Obx(() {
+                                          if (homeController.isDashboardSettingsLoading.value) {
+                                            return Center(
+                                              child: CircularProgressIndicator(),
+                                            );
+                                          }
+                                          
+                                          return homeController.dashboardImage.value.startsWith('http')
+                                              ? Image.network(
+                                                  homeController.dashboardImage.value,
+                                                  fit: BoxFit.fill,
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return Image.asset(
+                                                      'assets/images/dashboard.png',
+                                                      fit: BoxFit.fill,
+                                                    );
+                                                  },
+                                                )
+                                              : Image.asset(
+                                                  homeController.dashboardImage.value,
+                                                  fit: BoxFit.fill,
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return Image.asset(
+                                                      'assets/images/dashboard.png',
+                                                      fit: BoxFit.fill,
+                                                    );
+                                                  },
+                                                );
+                                        }),
+                                      ),
+                                      // Welcome text and Create Wallet button below image
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              languageController.getTranslation('welcome_back') + " ${userProfileController.userName.value} !",
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 20,
+                                                  fontFamily: 'Nunito',
+                                                  color: Colors.black87),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            SizedBox(height: 20),
+                                            CustomButton(
+                                                height: 37,
+                                                width: MediaQuery.of(context).size.width * 0.55,
+                                                text: languageController.getTranslation('create_a_wallet'),
+                                                onPressed: () {
+                                                  walletController.fetchWalletCurrencies();
+                                                  controller.createWallet();
+                                                }),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                          }),
+                          SizedBox(
+                            height: 20,
+                          ),
+                          CustomBtcContainer(),
+                          Obx(
+                            () => GestureDetector(
+                              onTap: () {
+                                // Open the PopupMenuButton programmatically
+                                final dynamic state = popupMenuKey.currentState;
+                                state.showButtonMenu();
+                              },
+                              child: Container(
+                                height: 42,
+                                width: MediaQuery.of(context).size.width * .9,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30),
+                                  color: Colors.white,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      _getTranslatedOption(homeController.selectedOption.value),
+                                      style: TextStyle(fontSize: 16),
+                                    ),
+                                    PopupMenuButton<String>(
+                                      key: popupMenuKey,
+                                      icon: Icon(Icons.expand_more),
+                                      onSelected: (String value) {
+                                        homeController.selectedOption.value = value;
+                                        completeController.fetchCompleteTransaction(value);
+                                        homeController.fetchBalanceData(value.toLowerCase());
+                                      },
+                                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                                        PopupMenuItem<String>(
+                                          value: 'Today',
+                                          child: Text(languageController.getTranslation('today')),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'This Week',
+                                          child: Text(languageController.getTranslation('this_week')),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'This Month',
+                                          child: Text(languageController.getTranslation('this_month')),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'This Year',
+                                          child: Text(languageController.getTranslation('this_year')),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ).paddingSymmetric(horizontal: 15),
+                              ).paddingOnly(top: 10, bottom: 10),
+                            ),
+                          ),
+                          buildDynamicBalanceContainers(),
+                          buildDepositButton(),
+                          buildWithdrawButton(),
+                          buildPendingMoneyRequestsList(
+                              homeController.pendingMoneyRequests),
+                          buildWellDoneContainer(),
+                          buildPendingTransactionList(homeController),
+                          SizedBox(
+                            height: 20,
+                          ),
+                          buildTransactionList(homeController),
+                          Obx(() => infoController.isVisible.value
+                              ? buildInfoContainer(infoController)
+                              : Container().paddingOnly(top: 20, bottom: 10)),
+                          CustomBottomContainerPostLogin()
+                        ],
+                      ),
+                  ],
+                );
+              }),
+            ),
+          ),
+          // Loading overlay
+          Obx(() => homeController.isBalanceLoading.value
+              ? _buildLoadingOverlay()
+              : Container()),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          userProfileController.fetchUserDetails();
-          walletController
-              .fetchWalletBalance(userProfileController.walletId.value);
-          walletController.walletBalance.value;
-          homeController.fetchFilteredData("today");
-          completeController.fetchCompleteTransaction("today");
-          homeController.fetchPendingMoneyRequests('today');
-          homeController.fetchPendingData('today');
-          sendEscrowController.fetchSendEscrows();
-          receivedEscrowController.fetchReceiverEscrows();
-          requestEscrowController.fetchRequestEscrows();
-        },
-        child: SingleChildScrollView(
+    );
+  }
+
+  // Helper method to translate the selected option
+  String _getTranslatedOption(String option) {
+    switch (option) {
+      case 'Today':
+        return languageController.getTranslation('today');
+      case 'This Week':
+        return languageController.getTranslation('this_week');
+      case 'This Month':
+        return languageController.getTranslation('this_month');
+      case 'This Year':
+        return languageController.getTranslation('this_year');
+      default:
+        return option;
+    }
+  }
+
+  // Method to build dynamic balance containers from API data
+  Widget buildDynamicBalanceContainers() {
+    return Obx(() {
+      if (homeController.balanceData.isEmpty) {
+        return Container(); // Return empty container if no data
+      }
+      
+      return Column(
+        children: homeController.balanceData.map((dash.BalanceData balance) => 
+          buildBalanceContainer(balance)
+        ).toList(),
+      );
+    });
+  }
+
+
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (isManager &&
-                  allowedModules.containsKey('Dashboard') &&
-                  allowedModules['Dashboard']!.contains('view_dashboard'))
-                Column(
-                  children: [
-                    Obx(() {
-                      return controller.isWalletCreated.value
-                          ? NewContainer(controller)
-                          : Container(
-                              height: MediaQuery.of(context).size.height * .47,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                  color: Color(0xffCDE0EF),
-                                  borderRadius: BorderRadius.only(
-                                      bottomLeft: Radius.circular(30),
-                                      bottomRight: Radius.circular(30)),
-                                  boxShadow: [
-                                    BoxShadow(
-                                        offset: Offset(1, 1),
-                                        blurRadius: 6,
-                                        color: Colors.grey)
-                                  ]),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              .25,
-                                      width: Get.width * .55,
-                                      child: Image(
-                                        image: AssetImage(
-                                            "assets/images/dashboard.png"),
-                                        fit: BoxFit.fill,
-                                      )).paddingOnly(top: 10),
-                                  Text(
-                                    "Welcome back ${userProfileController.userName.value} !",
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 20,
-                                        fontFamily: 'Nunito'),
-                                    textAlign: TextAlign.center,
-                                  ).paddingOnly(top: 20),
-                                  CustomButton(
-                                      height: 37,
-                                      width: MediaQuery.of(context).size.width *
-                                          0.55,
-                                      text: "CREATE WALLET",
-                                      onPressed: () {
-                                        walletController
-                                            .fetchWalletCurrencies();
-                                        controller.createWallet();
-                                      }).paddingOnly(top: 20),
-                                ],
-                              ),
-                            );
-                    }),
-                    // CustomButton(
-                    //     height: 37,
-                    //     width: MediaQuery.of(context).size.width * .55,
-                    //     text: 'MANAGERS',
-                    //     onPressed: () {
-                    //       Get.to(ScreenManagers());
-                    //     }).paddingSymmetric(horizontal: 20, vertical: 10),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    CustomBtcContainer(),
-                    Obx(
-                      () => GestureDetector(
-                        onTap: () {
-                          // Open the PopupMenuButton programmatically
-                          final dynamic state = popupMenuKey.currentState;
-                          state.showButtonMenu();
-                        },
-                        child: Container(
-                          height: 42,
-                          width: MediaQuery.of(context).size.width * .9,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            color: Colors.white,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                homeController.selectedOption.value,
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              PopupMenuButton<String>(
-                                key: popupMenuKey,
-                                // Assign the GlobalKey to the PopupMenuButton
-                                icon: Icon(Icons.expand_more),
-                                onSelected: (String value) {
-                                  homeController.selectedOption.value =
-                                      value; // Update the selected option
-                                  completeController
-                                      .fetchCompleteTransaction(value);
-                                },
-                                itemBuilder: (BuildContext context) =>
-                                    <PopupMenuEntry<String>>[
-                                  PopupMenuItem<String>(
-                                    value: 'today',
-                                    child: Text('Today'),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'This Week',
-                                    child: Text('This Week'),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'This Month',
-                                    child: Text('This Month'),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'This Year',
-                                    child: Text('This Year'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ).paddingSymmetric(horizontal: 15),
-                        ).paddingOnly(top: 10, bottom: 10),
-                      ),
-                    ),
-                    buildTransactionContainers(selectedCurrencies),
-                    buildPendingMoneyRequestsList(
-                        homeController.pendingMoneyRequests),
-                    //buildEscrowReleaseSystemList(sendEscrowController.escrows),
-                    //buildEscrowRejectSystemList(receivedEscrowController.receiverEscrows),
-                    //buildEscrowCancelledSystemList(requestEscrowController.requestEscrows),
-                    buildWellDoneContainer(),
-                    buildPendingTransactionList(homeController),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    buildTransactionList(homeController),
-                    Obx(() => infoController.isVisible.value
-                        ? buildInfoContainer(infoController)
-                        : Container().paddingOnly(top: 20, bottom: 10)),
-                    CustomBottomContainer()
-                  ],
-                )
-              else if (isManager)
-                Column(
-                  children: [
-                    Container(
-                      height: MediaQuery.of(context).size.height * 0.1,
-                      width: MediaQuery.of(context).size.width,
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                        child: Text(
-                          "You have not permission for this page!",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ).paddingSymmetric(horizontal: 20,vertical: 70),
-                    CustomBottomContainer().paddingOnly(top:
-                    MediaQuery.of(context).size.height * 0.49),
-                  ],
+              Container(
+                width: 50,
+                height: 50,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                  strokeWidth: 4,
                 ),
-              if (isNotManager)
-                Column(
-                  children: [
-                    Obx(() {
-                      return controller.isWalletCreated.value
-                          ? NewContainer(controller)
-                          : Container(
-                              height: MediaQuery.of(context).size.height * .47,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                  color: Color(0xffCDE0EF),
-                                  borderRadius: BorderRadius.only(
-                                      bottomLeft: Radius.circular(30),
-                                      bottomRight: Radius.circular(30)),
-                                  boxShadow: [
-                                    BoxShadow(
-                                        offset: Offset(1, 1),
-                                        blurRadius: 6,
-                                        color: Colors.grey)
-                                  ]),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              .25,
-                                      width: Get.width * .55,
-                                      child: Image(
-                                        image: AssetImage(
-                                            "assets/images/dashboard.png"),
-                                        fit: BoxFit.fill,
-                                      )).paddingOnly(top: 10),
-                                  Text(
-                                    "Welcome back ${userProfileController.userName.value} !",
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 20,
-                                        fontFamily: 'Nunito'),
-                                    textAlign: TextAlign.center,
-                                  ).paddingOnly(top: 20),
-                                  CustomButton(
-                                      height: 37,
-                                      width: MediaQuery.of(context).size.width *
-                                          0.55,
-                                      text: "CREATE WALLET",
-                                      onPressed: () {
-                                        walletController
-                                            .fetchWalletCurrencies();
-                                        controller.createWallet();
-                                      }).paddingOnly(top: 20),
-                                ],
-                              ),
-                            );
-                    }),
-                    // CustomButton(
-                    //     height: 37,
-                    //     width: MediaQuery.of(context).size.width * .55,
-                    //     text: 'MANAGERS',
-                    //     onPressed: () {
-                    //       Get.to(ScreenManagers());
-                    //     }).paddingSymmetric(horizontal: 20, vertical: 10),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    CustomBtcContainer(),
-                    Obx(
-                      () => GestureDetector(
-                        onTap: () {
-                          // Open the PopupMenuButton programmatically
-                          final dynamic state = popupMenuKey.currentState;
-                          state.showButtonMenu();
-                        },
-                        child: Container(
-                          height: 42,
-                          width: MediaQuery.of(context).size.width * .9,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            color: Colors.white,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                homeController.selectedOption.value,
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              PopupMenuButton<String>(
-                                key: popupMenuKey,
-                                // Assign the GlobalKey to the PopupMenuButton
-                                icon: Icon(Icons.expand_more),
-                                onSelected: (String value) {
-                                  homeController.selectedOption.value =
-                                      value; // Update the selected option
-                                  completeController
-                                      .fetchCompleteTransaction(value);
-                                },
-                                itemBuilder: (BuildContext context) =>
-                                    <PopupMenuEntry<String>>[
-                                  PopupMenuItem<String>(
-                                    value: 'today',
-                                    child: Text('Today'),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'This Week',
-                                    child: Text('This Week'),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'This Month',
-                                    child: Text('This Month'),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'This Year',
-                                    child: Text('This Year'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ).paddingSymmetric(horizontal: 15),
-                        ).paddingOnly(top: 10, bottom: 10),
-                      ),
-                    ),
-                    buildTransactionContainers(selectedCurrencies),
-                    buildPendingMoneyRequestsList(
-                        homeController.pendingMoneyRequests),
-                    //buildEscrowReleaseSystemList(sendEscrowController.escrows),
-                    //buildEscrowRejectSystemList(receivedEscrowController.receiverEscrows),
-                    //buildEscrowCancelledSystemList(requestEscrowController.requestEscrows),
-                    buildWellDoneContainer(),
-                    buildPendingTransactionList(homeController),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    buildTransactionList(homeController),
-                    Obx(() => infoController.isVisible.value
-                        ? buildInfoContainer(infoController)
-                        : Container().paddingOnly(top: 20, bottom: 10)),
-                    CustomBottomContainer()
-                  ],
-                )
+              ),
+              SizedBox(height: 15),
+              Text(
+                'Loading...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green,
+                ),
+              ),
             ],
           ),
         ),
@@ -426,82 +542,67 @@ class ScreenDashboard extends StatelessWidget {
     );
   }
 
-  // Method to build transaction containers based on selected currencies
-  Widget buildTransactionContainers(List<String> currencies) {
-    // Map each currency to the appropriate transaction containers
-    Map<String, List<String>> transactionMap = {
-      'XAF': [
-        'MTN Mobile Money CFA franc',
-        'Orange Money CFA franc',
-      ],
-      'USD': [
-        'USDT Wallet USDT',
-      ],
-      'BTC': [
-        'BTC Onchain BTC',
-        'BTC Lightening BTC',
-      ],
-    };
-
-    // Container list to hold the widgets for the selected currencies
-    List<Widget> transactionContainers = [];
-
-    // Loop through each selected currency
-    for (var currency in currencies) {
-      if (transactionMap.containsKey(currency)) {
-        for (var transaction in transactionMap[currency]!) {
-          transactionContainers.add(buildTransactionContainer(transaction));
-        }
-      }
-    }
-
-    // Return the list of transaction containers as a Column
-    return Column(
-      children: transactionContainers,
-    );
-  }
-
-  Widget buildTransactionContainer(String text) {
+  Widget buildBalanceContainer(dash.BalanceData balance) {
     return Container(
-      height: Get.height * 0.09,
+      height: Get.height * 0.09, // Restored to original height since labels are removed
       width: Get.width,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(5),
         color: Colors.white,
       ),
-      padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5), // Restored to original padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            text,
+            "${balance.paymentMethodName} ${balance.currency}",
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: Color(0xff666565),
             ),
           ),
-          Spacer(), // This will push the Row to the bottom
+          SizedBox(height: 8), // Keep some spacing for better layout
           Row(
             children: [
-              Icon(
-                Icons.arrow_circle_down,
-                color: Colors.green,
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.arrow_circle_down,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        balance.totalDeposit,
+                        style: TextStyle(fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(width: 5),
-              Text(
-                "0",
-                style: TextStyle(fontSize: 20),
-              ),
-              SizedBox(width: 25),
-              Icon(
-                Icons.arrow_circle_up,
-                color: Colors.red,
-              ),
-              SizedBox(width: 5),
-              Text(
-                "0",
-                style: TextStyle(fontSize: 20),
+              SizedBox(width: 15),
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.arrow_circle_up,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        balance.totalWithdraw,
+                        style: TextStyle(fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -510,68 +611,82 @@ class ScreenDashboard extends StatelessWidget {
     ).paddingSymmetric(horizontal: 15, vertical: 5);
   }
 
+
+
   Widget buildInfoContainer(InfoController infoController) {
-    return Container(
-      height: Get.height * .17,
-      width: Get.width,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(5),
-        color: Color(0xff2CA8FF),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: Colors.white,
-                size: 30,
-              ),
-              SizedBox(
-                width: 10,
-              ),
-              Text(
-                "Info",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: "Nunito"),
-              ),
-              Spacer(),
-              IconButton(
-                onPressed: () {
-                  infoController.hideContainer();
-                },
-                icon: Icon(
-                  Icons.clear,
+    return Obx(() {
+      // Check if there are any transactions (pending or complete)
+      bool hasTransactions = homeController.pendingTransactions.isNotEmpty || 
+                             completeController.dashboard.isNotEmpty;
+      
+      // Don't show the container if there are transactions
+      if (hasTransactions) {
+        return Container();
+      }
+      
+      return Container(
+        width: Get.width,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(5),
+          color: Color(0xff2CA8FF),
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
                   color: Colors.white,
                   size: 30,
                 ),
-              )
-            ],
+                SizedBox(
+                  width: 10,
+                ),
+                Text(
+                  languageController.getTranslation('info'),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: "Nunito"),
+                ),
+                Spacer(),
+                IconButton(
+                  onPressed: () {
+                    infoController.hideContainer();
+                  },
+                  icon: Icon(
+                    Icons.clear,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                )
+              ],
+            ),
+            Text(
+              languageController.getTranslation('your_account_is_fresh_and_new') + " !",
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: "Nunito"),
+            ),
+            Text(
+              languageController.getTranslation('start_by_requesting_money_from_friends_or_by_selling_online_and_collecting_payments_in_your_wallet'),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  fontFamily: "Nunito"),
+            ),
+          ],
           ),
-          Text(
-            "Your account is Fresh and New !",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                fontFamily: "Nunito"),
-          ),
-          Text(
-            "Start by requesting money from friends or by selling"
-            " online and collecting payments in your wallet.",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                fontFamily: "Nunito"),
-          ),
-        ],
-      ).paddingSymmetric(horizontal: 10),
-    ).paddingSymmetric(horizontal: 15, vertical: 10);
+        ),
+      ).paddingSymmetric(horizontal: 15, vertical: 6);
+    }).paddingSymmetric(horizontal: 15, vertical: 10);
   }
 
   Widget buildWellDoneContainer() {
@@ -594,7 +709,7 @@ class ScreenDashboard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    "Well done!",
+                    languageController.getTranslation('well_done'),
                     style: TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -604,8 +719,7 @@ class ScreenDashboard extends StatelessWidget {
                 ],
               ),
               Text(
-                "Now you just have to confirm that this"
-                " transaction is yours so that the money goes to it's destiny.",
+                languageController.getTranslation('now_you_just_have_to_confirm_that_this_transaction_is_yours_so_that_the_money_goes_to_its_destiny'),
                 style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -619,7 +733,7 @@ class ScreenDashboard extends StatelessWidget {
     });
   }
 
-  Widget buildTransactionList(HomeController homeController) {
+  Widget buildTransactionList(dash.HomeController homeController) {
     return Obx(() {
       if (homeController.isLoading.value) {
         return Center(child: Container());
@@ -633,7 +747,7 @@ class ScreenDashboard extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                "Complete Transactions",
+                languageController.getTranslation('complete_transactions'),
                 style: TextStyle(
                     fontSize: 18,
                     color: Color(0xff18CE0F),
@@ -646,27 +760,27 @@ class ScreenDashboard extends StatelessWidget {
                       //minHeight: Get.size.height,
                       ),
                   child: DataTable(
-                    columns: const <DataColumn>[
+                    columns: <DataColumn>[
                       DataColumn(
-                          label: Text('ID',
+                          label: Text(languageController.getTranslation('serial_no'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Date',
+                          label: Text(languageController.getTranslation('date'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Name',
+                          label: Text(languageController.getTranslation('name'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Gross',
+                          label: Text(languageController.getTranslation('gross'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Fee',
+                          label: Text(languageController.getTranslation('fee'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Net',
+                          label: Text(languageController.getTranslation('net'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Balance',
+                          label: Text(languageController.getTranslation('balance'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
                     rows: completeController.dashboard
@@ -693,7 +807,7 @@ class ScreenDashboard extends StatelessWidget {
                                   ),
                                   child: Center(
                                       child: Text(
-                                    'Complete',
+                                    languageController.getTranslation('complete'),
                                     style: TextStyle(color: Color(0xff18CE0F)),
                                   )))
                             ],
@@ -741,7 +855,7 @@ class ScreenDashboard extends StatelessWidget {
     });
   }
 
-  Widget buildPendingTransactionList(HomeController homeController) {
+  Widget buildPendingTransactionList(dash.HomeController homeController) {
     return Obx(() {
       if (homeController.isLoading.value) {
         return Center(child: Container());
@@ -755,7 +869,7 @@ class ScreenDashboard extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                "Pending Transactions",
+                languageController.getTranslation('pending_transactions'),
                 style: TextStyle(
                     fontSize: 18,
                     color: Color(0xff18CE0F),
@@ -769,30 +883,30 @@ class ScreenDashboard extends StatelessWidget {
                       //minHeight: Get.size.height,
                       ),
                   child: DataTable(
-                    columns: const <DataColumn>[
+                    columns: <DataColumn>[
                       DataColumn(
-                          label: Text('ID',
+                          label: Text(languageController.getTranslation('serial_no'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Date',
+                          label: Text(languageController.getTranslation('date'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('time to expire',
+                          label: Text(languageController.getTranslation('time_to_expire'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Name',
+                          label: Text(languageController.getTranslation('name'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Gross',
+                          label: Text(languageController.getTranslation('gross'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Fee',
+                          label: Text(languageController.getTranslation('fee'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Net',
+                          label: Text(languageController.getTranslation('net'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Status',
+                          label: Text(languageController.getTranslation('status'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
                       // Added status column
                     ],
@@ -825,9 +939,9 @@ class ScreenDashboard extends StatelessWidget {
                                   )))
                             ],
                           )),
-                          DataCell(Text('Funds\nAvailability')),
+                          DataCell(Text(languageController.getTranslation('funds_availability'))),
                           DataCell(
-                              Text('Money Sent\nTo ${transaction.entityName}')),
+                              Text('${languageController.getTranslation('money_sent')}\n${languageController.getTranslation('to')} ${transaction.entityName}')),
                           DataCell(Text(
                               '${transaction.moneyFlow} ${transaction.currencySymbol} ${transaction.gross.toString()}')),
                           DataCell(Text(
@@ -843,7 +957,7 @@ class ScreenDashboard extends StatelessWidget {
                               ),
                               child: Center(
                                   child: Text(
-                                "Confirm",
+                                languageController.getTranslation('confirm'),
                                 style: TextStyle(color: Color(0xff18CE0F)),
                               ))))
                         ],
@@ -877,7 +991,7 @@ class ScreenDashboard extends StatelessWidget {
     });
   }
 
-  Widget buildPendingMoneyRequestsList(List<PendingMoneyRequest> requests) {
+  Widget buildPendingMoneyRequestsList(List<dash.PendingMoneyRequest> requests) {
     return Obx(() {
       if (homeController.isLoading.value) {
         return Center(
@@ -896,7 +1010,7 @@ class ScreenDashboard extends StatelessWidget {
     });
   }
 
-  Widget buildPendingMoneyRequest(PendingMoneyRequest request) {
+  Widget buildPendingMoneyRequest(dash.PendingMoneyRequest request) {
     return Container(
       height: Get.height * 0.15,
       margin: EdgeInsets.only(top: 8.0),
@@ -1378,6 +1492,153 @@ class ScreenDashboard extends StatelessWidget {
       ),
     ).paddingSymmetric(horizontal: 15);
   }
+  // Method to build deposit button with KYC condition
+  Widget buildDepositButton() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      child: ElevatedButton(
+        onPressed: () {
+          // Check KYC status
+          if (userProfileController.kyc.value != '3') {
+            // Show KYC required message
+            Get.dialog(
+              AlertDialog(
+                title: Text(languageController.getTranslation('kyc_required')),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(languageController.getTranslation('in_order_to_deposit_submit_kyc_first')),
+                    SizedBox(height: 10),
+                    Text(languageController.getTranslation('visit_website_to_complete_kyc')),
+                    SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () {
+                        // Launch URL in browser
+                        final url = Uri.parse('$baseUrl');
+                        launchUrl(url, mode: LaunchMode.externalApplication);
+                      },
+                      child: Text(
+                        baseUrl,
+                        style: TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            // KYC is approved, navigate to deposit screen
+            Get.to(() => ScreenDeposit());
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xff18CE0F),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          minimumSize: Size(double.infinity, 50),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_circle_outline, color: Colors.white),
+            SizedBox(width: 10),
+            Text(
+              languageController.getTranslation('deposit'),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Method to build withdraw button with KYC condition
+  Widget buildWithdrawButton() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      child: ElevatedButton(
+        onPressed: () {
+          // Check KYC status
+          if (userProfileController.kyc.value != '3') {
+            // Show KYC required message
+            Get.dialog(
+              AlertDialog(
+                title: Text(languageController.getTranslation('kyc_required')),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(languageController.getTranslation('in_order_to_withdraw_submit_kyc_first')),
+                    SizedBox(height: 10),
+                    Text(languageController.getTranslation('visit_website_to_complete_kyc')),
+                    SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () {
+                        // Launch URL in browser
+                        final url = Uri.parse('$baseUrl');
+                        launchUrl(url, mode: LaunchMode.externalApplication);
+                      },
+                      child: Text(
+                        baseUrl,
+                        style: TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            // KYC is approved, navigate to withdraw screen
+            Get.to(() => ScreenWithdrawal());
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xffFF6B6B),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          minimumSize: Size(double.infinity, 50),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.remove_circle_outline, color: Colors.white),
+            SizedBox(width: 10),
+            Text(
+              languageController.getTranslation('withdraw'),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class NewContainer extends StatelessWidget {
@@ -1386,6 +1647,7 @@ class NewContainer extends StatelessWidget {
   NewContainer(this.controller);
 
   final WalletController walletController = Get.put(WalletController());
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   Widget build(BuildContext context) {
@@ -1408,7 +1670,7 @@ class NewContainer extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Select the Wallet\nCurrency",
+                languageController.getTranslation('select_the_wallet_currency'),
                 style: TextStyle(
                     color: Color(0xff484848),
                     fontWeight: FontWeight.w700,
@@ -1429,7 +1691,7 @@ class NewContainer extends StatelessWidget {
               if (walletController.isLoading.value) {
                 return Center(child: CircularProgressIndicator());
               } else if (walletController.walletCurrencies.isEmpty) {
-                return Center(child: Text('No currencies available'));
+                                  return Center(child: Text(languageController.getTranslation('no_currencies_available')));
               } else {
                 return ListView.builder(
                   itemCount: walletController.walletCurrencies.length,
@@ -1441,11 +1703,7 @@ class NewContainer extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: ListTile(
-                        leading: currency.thumb.isNotEmpty
-                            ? Image.network(currency.thumb,
-                                width: 40, height: 40, fit: BoxFit.cover)
-                            : Image.asset("assets/images/user.png",
-                                width: 40, height: 40),
+                        leading: Icon(Icons.account_balance_wallet, size: 40, color: Color(0xff484848)),
                         title: Text(
                           currency.name,
                           style: TextStyle(

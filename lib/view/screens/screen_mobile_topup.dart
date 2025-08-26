@@ -14,7 +14,7 @@ class ScreenMobileTopUp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(backgroundColor: Color(0xffE6F0F7),
       appBar:  AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         //leading: PopupMenuButtonLeading(),
         actions: [
@@ -201,7 +201,7 @@ class ScreenMobileTopUp extends StatelessWidget {
                   ],
                 ).paddingSymmetric(horizontal: 15),
               ).paddingOnly(top: 20,bottom: 20),
-              CustomBottomContainer()
+              CustomBottomContainerPostLogin()
             ],
           ),
         ),

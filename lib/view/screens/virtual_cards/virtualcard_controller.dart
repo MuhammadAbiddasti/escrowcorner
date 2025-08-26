@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:dacotech/widgets/custom_api_url/constant_url.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';

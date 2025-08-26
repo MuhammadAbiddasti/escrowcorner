@@ -13,10 +13,8 @@ class ScreenAddMerchant extends StatelessWidget {
   final UserProfileController userProfileController =Get.find<UserProfileController>();
   //final TextEditingController currencyController = TextEditingController();
   final TextEditingController merchantNameController = TextEditingController();
-  final TextEditingController merchantSiteUrlController =
-      TextEditingController();
-  final TextEditingController webhookUrlControler =
-      TextEditingController();
+
+
   final TextEditingController merchantSuccessLinkController =
       TextEditingController();
   final TextEditingController merchantFailLinkController =
@@ -28,10 +26,15 @@ class ScreenAddMerchant extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Initialize controllers with current values
+    merchantNameController.text = controller.merchantName.value;
+
+    merchantDescriptionController.text = controller.merchantDescription.value;
+    
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -39,14 +42,16 @@ class ScreenAddMerchant extends StatelessWidget {
           AppBarProfileButton(),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              //CustomBtcContainer(),
-              Container(
+      body: Stack(
+        children: <Widget>[
+          SingleChildScrollView(
+            child: Center(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  //CustomBtcContainer(),
+                  Container(
                 //height: MediaQuery.of(context).size.height * 0.5,
                 width: MediaQuery.of(context).size.width * 0.9,
                 decoration: BoxDecoration(
@@ -57,7 +62,7 @@ class ScreenAddMerchant extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "New Application",
+                      "New Sub Account",
                       style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
@@ -65,7 +70,7 @@ class ScreenAddMerchant extends StatelessWidget {
                           fontFamily: 'Nunito'),
                     ).paddingOnly(top: 10),
                     Text(
-                      "Application Logo",
+                      "Sub Account Logo",
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -148,7 +153,7 @@ class ScreenAddMerchant extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Application Name",
+                      "Sub Account Name",
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -156,7 +161,7 @@ class ScreenAddMerchant extends StatelessWidget {
                           fontFamily: 'Nunito'),
                     ).paddingOnly(top: 10, bottom: 10),
                     TextFormField(
-                      controller: TextEditingController(text: controller.merchantName.value),
+                      controller: merchantNameController,
                       onChanged: (value) {
                         controller.merchantName.value = value;
                       },
@@ -221,64 +226,8 @@ class ScreenAddMerchant extends StatelessWidget {
                   //     );
                   //   }
                   // }),
-                    Text(
-                      "Webhook URL",
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
-                    TextFormField(
-                      controller: TextEditingController(text: controller.webhookUrl.value),
-                      onChanged: (value) {
-                        controller.webhookUrl.value = value;
-                      },
-                      //onChanged: (value) => controller.merchantIpnLink(value),
-                      keyboardType: TextInputType.url,
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.only(left: 5),
-                        hintStyle: TextStyle(color: Color(0xffA9A9A9)),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565))),
-                        enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565))),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Color(0xff666565),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      "Site URL",
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
-                    TextFormField(
-                      keyboardType: TextInputType.url,
-                      controller: TextEditingController(text: controller.merchantSiteUrl.value),
-                      onChanged: (value) {
-                        controller.merchantSiteUrl.value = value;
-                      },
-                      //onChanged: (value) => controller.merchantSiteUrl(value),
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.only(left: 5),
-                        hintStyle: TextStyle(color: Color(0xffA9A9A9)),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565))),
-                        enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565))),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Color(0xff666565),
-                          ),
-                        ),
-                      ),
-                    ),
+
+
                     // Text(
                     //   "Success URL:",
                     //   style: TextStyle(
@@ -344,7 +293,7 @@ class ScreenAddMerchant extends StatelessWidget {
                     //   ),
                     // ),
                     Text(
-                      "Application Description",
+                      "Sub Account Description",
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -352,7 +301,7 @@ class ScreenAddMerchant extends StatelessWidget {
                           fontFamily: 'Nunito'),
                     ).paddingOnly(top: 10, bottom: 10),
                     TextFormField(
-                      controller: TextEditingController(text: controller.merchantDescription.value),
+                      controller: merchantDescriptionController,
                       onChanged: (value) {
                         controller.merchantDescription.value = value;
                       },
@@ -375,11 +324,24 @@ class ScreenAddMerchant extends StatelessWidget {
                     ),
                     FFButtonWidget(
                       onPressed: () async {
+                        print('Save button pressed');
+                        print('Form values:');
+                        print('Name: ${merchantNameController.text}');
+
+                        print('Description: ${merchantDescriptionController.text}');
+                        print('Avatar: ${controller.avatar.value?.path}');
+                        
+                        // Update controller values from form controllers
+                        controller.merchantName.value = merchantNameController.text;
+
+                        controller.merchantDescription.value = merchantDescriptionController.text;
+                        
                         // Adding a delay of 3 seconds before the API call
                         await Future.delayed(Duration(seconds: 3));
-                        await controller.createMerchant(context
-                          // Use code instead of name
-                        );},
+                        print('Delay completed, calling createMerchant...');
+                        await controller.createMerchant(context);
+                        print('createMerchant call completed');
+                      },
                       text: 'Save',
                       options: FFButtonOptions(
                         width: Get.width,
@@ -405,10 +367,15 @@ class ScreenAddMerchant extends StatelessWidget {
                   ],
                 ).paddingSymmetric(horizontal: 15),
               ).paddingOnly(top: 20, bottom: 20),
-              CustomBottomContainer()
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: CustomBottomContainerPostLogin(),
+          ),
+        ],
       ),
     );
   }

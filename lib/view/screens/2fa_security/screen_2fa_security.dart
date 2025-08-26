@@ -1,11 +1,13 @@
-import 'package:dacotech/view/screens/user_profile/user_profile_controller.dart';
+import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
+import '../../../widgets/common_header/common_header.dart';
 import '2fa_security_controller.dart';
+import 'package:escrowcorner/view/controller/language_controller.dart';
 
 class Screen2faSecurity extends StatefulWidget {
   @override
@@ -13,8 +15,9 @@ class Screen2faSecurity extends StatefulWidget {
 }
 
 class _Screen2faSecurityState extends State<Screen2faSecurity> {
-  final UserProfileController userController = Get.put(UserProfileController());
+  final UserProfileController userController = Get.find<UserProfileController>();
   final TwoFactorController controller = Get.put(TwoFactorController());
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   void initState() {
@@ -27,15 +30,7 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
     controller.fetchQRCode();
     return Scaffold(
       backgroundColor: const Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
-      ),
+      appBar: CommonHeader(title: languageController.getTranslation('2fa_security'), managerId: userController.userId.value),
       body:
           Stack(
             children: [
@@ -56,29 +51,29 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
                         child: Column(
                           children: [
                             SizedBox(height: 20),
-                             Text(
-                              "Two-Factor Authentication",
+                            Obx(() => Text(
+                              languageController.getTranslation('two_factor_authentication'),
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),
-                            ),
-                            Text(
-                              'Please Choose how you want to receive your confirmation code',
+                            )),
+                            Obx(() => Text(
+                              languageController.getTranslation('please_choose_how_you_want_to_receive_your_confirmation_code'),
                               style: TextStyle(fontSize: 12),
-                              textAlign: TextAlign.center, // Center-aligns the text
-                            ).paddingSymmetric(horizontal: 20),
+                              textAlign: TextAlign.center,
+                            ).paddingSymmetric(horizontal: 20)),
                             const SizedBox(height: 20),
                             //Google 2FA Checkbox
                             CheckboxListTile(
-                              title: const Text(
-                                'Enable Google Authenticator 2FA',
+                              title: Obx(() => Text(
+                                languageController.getTranslation('google_authenticator'),
                                 style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
-                              ),
-                              subtitle: Text(
-                                'Get new confirmation codes from your Google authenticator app.',
+                              )),
+                              subtitle: Obx(() => Text(
+                                languageController.getTranslation('get_new_confirmation_codes_from_your_google_authenticator_app'),
                                 style: TextStyle(fontSize: 12),
-                              ),
+                              )),
                               value: userController.enableGoogle2fa.value,
                               onChanged: (value) async {
                                 if (value == true) {
@@ -90,10 +85,10 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
                             ),
                             //Email 2FA Checkbox
                             CheckboxListTile(
-                              title: const Text(
-                                'Enable Email 2FA',
+                              title: Obx(() => Text(
+                                languageController.getTranslation('email'),
                                 style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
-                              ),
+                              )),
                               value: userController.enableEmail2fa.value,
                               onChanged: (value) async {
                                 if (value == true) {
@@ -102,10 +97,10 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
                               },
                               activeColor: Colors.blue,
                               controlAffinity: ListTileControlAffinity.leading,
-                              subtitle: Text(
-                                "We'll send a confirmation code to your registered email address",
+                              subtitle: Obx(() => Text(
+                                languageController.getTranslation('well_send_confirmation_codes_to_your_registered_email_address'),
                                 style: TextStyle(fontSize: 12),
-                              ),
+                              )),
                             ),
                           ],
                         ),
@@ -134,11 +129,11 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                'Scan the QR code below with your 2FA app:',
+                              Obx(() => Text(
+                                languageController.getTranslation('scan_qr_with_2fa_app'),
                                 style: TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
-                              ),
+                              )),
                               const SizedBox(height: 7),
                               if (controller.qrCodeImage.value != null)
                                 Image.memory(
@@ -152,9 +147,20 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
                                 Column(
                                   children: [
                                     const Icon(Icons.broken_image, size: 100),
-                                    const Text("QR Code Image Not available")
+                                    Obx(() => Text(languageController.getTranslation('qr_code_image_not_available')))
                                   ],
                                 ),
+                              const SizedBox(height: 7),
+                              Obx(() => Text(
+                                languageController.getTranslation('or'),
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              )),
+                              const SizedBox(height: 7),
+                              Obx(() => Text(
+                                languageController.getTranslation('add_following_code_into_google_authenticator_app'),
+                                style: TextStyle(fontSize: 12),
+                                textAlign: TextAlign.center,
+                              )),
                               const SizedBox(height: 7),
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
@@ -171,7 +177,7 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          userController.googleSecretCode.value,
+                                          controller.qrCodeValue.value,
                                           style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
@@ -181,7 +187,7 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
                                           icon: Icon(Icons.copy, color: Colors.blue),
                                           onPressed: () {
                                             Clipboard.setData(ClipboardData(
-                                                text: userController.googleSecretCode.value));
+                                                text: controller.qrCodeValue.value));
                                           },
                                         ),
                                       ],
@@ -200,7 +206,7 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
             ),
     Align(
     alignment: Alignment.bottomCenter,
-    child: const CustomBottomContainer(),
+              child: const CustomBottomContainerPostLogin(),
     ),
           ]),
           // Positioned Bottom Container
@@ -226,13 +232,17 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
           userController.enableEmail2fa.value = true;
           userController.enableGoogle2fa.value = false; // Disable Google 2FA
         }
+        // Refresh data and rebuild UI after successful verification
+        await userController.fetchUserDetails();
+        await controller.fetchQRCode();
+        if (mounted) setState(() {});
         // Call API to update the 2FA status on the server
         //controller.update2fa(type);
       }
     } catch (e) {
       Get.snackbar(
-        "Error",
-        "Failed to enable $type 2FA. Please try again.",
+        languageController.getTranslation('error'),
+        languageController.getTranslation('failed_to_enable_2fa_please_try_again'),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white
@@ -246,19 +256,21 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text("Verify OTP"),
+          title: Obx(() => Text(languageController.getTranslation('verify_otp'))),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                "Enter OTP sent to your ${type == 'email' ? 'authenticator' : 'email'}",
-              ),
+              Obx(() => Text(
+                type == 'google'
+                    ? languageController.getTranslation('enter_otp_sent_to_email')
+                    : languageController.getTranslation('enter_otp_from_authenticator_app'),
+              )),
               const SizedBox(height: 10),
               TextField(
                 controller: codeController,
-                decoration: const InputDecoration(
-                  labelText: 'Enter OTP',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: languageController.getTranslation('enter_otp'),
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ],
@@ -266,27 +278,32 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false), // Cancel
-              child: const Text(
-                'Cancel',
+              child: Obx(() => Text(
+                languageController.getTranslation('cancel'),
                 style: TextStyle(
                   color: Colors.black,
                 ),
-              ),
+              )),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff18CE0F),
               ),
               onPressed: () async {
+                if (controller.isLoading.value) return;
                 if (codeController.text.isNotEmpty) {
                   final otherType =
                   type == 'email' ? 'authenticator' : 'email';
-                  // Adding a delay of 3 seconds before the API call
-                  await Future.delayed(Duration(seconds: 2));
-                  final verified = await controller.verifyOtpCode(context,
-                    codeController.text,
-                    otherType,
-                  );
+                  bool verified;
+                  if (type == 'email') {
+                    // Email checkbox flow: verify code for Google Authenticator
+                    verified = await controller.verifyGoogleOtpCode(context, codeController.text);
+                  } else {
+                    verified = await controller.verifyOtpCode(context,
+                      codeController.text,
+                      otherType,
+                    );
+                  }
                   print("type: $otherType");
                   if (verified) {
                     // Dismiss dialog only if verification is successful
@@ -296,8 +313,8 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
                   }
                 } else {
                   Get.snackbar(
-                    "Message",
-                    "Please enter the verification code.",
+                    languageController.getTranslation('error'),
+                    languageController.getTranslation('please_enter_the_otp_code'),
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: Colors.red,
                     colorText: Colors.white
@@ -306,12 +323,21 @@ class _Screen2faSecurityState extends State<Screen2faSecurity> {
 
                 userController.fetchUserDetails();
               },
-              child: const Text(
-                'Verify',
-                style: TextStyle(
-                  color: Colors.white,
-                ),
-              ),
+              child: Obx(() => controller.isLoading.value
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      languageController.getTranslation('verify'),
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                    )),
             ),
           ],
         );

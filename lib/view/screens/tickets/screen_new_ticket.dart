@@ -11,7 +11,7 @@ import 'ticket_controller.dart';
 class ScreenNewTicket extends StatelessWidget {
   final LogoController logoController = Get.put(LogoController());
   final TicketController controller = Get.put(TicketController());
-  final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
 
   @override
   void initState() {
@@ -27,7 +27,7 @@ class ScreenNewTicket extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -35,20 +35,21 @@ class ScreenNewTicket extends StatelessWidget {
           AppBarProfileButton(),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              //CustomBtcContainer().paddingOnly(top: 20),
-              Container(
-                //height: MediaQuery.of(context).size.height * 0.68,
-                width: MediaQuery.of(context).size.width * 0.9,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Color(0xffFFFFFF),
-                ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Center(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: Color(0xffFFFFFF),
+                      ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -141,48 +142,7 @@ class ScreenNewTicket extends StatelessWidget {
                         },
                       ),
                     ),
-                    Text(
-                      "Priority",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 14,
-                        color: Color(0xff484848),
-                        fontFamily: 'Nunito',
-                      ),
-                    ).paddingOnly(top: 10, bottom: 10),
-                    Obx(
-                          () => DropdownButtonFormField<String>(
-                        value: controller.selectedPriority.value.isEmpty
-                            ? null
-                            : controller.selectedPriority.value, // Set the selected value
-                        decoration: InputDecoration(
-                          contentPadding: EdgeInsets.only(top: 4, left: 5),
-                          hintText: "Select Priority",
-                          hintStyle: TextStyle(color: Color(0xffA9A9A9)),
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565)),
-                          ),
-                        ),
-                        icon: Icon(Icons.expand_more), // Dropdown icon
-                        items: controller.priorities.map((String priority) {
-                          return DropdownMenuItem<String>(
-                            value: priority,
-                            child: Text(priority),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            controller.selectedPriority.value = newValue; // Update the selected value
-                          }
-                        },
-                      ),
-                    ),
+
 
                     Text(
                       "Message",
@@ -211,13 +171,101 @@ class ScreenNewTicket extends StatelessWidget {
                         ),
                       ),
                     ),
-                    FFButtonWidget(
-                      onPressed: () async{
-                        // Adding a delay of 3 seconds before the API call
-                        await Future.delayed(Duration(seconds: 2));
-                        await controller.openNewTicket(context);
-                      },
-                      text: 'OPEN TICKET',
+                    Text(
+                      "Attachment Files (Optional)",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 14,
+                        color: Color(0xff484848),
+                        fontFamily: 'Nunito',
+                      ),
+                    ).paddingOnly(top: 10, bottom: 10),
+                    
+                    // Display selected files
+                    Obx(() {
+                      if (controller.selectedFiles.isNotEmpty) {
+                        return Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Selected Files (${controller.selectedFiles.length}):",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: Color(0xff484848),
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              ...controller.selectedFiles.asMap().entries.map((entry) {
+                                int index = entry.key;
+                                var file = entry.value;
+                                return Container(
+                                  margin: EdgeInsets.only(bottom: 5),
+                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          file.path.split('/').last,
+                                          style: TextStyle(fontSize: 12),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.close, size: 16, color: Colors.red),
+                                        onPressed: () => controller.removeFile(index),
+                                        padding: EdgeInsets.zero,
+                                        constraints: BoxConstraints(),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        );
+                      }
+                      return Container();
+                    }),
+                    
+                    Obx(() => InkWell(
+                      onTap: () => controller.showPickerOptions(context),
+                      child: Container(
+                        height: 40,
+                        width: 150,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(5),
+                          border: Border.all(color: Colors.black)
+                        ),
+                        child: Center(
+                          child: Text(
+                            controller.selectedFiles.isEmpty ? "Choose Files" : "Add More Files",
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    )),
+                    SizedBox(height: 20),
+                    Obx(() => FFButtonWidget(
+                      onPressed: controller.isSubmitting.value 
+                          ? null 
+                          : () async {
+                              // Adding a delay of 2 seconds before the API call
+                              await Future.delayed(Duration(seconds: 2));
+                              await controller.openNewTicket(context);
+                            },
+                      text: controller.isSubmitting.value ? 'SUBMITTING...' : 'OPEN TICKET',
                       options: FFButtonOptions(
                         width: Get.width,
                         height: 45.0,
@@ -225,7 +273,9 @@ class ScreenNewTicket extends StatelessWidget {
                             0.0, 0.0, 0.0, 0.0),
                         iconPadding: EdgeInsetsDirectional.fromSTEB(
                             0.0, 0.0, 0.0, 0.0),
-                        color: DamaspayTheme.of(context).primary,
+                        color: controller.isSubmitting.value 
+                            ? Colors.grey 
+                            : DamaspayTheme.of(context).primary,
                         textStyle:
                         DamaspayTheme.of(context).titleSmall.override(
                           fontFamily: 'Poppins',
@@ -238,14 +288,17 @@ class ScreenNewTicket extends StatelessWidget {
                         ),
                         borderRadius: BorderRadius.circular(5.0),
                       ),
-                    ).paddingOnly(top: 30,bottom: 20),
+                    )).paddingOnly(top: 30,bottom: 10),
                   ],
                 ).paddingSymmetric(horizontal: 15),
-              ).paddingOnly(top: 30, bottom: 30),
-              CustomBottomContainer()
+              ).paddingOnly(top: 30, bottom: 10),
             ],
           ),
         ),
+      ),
+          ),
+          CustomBottomContainerPostLogin(),
+        ],
       ),
     );
   }

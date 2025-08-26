@@ -1,5 +1,5 @@
-import 'package:dacotech/widgets/custom_bottom_container/custom_bottom_container.dart';
-import 'package:dacotech/widgets/custom_button/custom_button.dart';
+import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
+import 'package:escrowcorner/widgets/custom_button/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -15,7 +15,7 @@ class ScreenEscrowDetails extends StatelessWidget {
     return  Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar:  AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -72,7 +72,7 @@ class ScreenEscrowDetails extends StatelessWidget {
                 ],
               ).paddingSymmetric(horizontal: 10,vertical: 5),
             ).paddingSymmetric(horizontal: 10,vertical: 20),
-            CustomBottomContainer()
+            CustomBottomContainerPostLogin()
           ],
         ),
       ),

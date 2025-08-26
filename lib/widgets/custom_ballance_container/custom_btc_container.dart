@@ -192,7 +192,7 @@
 // //     );
 // //   }
 //
-import 'package:dacotech/view/controller/wallet_controller.dart';
+import 'package:escrowcorner/view/controller/wallet_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
@@ -202,6 +202,8 @@ import '../../view/screens/managers/manager_permission_controller.dart';
 import '../../view/screens/swapping/swapping_screen.dart';
 import '../../view/screens/user_profile/user_profile_controller.dart';
 import '../../view/screens/withdraw/screen_withdrawal.dart';
+import '../../view/Kyc_screens/screen_kyc1.dart';
+import '../../view/controller/language_controller.dart';
 
 class CustomBtcContainer extends StatefulWidget {
   @override
@@ -211,10 +213,10 @@ class CustomBtcContainer extends StatefulWidget {
 class _WalletWidgetState extends State<CustomBtcContainer> {
   WalletController walletController =
       Get.put(WalletController(), permanent: true);
-  final UserProfileController userProfileController =
-      Get.put(UserProfileController());
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
   final ManagersPermissionController permissionController =
       Get.put(ManagersPermissionController());
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   void initState() {
@@ -328,27 +330,10 @@ class _WalletWidgetState extends State<CustomBtcContainer> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: Alignment.topRight,
-            child: GestureDetector(
-              onTap: () => _showCurrencySelection(context),
-              child: Container(
-                height: 30,
-                width: 30,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(3),
-                  color: Colors.grey.withOpacity(0.3),
-                ),
-                child: Icon(Icons.add, color: Colors.grey),
-              ).paddingOnly(top: 5),
-            ),
-          ),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Obx(() {
-              // walletController
-              //     .fetchWalletBalance(userProfileController.walletId.value);
               return Text(
                 walletController.walletBalance.value.isEmpty
                     ? 'Fetching...'
@@ -362,206 +347,85 @@ class _WalletWidgetState extends State<CustomBtcContainer> {
               );
             }),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  Get.to(ScreenDeposit());
-                },
-                child: Text(
-                  'DEPOSIT',
-                  style: TextStyle(color: Color(0xff18CE0F), fontSize: 9),
-                ),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(110, 25),
-                  maximumSize: Size(110, 25),
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.white,
-                  side: BorderSide(color: Color(0xff18CE0F)),
-                  shape: RoundedRectangleBorder(
-                    //borderRadius: BorderRadius.circular(5.0),
+          // Wallet gateway details just above deposit/withdraw buttons
+          Obx(() => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: walletController.walletGatewayDetails
+                .map((detail) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4.0, left: 2.0),
+                    child: Text(
+                      "${detail['name']} ${languageController.getTranslation('balance')}: ${detail['balance']}",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xff484848),
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Nunito',
+                      ),
+                    ),
+                  );
+                }).toList(),
+          )),
+          Obx(() {
+            final kycStatus = userProfileController.kyc.value;
+            if (kycStatus == null || kycStatus.isEmpty) {
+              // Force fetch user details if kyc is not loaded
+              userProfileController.fetchUserDetails();
+              return Center(child: CircularProgressIndicator());
+            }
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    if (kycStatus != '3') {
+                      Get.to(() => ScreenKyc1());
+                    } else {
+                      Get.to(ScreenDeposit());
+                    }
+                  },
+                  child: Text(
+                    languageController.getTranslation('deposits'),
+                    style: TextStyle(color: Color(0xff18CE0F), fontSize: 9),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(110, 25),
+                    maximumSize: Size(110, 25),
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: Color(0xff18CE0F)),
+                    shape: RoundedRectangleBorder(
+                      //borderRadius: BorderRadius.circular(5.0),
+                    ),
                   ),
                 ),
-              ),
-              // if (isManager &&
-              //     allowedModules.containsKey('My Deposits') &&
-              //     allowedModules['My Deposits']!
-              //         .contains('add_deposit'))
-              //   ElevatedButton(
-              //     onPressed: () {
-              //       Get.to(ScreenDeposit());
-              //     },
-              //     child: Text(
-              //       'DEPOSIT',
-              //       style:
-              //           TextStyle(color: Color(0xff18CE0F), fontSize: 9),
-              //     ),
-              //     style: ElevatedButton.styleFrom(
-              //       minimumSize: Size(110, 25),
-              //       maximumSize: Size(110, 25),
-              //       foregroundColor: Colors.white,
-              //       backgroundColor: Colors.white,
-              //       side: BorderSide(color: Color(0xff18CE0F)),
-              //       shape: RoundedRectangleBorder(
-              //           //borderRadius: BorderRadius.circular(5.0),
-              //           ),
-              //     ),
-              //   ).paddingOnly(top: 20)
-              // else if (isManager)
-              //   ElevatedButton(
-              //     onPressed: () {
-              //       // Get.to(ScreenDeposit());
-              //       Get.snackbar(
-              //           "Message",
-              //           "You have no Permission ",
-              //           snackPosition:
-              //           SnackPosition
-              //               .BOTTOM,
-              //           backgroundColor:
-              //           Colors.red,
-              //           colorText:
-              //           Colors.white);
-              //     },
-              //     child: Text(
-              //       'DEPOSIT',
-              //       style: TextStyle(color: Color(0xff18CE0F), fontSize: 9),
-              //     ),
-              //     style: ElevatedButton.styleFrom(
-              //       minimumSize: Size(110, 25),
-              //       maximumSize: Size(110, 25),
-              //       foregroundColor: Colors.white,
-              //       backgroundColor: Colors.white,
-              //       side: BorderSide(color: Color(0xff18CE0F)),
-              //       shape: RoundedRectangleBorder(
-              //           //borderRadius: BorderRadius.circular(5.0),
-              //           ),
-              //     ),
-              //   ),
-              // if (isNotManager)
-              //   ElevatedButton(
-              //     onPressed: () {
-              //       Get.to(ScreenDeposit());
-              //     },
-              //     child: Text(
-              //       'DEPOSIT',
-              //       style:
-              //           TextStyle(color: Color(0xff18CE0F), fontSize: 9),
-              //     ),
-              //     style: ElevatedButton.styleFrom(
-              //       minimumSize: Size(110, 25),
-              //       maximumSize: Size(110, 25),
-              //       foregroundColor: Colors.white,
-              //       backgroundColor: Colors.white,
-              //       side: BorderSide(color: Color(0xff18CE0F)),
-              //       shape: RoundedRectangleBorder(
-              //           //borderRadius: BorderRadius.circular(5.0),
-              //           ),
-              //     ),
-              //   ).paddingOnly(top: 20),
-              SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: () {
-                  Get.to(ScreenWithdrawal());
-                },
-                child: Text(
-                  'WITHDRAW',
-                  style: TextStyle(color: Color(0xff18CE0F), fontSize: 9),
+                SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    if (kycStatus != '3') {
+                      Get.to(() => ScreenKyc1());
+                    } else {
+                      Get.to(ScreenWithdrawal());
+                    }
+                  },
+                  child: Text(
+                    languageController.getTranslation('withdraw'),
+                    style: TextStyle(color: Color(0xff18CE0F), fontSize: 9),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(110, 25),
+                    maximumSize: Size(110, 25),
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: Color(0xff18CE0F)),
+                    shape: RoundedRectangleBorder(
+                        //borderRadius: BorderRadius.circular(5.0),
+                        ),
+                  ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(110, 25),
-                  maximumSize: Size(110, 25),
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.white,
-                  side: BorderSide(color: Color(0xff18CE0F)),
-                  shape: RoundedRectangleBorder(
-                      //borderRadius: BorderRadius.circular(5.0),
-                      ),
-                ),
-              ),
-              // if (isManager &&
-              //     allowedModules.containsKey('My Withdrawals') &&
-              //     allowedModules['My Withdrawals']!
-              //         .contains('add_withdraw'))
-              //   ElevatedButton(
-              //     onPressed: () {
-              //       Get.to(ScreenWithdrawal());
-              //     },
-              //     child: Text(
-              //       'WITHDRAW',
-              //       style: TextStyle(color: Color(0xff18CE0F), fontSize: 9),
-              //     ),
-              //     style: ElevatedButton.styleFrom(
-              //       minimumSize: Size(110, 25),
-              //       maximumSize: Size(110, 25),
-              //       foregroundColor: Colors.white,
-              //       backgroundColor: Colors.white,
-              //       side: BorderSide(color: Color(0xff18CE0F)),
-              //       shape: RoundedRectangleBorder(
-              //         //borderRadius: BorderRadius.circular(5.0),
-              //       ),
-              //     ),
-              //   ).paddingOnly(top: 20)
-              // else if (isManager)
-              //   ElevatedButton(
-              //     onPressed: () {
-              //       Get.snackbar(
-              //           "Message",
-              //           "You have no Permission ",
-              //           snackPosition:
-              //           SnackPosition
-              //               .BOTTOM,
-              //           backgroundColor:
-              //           Colors.red,
-              //           colorText:
-              //           Colors.white);
-              //     },
-              //     child: Text(
-              //       'WITHDRAW',
-              //       style: TextStyle(color: Color(0xff18CE0F), fontSize: 9),
-              //     ),
-              //     style: ElevatedButton.styleFrom(
-              //       minimumSize: Size(110, 25),
-              //       maximumSize: Size(110, 25),
-              //       foregroundColor: Colors.white,
-              //       backgroundColor: Colors.white,
-              //       side: BorderSide(color: Color(0xff18CE0F)),
-              //       shape: RoundedRectangleBorder(
-              //         //borderRadius: BorderRadius.circular(5.0),
-              //       ),
-              //     ),
-              //   ),
-              // if (isNotManager)
-              //   ElevatedButton(
-              //     onPressed: () {
-              //       Get.snackbar(
-              //           "Message",
-              //           "You have no Permission ",
-              //           snackPosition:
-              //           SnackPosition
-              //               .BOTTOM,
-              //           backgroundColor:
-              //           Colors.red,
-              //           colorText:
-              //           Colors.white);
-              //     },
-              //     child: Text(
-              //       'WITHDRAW',
-              //       style: TextStyle(color: Color(0xff18CE0F), fontSize: 9),
-              //     ),
-              //     style: ElevatedButton.styleFrom(
-              //       minimumSize: Size(110, 25),
-              //       maximumSize: Size(110, 25),
-              //       foregroundColor: Colors.white,
-              //       backgroundColor: Colors.white,
-              //       side: BorderSide(color: Color(0xff18CE0F)),
-              //       shape: RoundedRectangleBorder(
-              //         //borderRadius: BorderRadius.circular(5.0),
-              //       ),
-              //     ),
-              //   ),
-            ],
-          ).paddingOnly(bottom: 10),
+              ],
+            );
+          }),
           // ElevatedButton(
           //   onPressed: () {
           //     Get.to(SwappingScreen());

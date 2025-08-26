@@ -1,7 +1,7 @@
-import 'package:dacotech/view/screens/escrow_system/escrow_controller.dart';
-import 'package:dacotech/view/screens/payment_links/payment_link_controller.dart';
-import 'package:dacotech/view/screens/payment_links/payment_link_pay.dart';
-import 'package:dacotech/view/screens/payment_links/screen_create_payment_link.dart';
+import 'package:escrowcorner/view/screens/escrow_system/escrow_controller.dart';
+import 'package:escrowcorner/view/screens/payment_links/payment_link_controller.dart';
+import 'package:escrowcorner/view/screens/payment_links/payment_link_pay.dart';
+import 'package:escrowcorner/view/screens/payment_links/screen_create_payment_link.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
@@ -12,6 +12,7 @@ import '../../../widgets/custom_appbar/custom_appbar.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
 import '../../../widgets/custom_ballance_container/custom_btc_container.dart';
 import '../../../widgets/custom_button/custom_button.dart';
+import '../../../widgets/custom_api_url/constant_url.dart';
 import '../../controller/logo_controller.dart';
 import '../user_profile/user_profile_controller.dart';
 
@@ -27,7 +28,7 @@ class ScreenPaymentLinks extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -62,15 +63,6 @@ class ScreenPaymentLinks extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            Align(
-                              alignment: Alignment.topRight,
-                              child: GestureDetector(
-                                onTap: () {
-                                  controller.isVisible.value = false; // Hide the container when clicked
-                                },
-                                child: Icon(Icons.clear),
-                              ),
-                            ).paddingOnly(right: 10, top: 5),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -112,7 +104,11 @@ class ScreenPaymentLinks extends StatelessWidget {
                             CustomButton(
                               text: "REQUEST PAYMENT",
                               onPressed: () {
-                                Get.to(ScreenCreatePaymentLink());
+                                if (userProfileController.kyc.value != '3') {
+                                  Get.toNamed('/kyc');
+                                } else {
+                                  Get.to(ScreenCreatePaymentLink());
+                                }
                               },
                             ).paddingSymmetric(horizontal: 20, vertical: 15)
                           ],
@@ -241,14 +237,14 @@ class ScreenPaymentLinks extends StatelessWidget {
                                       InkWell(
                                         onTap: () async {
                                           final Uri _url = Uri.parse(
-                                              'https://damaspay.com/web/payment/${paymentLink
+                                              '$baseUrl/web/payment/${paymentLink
                                                   .link}');
                                           if (!await launchUrl(_url)) {
                                           throw Exception('Could not launch $_url');
                                           }
                                         },
                                         child: Text(
-                                          'https://damaspay.com/web/payment/${paymentLink
+                                          '$baseUrl/web/payment/${paymentLink
                                               .link}',
                                           style: TextStyle(
                                             fontSize: 14,
@@ -309,7 +305,7 @@ class ScreenPaymentLinks extends StatelessWidget {
             ),
           ),
           Align(alignment: Alignment.bottomCenter,
-              child: CustomBottomContainer()),
+              child: CustomBottomContainerPostLogin()),
         ],
       ),
     );
@@ -333,7 +329,7 @@ class ScreenPaymentLinks extends StatelessWidget {
                 TextButton(
                   onPressed: () async {
                     final Uri _url = Uri.parse(
-                        'https://damaspay.com/web/payment/$paymentLinkId');
+                        '$baseUrl/web/payment/$paymentLinkId');
                     print("id: $paymentLinkId");
                     if (!await launchUrl(_url)) {
                       throw Exception('Could not launch $_url');

@@ -1,4 +1,4 @@
-import 'package:dacotech/view/screens/dashboard/screen_dashboard.dart';
+import 'package:escrowcorner/view/screens/dashboard/screen_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
@@ -25,7 +25,7 @@ class ScreenCreatePaymentLink extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -80,11 +80,11 @@ class ScreenCreatePaymentLink extends StatelessWidget {
                             }
                           });
                         },
-                        controller: TextEditingController(text: paymentLinkController.selectedMethod.value?.name ?? ''),
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          contentPadding: EdgeInsets.only(left: 5),
-                          hintText: paymentLinkController.selectedMethod.value?.name ?? "Select Method",
+                                                      controller: TextEditingController(text: paymentLinkController.selectedMethod.value?.name ?? ''),
+                              readOnly: true,
+                              decoration: InputDecoration(
+                                contentPadding: EdgeInsets.only(left: 5),
+                                hintText: paymentLinkController.selectedMethod.value?.name ?? "",
                           hintStyle: TextStyle(color: Color(0xffA9A9A9)),
                           border: OutlineInputBorder(
                             borderSide: BorderSide(color: Color(0xff666565)),
@@ -210,10 +210,10 @@ class ScreenCreatePaymentLink extends StatelessWidget {
                 ],
               ).paddingSymmetric(horizontal: 15,vertical: 20),
             ),
-            CustomBottomContainer().paddingOnly(top: MediaQuery.of(context).size.height*.1)
           ],
         ),
       ),
+              bottomNavigationBar: const CustomBottomContainerPostLogin(),
     );
   }
 }

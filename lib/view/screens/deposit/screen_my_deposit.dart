@@ -1,4 +1,4 @@
-import 'package:dacotech/view/screens/deposit/mydeposit_controller.dart';
+import 'package:escrowcorner/view/screens/deposit/mydeposit_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
@@ -21,7 +21,7 @@ class ScreenMyDeposit extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -180,7 +180,7 @@ class ScreenMyDeposit extends StatelessWidget {
         ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: CustomBottomContainer()
+            child: CustomBottomContainerPostLogin()
           )
         ]
       ),
@@ -216,17 +216,6 @@ class ScreenMyDeposit extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     fontFamily: "Nunito"),
               ),
-              Spacer(),
-              IconButton(
-                onPressed: () {
-                  infoController.hideContainer();
-                },
-                icon: Icon(
-                  Icons.clear,
-                  color: Colors.white,
-                  size: 30,
-                ),
-              )
             ],
           ),
           Text(

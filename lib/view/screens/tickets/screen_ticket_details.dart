@@ -5,495 +5,669 @@ import 'package:shimmer/shimmer.dart';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
 import '../../../widgets/custom_button/damaspay_button.dart';
-import '../../theme/damaspay_theme/Damaspay_theme.dart';
 import 'ticket_controller.dart';
 import '../user_profile/user_profile_controller.dart';
+import 'dart:convert';
 
 class ScreenTicketDetails extends StatefulWidget {
-  final String
-      ticketId; // Pass the ticket ID from previous screens or as a parameter
+  final String ticketId;
   ScreenTicketDetails({required this.ticketId});
-
 
   @override
   State<ScreenTicketDetails> createState() => _ScreenTicketDetailsState();
 }
 
 class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
-  final TicketController ticketController =
-      Get.put(TicketController(), permanent: true);
-
+  final TicketController ticketController = Get.put(TicketController(), permanent: true);
   final UserProfileController userController = Get.find<UserProfileController>();
 
-   initState() {
+  @override
+  void initState() {
     super.initState();
     if (!Get.isRegistered<TicketController>()) {
       Get.put(TicketController());
     }
     ticketController.fetchTicketDetail(widget.ticketId);
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Color(0xffE6F0F7),
-        appBar: AppBar(
-          backgroundColor: Color(0xff0766AD),
-          title: AppBarTitle(),
-          leading: CustomPopupMenu(managerId: userController.userId.value,),
+      backgroundColor: Color(0xffE6F0F7),
+      appBar: AppBar(
+        backgroundColor: Color(0xff191f28),
+        title: AppBarTitle(),
+        leading: CustomPopupMenu(managerId: userController.userId.value),
+        actions: [
+          PopupMenuButtonAction(),
+          AppBarProfileButton(),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await ticketController.fetchTicketDetail(widget.ticketId);
+              },
+              child: SingleChildScrollView(
+                child: Center(
+                  child: Column(
+                    children: [
+                      Obx(() {
+                        final details = ticketController.ticketDetails;
+                        final isLoading = ticketController.isLoading.value;
+                        final createdAt = details['created_at'] ?? 'N/A';
+                        final formattedDate = createdAt != 'N/A'
+                            ? DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(createdAt))
+                            : 'N/A';
 
-          actions: [
-            PopupMenuButtonAction(),
-            AppBarProfileButton(),
-          ],
-        ),
-        body: RefreshIndicator(
-          onRefresh: () async {
-            await ticketController.fetchTicketDetail(widget.ticketId);
-          },
-          child: SingleChildScrollView(
-              child: Center(
-                  child: Column(children: [
-            //CustomBtcContainer().paddingOnly(top: 20),
-            Obx(() {
-              final details = ticketController.ticketDetails;
-              final isLoading = ticketController.isLoading.value;
-              final createdAt = details['created_at'] ?? 'N/A';
-              final formattedDate = createdAt != 'N/A'
-                  ? DateFormat('yyyy-MM-dd HH:mm')
-                      .format(DateTime.parse(createdAt))
-                  : 'N/A';
-
-              return Column(
-                children: [
-                  Container(
-                    //height: Get.height * .7,
-                    width: MediaQuery.of(context).size.width * 0.9,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Color(0xffFFFFFF),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Ticket Details",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xff484848),
-                            )).paddingOnly(top: 10),
-
-                        // Ticket ID
-                        Row(
+                        return Column(
                           children: [
-                            Text("Ticket:",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xff484848),
-                                )),
-                            isLoading
-                                ? Shimmer.fromColors(
-                                    baseColor: Colors.grey[300]!,
-                                    highlightColor: Colors.grey[100]!,
-                                    child: Container(
-                                      height: 15,
-                                      width: 50,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(' #${details['ticket_id'] ?? 'N/A'} ',
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.9,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: Color(0xffFFFFFF),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Ticket Details",
                                     style: TextStyle(
                                       fontSize: 14,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.bold,
                                       color: Color(0xff484848),
-                                    )),
+                                    ),
+                                  ).paddingOnly(top: 10),
+
+                                  // Ticket ID
+                                  Row(
+                                    children: [
+                                      Text(
+                                        "Ticket:",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: Color(0xff484848),
+                                        ),
+                                      ),
+                                      isLoading
+                                          ? Shimmer.fromColors(
+                                              baseColor: Colors.grey[300]!,
+                                              highlightColor: Colors.grey[100]!,
+                                              child: Container(
+                                                height: 15,
+                                                width: 50,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : Text(
+                                              ' #${details['ticket_id'] ?? 'N/A'} ',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xff484848),
+                                              ),
+                                            ),
+                                    ],
+                                  ).paddingOnly(top: 10),
+                                  Divider(),
+                                  
+                                  // Status
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "Status",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: Color(0xff484848),
+                                        ),
+                                      ),
+                                      isLoading
+                                          ? Shimmer.fromColors(
+                                              baseColor: Colors.grey[300]!,
+                                              highlightColor: Colors.grey[100]!,
+                                              child: Container(
+                                                height: 35,
+                                                width: 120,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : Container(
+                                              height: 35,
+                                              width: 120,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(5),
+                                                color: Color(0xff18CE0F),
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  '${details['status'] ?? 'N/A'}',
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w400,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                    ],
+                                  ).paddingOnly(top: 5, bottom: 5),
+
+                                  // Category Name
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "Category",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: Color(0xff484848),
+                                        ),
+                                      ),
+                                      isLoading
+                                          ? Shimmer.fromColors(
+                                              baseColor: Colors.grey[300]!,
+                                              highlightColor: Colors.grey[100]!,
+                                              child: Container(
+                                                height: 15,
+                                                width: 150,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : Text(
+                                              '${details['category']?['name'] ?? 'N/A'}',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w400,
+                                                color: Color(0xff484848),
+                                              ),
+                                            ),
+                                    ],
+                                  ).paddingOnly(top: 5, bottom: 5),
+
+                                  // Created
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "Created",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: Color(0xff484848),
+                                        ),
+                                      ),
+                                      isLoading
+                                          ? Shimmer.fromColors(
+                                              baseColor: Colors.grey[300]!,
+                                              highlightColor: Colors.grey[100]!,
+                                              child: Container(
+                                                height: 15,
+                                                width: 150,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : Text(
+                                              formattedDate,
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w400,
+                                                color: Color(0xff484848),
+                                              ),
+                                            ),
+                                    ],
+                                  ).paddingOnly(top: 5, bottom: 5),
+                                  Divider(),
+
+                                  SizedBox(height: 10),
+                                ],
+                              ).paddingSymmetric(horizontal: 20),
+                            ).paddingOnly(top: 20, bottom: 10),
                           ],
-                        ).paddingOnly(top: 10),
-                        Divider(),
-                        // Status
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Status",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xff484848),
-                                )),
-                            isLoading
-                                ? Shimmer.fromColors(
-                                    baseColor: Colors.grey[300]!,
-                                    highlightColor: Colors.grey[100]!,
-                                    child: Container(
-                                      height: 35,
-                                      width: 120,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Container(
-                                    height: 35,
-                                    width: 120,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(5),
-                                        color: Color(0xff18CE0F)),
-                                    child: Center(
-                                      child: Text(
-                                          '${details['status'] ?? 'N/A'}',
-                                          style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w400,
-                                              color: Colors.white)),
-                                    ),
+                        );
+                      }),
+                      
+                      Obx(() {
+                        final replies = ticketController.ticketReplies;
+                        final isLoading = ticketController.isLoading.value;
+
+                        return Container(
+                          width: MediaQuery.of(context).size.width * 0.9,
+                          child: Column(
+                            children: [
+                              if (isLoading)
+                                Shimmer.fromColors(
+                                  baseColor: Colors.grey[300]!,
+                                  highlightColor: Colors.grey[100]!,
+                                  child: Container(
+                                    height: 100,
+                                    width: double.infinity,
+                                    color: Colors.white,
                                   ),
-                          ],
-                        ).paddingOnly(top: 5, bottom: 5),
-                        Divider(),
-                        //Name
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Name",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xff484848),
-                                )),
-                            isLoading
-                                ? Shimmer.fromColors(
-                                    baseColor: Colors.grey[300]!,
-                                    highlightColor: Colors.grey[100]!,
-                                    child: Container(
-                                      height: 15,
-                                      width: 100,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    '${userController.firstName} ${userController.lastName}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      color: Color(0xff484848),
-                                    )),
-                          ],
-                        ).paddingOnly(top: 5, bottom: 5),
-                        Divider(),
-                        // Category Name
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Category",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xff484848),
-                                )),
-                            isLoading
-                                ? Shimmer.fromColors(
-                                    baseColor: Colors.grey[300]!,
-                                    highlightColor: Colors.grey[100]!,
-                                    child: Container(
-                                      height: 15,
-                                      width: 120,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    '${details['category']['name'] ?? 'N/A'}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      color: Color(0xff484848),
-                                    )),
-                          ],
-                        ).paddingOnly(top: 5, bottom: 5),
-                        Divider(),
-                        //Email
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("E-mail",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xff484848),
-                                )),
-                            isLoading
-                                ? Shimmer.fromColors(
-                                    baseColor: Colors.grey[300]!,
-                                    highlightColor: Colors.grey[100]!,
-                                    child: Container(
-                                      height: 15,
-                                      width: 150,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    '${userController.email}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      color: Color(0xff484848),
-                                    )),
-                          ],
-                        ).paddingOnly(top: 5, bottom: 5),
-                        Divider(),
+                                )
+                              else
+                                Column(
+                                  children: [
+                                    // Existing replies only (no original ticket message)
+                                    ...replies.map((reply) {
+                                      final replyDate = reply['created_at'] != null
+                                          ? DateFormat('MMM dd yyyy hh:mm a').format(DateTime.parse(reply['created_at']))
+                                          : 'N/A';
+                                      final message = reply['message'] ?? 'No message';
+                                      final userName = reply['user_name'] ?? '${userController.firstName} ${userController.lastName}';
+                                      final attachments = reply['attachments'];
 
-                        //Created
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Created",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xff484848),
-                                )),
-                            isLoading
-                                ? Shimmer.fromColors(
-                                    baseColor: Colors.grey[300]!,
-                                    highlightColor: Colors.grey[100]!,
-                                    child: Container(
-                                      height: 15,
-                                      width: 150,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(formattedDate,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      color: Color(0xff484848),
-                                    )),
-                          ],
-                        ).paddingOnly(top: 5, bottom: 5),
-                        Divider(),
+                                      final containerColor = userName == "Customer Support" ? Colors.blue : Color(0xff18CE0F);
 
-                        SizedBox(height: 10),
-                      ],
-                    ).paddingSymmetric(horizontal: 20),
-                  ).paddingOnly(top: 20, bottom: 10),
-                ],
-              );
-            }),
-                    Obx(() {
-                      final replies = ticketController.ticketReplies;
-                      final isLoading = ticketController.isLoading.value;
-
-                      return Container(
+                                      return Container(
+                                        width: MediaQuery.of(context).size.width * 0.9,
+                                        margin: EdgeInsets.only(bottom: 10),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              width: MediaQuery.of(context).size.width * 0.9,
+                                              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                              decoration: BoxDecoration(
+                                                color: containerColor,
+                                                borderRadius: BorderRadius.only(
+                                                  topLeft: Radius.circular(5),
+                                                  topRight: Radius.circular(5),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Flexible(
+                                                    child: Text(
+                                                      "Name: $userName",
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w500,
+                                                        color: Colors.white,
+                                                      ),
+                                                      overflow: TextOverflow.ellipsis,
+                                                      maxLines: 1,
+                                                      softWrap: false,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    replyDate,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w400,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Container(
+                                              width: MediaQuery.of(context).size.width * 0.9,
+                                              padding: EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                border: Border.all(color: Colors.grey[300]!),
+                                                borderRadius: BorderRadius.only(
+                                                  bottomLeft: Radius.circular(5),
+                                                  bottomRight: Radius.circular(5),
+                                                ),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  // Message text
+                                                  Text(
+                                                    message,
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w400,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  // Attachments below the message for each reply
+                                                  if (attachments != null && attachments.toString().isNotEmpty) ...[
+                                                    SizedBox(height: 10),
+                                                    _buildTicketAttachments(attachments),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ).paddingOnly(bottom: 20);
+                      }),
+                      
+                      Container(
                         width: MediaQuery.of(context).size.width * 0.9,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.white,
-                        ),
                         child: Column(
                           children: [
-                            // Header
-                            Center(
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.9,
+                              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Color(0xff18CE0F),
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(5),
+                                  topRight: Radius.circular(5),
+                                ),
+                              ),
                               child: Text(
                                 "Post Replies",
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black54,
-                                ),
-                              ).paddingOnly(bottom: 10),
-                            ),
-                            // Shimmer effect if loading
-                            if (isLoading)
-                              Shimmer.fromColors(
-                                baseColor: Colors.grey[300]!,
-                                highlightColor: Colors.grey[100]!,
-                                child: Container(
-                                  height: 100,
-                                  width: double.infinity,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
                                   color: Colors.white,
                                 ),
-                              )
-                            else
-                              Column(
-                                children: replies.map((reply) {
-                                  final replyDate = reply['created_at'] != null
-                                      ? DateFormat('MMM dd yyyy hh:mm a').format(
-                                    DateTime.parse(reply['created_at']),
-                                  )
-                                      : 'N/A';
-                                  final message = reply['message'] ?? 'No message';
-                                  final userName = reply['user_name'] ??
-                                      '${userController.firstName} ${userController.lastName}'; // Fallback if user_name is null
-
-                                  // Determine the container color
-                                  final containerColor = userName == "Customer Support"
-                                      ? Colors.blue
-                                      : Color(0xff18CE0F);
-
-                                  return Container(
-                                    width: double.infinity,
-                                    margin: EdgeInsets.only(bottom: 10),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Name and Date row
-                                        Container(
-                                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                          decoration: BoxDecoration(
-                                            color: containerColor,
-                                            borderRadius: BorderRadius.only(
-                                              topLeft: Radius.circular(5),
-                                              topRight: Radius.circular(5),
+                              ),
+                            ),
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.9,
+                              padding: EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: Colors.grey[300]!),
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(5),
+                                  bottomRight: Radius.circular(5),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Message",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xff484848),
+                                    ),
+                                  ).paddingOnly(bottom: 8),
+                                  TextField(
+                                    controller: ticketController.messageController,
+                                    maxLines: 3,
+                                    decoration: InputDecoration(
+                                      hintText: "Write your message",
+                                      hintStyle: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: Colors.grey[500],
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(5),
+                                        borderSide: BorderSide(color: Colors.grey[300]!),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(5),
+                                        borderSide: BorderSide(color: Colors.grey[300]!),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(5),
+                                        borderSide: BorderSide(color: Color(0xff18CE0F)),
+                                      ),
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                    ),
+                                  ).paddingOnly(bottom: 10),
+                                  
+                                  // Attachment Files Section
+                                  Text(
+                                    "Attachment Files (Optional)",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xff484848),
+                                    ),
+                                  ).paddingOnly(bottom: 8),
+                                  
+                                  // Selected Files Display
+                                  Obx(() {
+                                    if (ticketController.selectedFiles.isEmpty) {
+                                      return Container();
+                                    }
+                                    
+                                    return Container(
+                                      margin: EdgeInsets.only(bottom: 10),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: ticketController.selectedFiles.map((file) {
+                                          return Container(
+                                            margin: EdgeInsets.only(bottom: 5),
+                                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[100],
+                                              borderRadius: BorderRadius.circular(5),
+                                              border: Border.all(color: Colors.grey[300]!),
                                             ),
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              // Name Text
-                                              Flexible(
-                                                child: Text(
-                                                  "Name: $userName",
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.white,
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.attach_file,
+                                                  size: 16,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    file.path.split('/').last,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey[700],
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
-                                                  overflow: TextOverflow.ellipsis, // Handles overflow with ellipsis
-                                                  maxLines: 1, // Limits the text to one line
-                                                  softWrap: false, // Prevents wrapping
                                                 ),
-                                              ),
-                                              // Reply Date
-                                              Text(
-                                                replyDate,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w400,
-                                                  color: Colors.white,
+                                                IconButton(
+                                                  onPressed: () => ticketController.removeFile(ticketController.selectedFiles.indexOf(file)),
+                                                  icon: Icon(
+                                                    Icons.close,
+                                                    size: 16,
+                                                    color: Colors.red,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: BoxConstraints(),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        // Message content
-                                        Container(
-                                          width: double.infinity,
-                                          padding: EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            border: Border.all(color: Colors.grey[300]!),
-                                            borderRadius: BorderRadius.only(
-                                              bottomLeft: Radius.circular(5),
-                                              bottomRight: Radius.circular(5),
+                                              ],
                                             ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    );
+                                  }),
+                                  
+                                  // Add Attachment Button
+                                  InkWell(
+                                    onTap: () {
+                                      ticketController.showPickerOptions(context);
+                                    },
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: EdgeInsets.symmetric(vertical: 12),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey[300]!),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.attach_file,
+                                            size: 16,
+                                            color: Colors.grey[600],
                                           ),
-                                          child: Text(
-                                            message,
+                                          SizedBox(width: 8),
+                                          Text(
+                                            "Add Attachment Files",
                                             style: TextStyle(
                                               fontSize: 14,
-                                              fontWeight: FontWeight.w400,
-                                              color: Colors.black87,
+                                              color: Colors.grey[600],
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  );
-                                }).toList(),
+                                  ).paddingOnly(bottom: 10),
+                                  FFButtonWidget(
+                                    onPressed: ticketController.isSubmittingReply.value 
+                                      ? null 
+                                      : () async {
+                                          await ticketController.postReply(context, widget.ticketId, ticketController.messageController.text);
+                                          ticketController.messageController.clear();
+                                        },
+                                    text: ticketController.isSubmittingReply.value ? "Submitting..." : "Submit",
+                                    options: FFButtonOptions(
+                                      width: double.infinity,
+                                      height: 40,
+                                      color: Color(0xff18CE0F),
+                                      textStyle: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                      borderSide: BorderSide(
+                                        color: Colors.transparent,
+                                        width: 1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                  ),
+                                ],
                               ),
+                            ),
                           ],
-                        ).paddingSymmetric(horizontal: 15),
-                      ).paddingOnly(top: 10, bottom: 20);
-                    }),
-                    Container(
-              height: Get.height * .3,
-              width: MediaQuery.of(context).size.width * 0.9,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Color(0xffFFFFFF),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Message",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 14,
-                      color: Color(0xff484848),
-                      fontFamily: 'Nunito',
-                    ),
-                  ).paddingOnly(top: 10, bottom: 10),
-                  TextField(
-                    controller: ticketController.messageController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      hintText: "Write your message...",
-                      contentPadding: EdgeInsets.only(top: 4, left: 5),
-                      hintStyle: TextStyle(color: Color(0xffA9A9A9)),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xff666565)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xff666565)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xff666565)),
-                      ),
-                    ),
+                        ),
+                      ).paddingOnly(bottom: 20),
+                    ],
                   ),
-                  FFButtonWidget(
-                    onPressed: () async {
-                      final message =
-                          ticketController.messageController.text;
-                      if(message.isEmpty){
-                        Get.snackbar("Message", "Your Message Field is empty",
-                          backgroundColor: Colors.red,
-                          colorText: Colors.white,
-                          snackPosition: SnackPosition.BOTTOM,);
-                        return;
-                      }
-                      if (message.isNotEmpty) {
-                        await ticketController.postReply(context,
-                            widget.ticketId,message);
-                        ticketController.messageController.clear(); // Clear the text field after submission
-                        await ticketController.fetchTicketDetail(widget
-                            .ticketId); // Fetch ticket details again to update the UI
-                      }
-                    },
-                    text: 'Submit',
-                    options: FFButtonOptions(
-                      width: Get.width,
-                      height: 45.0,
-                      padding: EdgeInsetsDirectional.fromSTEB(
-                          0.0, 0.0, 0.0, 0.0),
-                      iconPadding: EdgeInsetsDirectional.fromSTEB(
-                          0.0, 0.0, 0.0, 0.0),
-                      color: DamaspayTheme.of(context).primary,
-                      textStyle:
-                      DamaspayTheme.of(context).titleSmall.override(
-                        fontFamily: 'Poppins',
-                        color: Colors.white,
-                      ),
-                      elevation: 2.0,
-                      borderSide: BorderSide(
-                        color: Colors.transparent,
-                        width: 1.0,
-                      ),
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                  ).paddingOnly(top: 15,bottom: 20),
-                ],
-              ).paddingSymmetric(horizontal: 15).paddingOnly(bottom: 10),
-            ).paddingOnly(bottom: 20),
-            CustomBottomContainer()
-          ]))),
-        ));
+                ),
+              ),
+            ),
+          ),
+          CustomBottomContainerPostLogin(),
+        ],
+      ),
+    );
   }
-}
 
-class MessageController extends GetxController {
-  static final instance = MessageController._();
-  final TextEditingController _controller = TextEditingController();
+  Widget _buildTicketAttachments(dynamic attachments) {
+    if (attachments == null || attachments.toString().isEmpty) {
+      return Container();
+    }
 
-  MessageController._();
+    try {
+      List<String> attachmentList = [];
+      
+      // Handle different attachment formats
+      if (attachments is String) {
+        // If it's a JSON string, try to parse it
+        if (attachments.startsWith('[') || attachments.startsWith('{')) {
+          try {
+            var parsed = jsonDecode(attachments);
+            if (parsed is List) {
+              attachmentList = parsed.cast<String>().toList();
+            } else if (parsed is Map) {
+              attachmentList = parsed.values.cast<String>().toList();
+            }
+          } catch (e) {
+            // If JSON parsing fails, treat as comma-separated
+            attachmentList = attachments.split(',').map((e) => e.trim()).toList();
+          }
+        } else {
+          // Treat as comma-separated string
+          attachmentList = attachments.split(',').map((e) => e.trim()).toList();
+        }
+      } else if (attachments is List) {
+        attachmentList = attachments.cast<String>().toList();
+      }
 
-  TextEditingController get controller => _controller;
+      if (attachmentList.isEmpty) {
+        return Container();
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Attachments:",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xff484848),
+            ),
+          ).paddingOnly(bottom: 8),
+          ...attachmentList.map((attachmentUrl) => _buildAttachmentDownloadLink(attachmentUrl)).toList(),
+        ],
+      );
+    } catch (e) {
+      print('Error parsing attachments: $e');
+      return Container();
+    }
+  }
+
+  Widget _buildAttachmentDownloadLink(String attachmentUrl) {
+    // Extract filename from URL for display
+    String fileName = attachmentUrl.split('/').last;
+    
+    // Ensure the URL has the base URL prepended
+    String fullUrl = attachmentUrl;
+    if (!attachmentUrl.startsWith('http')) {
+      // If it's a relative path, prepend the base URL from controller
+      fullUrl = '${ticketController.apiBaseUrl}/$attachmentUrl';
+    }
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () {
+          // Download attachment
+          ticketController.downloadAttachmentFromUrl(fullUrl, fileName);
+        },
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.blue.shade200,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.download,
+                size: 16,
+                color: Colors.blue.shade600,
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Download Attachment Files',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

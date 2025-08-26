@@ -14,21 +14,21 @@ class ScreenEditApplication extends StatelessWidget {
   ScreenEditApplication({required this.merchant, required this.imageUrl});
   final MerchantController controller = Get.put(MerchantController());
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController webhookController = TextEditingController();
+
   final TextEditingController siteUrlController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
 
   @override
   Widget build(BuildContext context) {
     nameController.text = merchant.name;
-    webhookController.text = merchant.webhookUrl;
+
     siteUrlController.text = merchant.siteUrl;
     descriptionController.text = merchant.description;
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -54,7 +54,7 @@ class ScreenEditApplication extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Edit Application",
+                      "Edit Sub Account",
                       style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
@@ -62,7 +62,7 @@ class ScreenEditApplication extends StatelessWidget {
                           fontFamily: 'Nunito'),
                     ).paddingOnly(top: 10),
                     Text(
-                      "Application Logo",
+                      "Sub Account Logo",
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -150,7 +150,7 @@ class ScreenEditApplication extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Application Name",
+                      "Sub Account Name",
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -173,58 +173,10 @@ class ScreenEditApplication extends StatelessWidget {
                         ),
                       ),
                     ),
+
+
                     Text(
-                      "Webhook URL",
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
-                    TextFormField(
-                      controller: webhookController,
-                      keyboardType: TextInputType.url,
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.only(left: 5),
-                        hintStyle: TextStyle(color: Color(0xffA9A9A9)),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565))),
-                        enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565))),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Color(0xff666565),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      "Site URL",
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
-                    TextFormField(
-                      controller: siteUrlController,
-                      keyboardType: TextInputType.url,
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.only(left: 5),
-                        hintStyle: TextStyle(color: Color(0xffA9A9A9)),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565))),
-                        enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xff666565))),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Color(0xff666565),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      "Application Description",
+                      "Sub Account Description",
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -280,7 +232,7 @@ class ScreenEditApplication extends StatelessWidget {
                   ],
                 ).paddingSymmetric(horizontal: 15),
               ).paddingOnly(top: 20, bottom: 20),
-              CustomBottomContainer()
+              CustomBottomContainerPostLogin()
             ],
           ),
         ),

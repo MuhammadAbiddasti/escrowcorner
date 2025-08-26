@@ -1,9 +1,11 @@
 import 'dart:convert';
-import 'package:dacotech/widgets/custom_api_url/constant_url.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import '../../../widgets/custom_token/constant_token.dart';
+import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
+
 class ManagersPermissionController extends GetxController {
   var isLoading = true.obs;
   var allowedModules = <String>[].obs;
@@ -11,8 +13,7 @@ class ManagersPermissionController extends GetxController {
 
 
   Future<Map<String, dynamic>> fetchManagerPermissions(String managerId) async {
-    final url = Uri.parse(
-        '$baseUrl/api/managerPermission/$managerId');
+    final url = Uri.parse('$baseUrl/api/managerPermission/$managerId');
     if (managerId.isEmpty) {
       throw Exception('Manager ID is empty');
     }
@@ -22,14 +23,40 @@ class ManagersPermissionController extends GetxController {
       throw Exception('Token is null');
     }
     print('Retrieved Token: $token');
-    final response = await http.get(url, headers: {
-      'Authorization': 'Bearer $token', // Replace with your token
-    });
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/managerPermission/$managerId'),
+      headers: {
+        'Authorization': 'Bearer $token', // Replace with your token
+      },
+    );
     print("response code: ${response.statusCode}");
     print("response body: ${response.body}");
     if (response.statusCode == 200) {
       final responseData = json.decode(response.body);
-      _extractAllowedModules(responseData['data']); // Access the 'data' key
+      
+      // Handle different response structures
+      if (responseData['data'] != null) {
+        if (responseData['data'] is Map<String, dynamic>) {
+          _extractAllowedModules(responseData['data']);
+        } else if (responseData['data'] is List) {
+          // If data is a list, create a wrapper map
+          _extractAllowedModules({'modules': responseData['data']});
+        } else {
+          print("Unexpected data type: ${responseData['data'].runtimeType}");
+          _extractAllowedModules({});
+        }
+      } else {
+        // If no 'data' key, try to use the response directly
+        if (responseData is Map<String, dynamic>) {
+          _extractAllowedModules(responseData);
+        } else if (responseData is List) {
+          _extractAllowedModules({'modules': responseData});
+        } else {
+          print("Unexpected response type: ${responseData.runtimeType}");
+          _extractAllowedModules({});
+        }
+      }
+      
       return responseData;
     } else {
       throw Exception('Failed to load permissions');
@@ -38,77 +65,97 @@ class ManagersPermissionController extends GetxController {
 
   // Extract modules with allowed permissions
   void _extractAllowedModules(Map<String, dynamic> jsonData) {
-    allowedModules.clear(); // Clear the previous list
-    modulePermissions.clear(); // Clear previous permissions map
+    try {
+      allowedModules.clear(); // Clear the previous list
+      modulePermissions.clear(); // Clear previous permissions map
 
-    // Safely check if 'modules' key exists and is not null
-    final modulesData = jsonData['modules'];
-    if (modulesData != null && modulesData is List) {
-      final modules = modulesData.map((module) => Module.fromJson(module)).toList();
-      print("Allowed Modules: ${allowedModules.join(', ')}");
+      // Safely check if 'modules' key exists and is not null
+      final modulesData = jsonData['modules'];
+      if (modulesData != null && modulesData is List) {
+        final modules = modulesData.map((module) => Module.fromJson(module)).toList();
+        print("Allowed Modules: ${allowedModules.join(', ')}");
 
-      for (var module in modules) {
-        bool hasAllowedPermission = module.permissions.values.any((permission) => permission.allow == 1);
+        for (var module in modules) {
+          bool hasAllowedPermission = module.permissions.values.any((permission) => permission.allow == 1);
 
-        if (hasAllowedPermission) {
-          allowedModules.add(module.moduleName); // Add module name to allowedModules
+          if (hasAllowedPermission) {
+            allowedModules.add(module.moduleName); // Add module name to allowedModules
 
-          // Store the allowed permissions for this module
-          List<String> permissions = [];
-          module.permissions.forEach((key, permission) {
-            if (permission.allow == 1) {
-              permissions.add(permission.name); // Add allowed permission name to the list
+            // Store the allowed permissions for this module
+            List<String> permissions = [];
+            module.permissions.forEach((key, permission) {
+              if (permission.allow == 1) {
+                permissions.add(permission.name); // Add allowed permission name to the list
+              }
+            });
+
+            // Store the permissions in the modulePermissions map with the module name as the key
+            if (permissions.isNotEmpty) {
+              modulePermissions[module.moduleName] = permissions;
+              print("Allowed permission: ${modulePermissions}");
             }
-          });
-
-          // Store the permissions in the modulePermissions map with the module name as the key
-          if (permissions.isNotEmpty) {
-            modulePermissions[module.moduleName] = permissions;
-            print("Allowed permission: ${modulePermissions}");
           }
         }
-      }
 
-      // Define the custom order you want
-      List<String> customOrder = [
+        // Define the custom order you want
+        List<String> customOrder = [
+          'Dashboard',
+          'Transfer Money',
+          'Request Money',
+          'Payment Link',
+          'Escrow History',
+          'Support Ticket',
+          'Transactions',
+          'Managers',
+          'Settings',
+          'My Sub Accounts'
+        ];
+
+        // Reorder allowedModules based on the custom order
+        allowedModules.sort((a, b) {
+          int indexA = customOrder.indexOf(a);
+          int indexB = customOrder.indexOf(b);
+
+          // If module is in customOrder, prioritize its position; else keep it at the end
+          if (indexA == -1) indexA = customOrder.length; // Modules not in customOrder will be placed last
+          if (indexB == -1) indexB = customOrder.length;
+
+          return indexA.compareTo(indexB);
+        });
+      } else {
+        print("No modules data found or modules is not a list. Data: $jsonData");
+      }
+    } catch (e) {
+      print("Error extracting allowed modules: $e");
+      // Set default modules if extraction fails
+      allowedModules.value = [
         'Dashboard',
         'Transfer Money',
         'Request Money',
         'Payment Link',
-        'Escrow System',
+        'Escrow History',
         'Support Ticket',
         'Transactions',
-        'Managers',
-        'Settings',
-        'My Application'
+        'Settings'
       ];
-
-      // Reorder allowedModules based on the custom order
-      allowedModules.sort((a, b) {
-        int indexA = customOrder.indexOf(a);
-        int indexB = customOrder.indexOf(b);
-
-        // If module is in customOrder, prioritize its position; else keep it at the end
-        if (indexA == -1) indexA = customOrder.length; // Modules not in customOrder will be placed last
-        if (indexB == -1) indexB = customOrder.length;
-
-        return indexA.compareTo(indexB);
-      });
     }
   }
 
   void onPermissionUpdateNotification(String managerId) {
-    fetchManagerPermissions(managerId).then((_) {
-      print("Permissions updated successfully");
-    }).catchError((error) {
-      print("Failed to update permissions: $error");
-    });
+    final userProfileController = Get.find<UserProfileController>();
+    if (managerId != null && managerId.isNotEmpty && userProfileController.isManager.value == '1') {
+      fetchManagerPermissions(managerId).then((_) {
+        print("Permissions updated successfully");
+      }).catchError((error) {
+        print("Failed to update permissions: $error");
+      });
+    }
   }
 
   // Printing allowed module names
   Future<bool> assignPermission(int permissionId, String managerId,
       int isAllow, BuildContext context) async {
-    final url = Uri.parse('https://damaspay.com/api/assign_permission');
+    final url = Uri.parse('$baseUrl/api/assign_permission');
     String? token = await getToken();
     if (token == null) {
       throw Exception('Token is null');

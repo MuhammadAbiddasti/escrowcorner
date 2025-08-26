@@ -5,11 +5,14 @@ import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import '../../widgets/custom_token/constant_token.dart';
 import '../../widgets/custom_api_url/constant_url.dart';
-import '../screens/dashboard/dashboard_controller.dart';
+import '../screens/dashboard/dashboard_controller.dart' as dash;
+import '../controller/home_controller.dart' as home;
 import '../screens/user_profile/user_profile_controller.dart';
 
 class WalletController extends GetxController {
   var walletBalance = RxString('--.--');
+  var mtnBalance = RxString('0.00');
+  var orangeBalance = RxString('0.00');
   var currencies = <Currency>[].obs;
   var selectedCurrency = Rx<Currency?>(null);
   var walletCurrencies = <WalletCurrency>[].obs;
@@ -17,8 +20,9 @@ class WalletController extends GetxController {
   var wallets = <dynamic>[].obs; // Changed to <dynamic> to match API data type
   var isLoading = false.obs;
   var token = ''.obs;
+  var walletGatewayDetails = <dynamic>[].obs;
 
-final HomeController controller = Get.put(HomeController());
+final home.HomeController controller = Get.put(home.HomeController());
   final userController = Get.put(UserProfileController());
 
 
@@ -79,6 +83,9 @@ final HomeController controller = Get.put(HomeController());
       print("Response Status Code: ${response.statusCode}");
       print("Response Headers: ${response.headers}");
       print("Response Body: ${response.body}");
+      if (response.statusCode != 200) {
+        Get.snackbar('Error', 'Wallet API: Failed to fetch currencies (Status: ${response.statusCode})');
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -97,6 +104,7 @@ final HomeController controller = Get.put(HomeController());
           }
         } else {
           print("Unexpected data format: ${data.runtimeType}");
+          Get.snackbar('Error', 'Wallet API: Invalid data format');
           //Get.snackbar('Error', 'Invalid data format');
         }
       } else {
@@ -105,6 +113,7 @@ final HomeController controller = Get.put(HomeController());
       }
     } catch (e) {
       print("Error fetching currencies: $e");
+      Get.snackbar('Error', 'Wallet API: $e');
       //Get.snackbar('Error', 'An error occurred: $e');
     } finally {
       isLoading(false);
@@ -165,25 +174,57 @@ final HomeController controller = Get.put(HomeController());
     try {
       print("Fetching wallet balance for wallet ID: $walletId");
       final response = await http.get(url, headers: headers);
+      print('Wallet API status:  [33m${response.statusCode} [0m');
+      print('Wallet API body:  [36m${response.body} [0m');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('Wallet API parsed: $data');
         if (data['balance'] != null && data['currency_symbol'] != null) {
-          String balanceStr = data['balance'].toString().replaceAll(RegExp(r'[^\d.]'), '');
+          String balanceStr = data['balance'].toString().replaceAll(RegExp(r'[^ -9.]'), '');
           walletBalance.value = '${data['currency_symbol']} $balanceStr';
-          print("Balance fetched: ${walletBalance.value}");
-
+          print("Balance fetched:  [32m${walletBalance.value} [0m");
         } else {
           print("Invalid response from API: $data");
-          //Get.snackbar('Error', 'Invalid response from API');
+          Get.snackbar('Error', 'Wallet API: Invalid response from API');
+        }
+        walletGatewayDetails.clear();
+        if (data['wallet_gateway_array'] != null) {
+          if (data['wallet_gateway_array'] is List) {
+            for (var item in data['wallet_gateway_array']) {
+              if (item['gateway_name'] != null && item['gateway_balance'] != null) {
+                walletGatewayDetails.add({
+                  'name': item['gateway_name'].toString(),
+                  'balance': item['gateway_balance'].toString(),
+                });
+              }
+            }
+          } else if (data['wallet_gateway_array'] is Map) {
+            data['wallet_gateway_array'].forEach((key, value) {
+              if (value is Map && value['gateway_name'] != null && value['gateway_balance'] != null) {
+                walletGatewayDetails.add({
+                  'name': value['gateway_name'].toString(),
+                  'balance': value['gateway_balance'].toString(),
+                });
+              }
+            });
+          }
         }
       } else {
         print("Failed to fetch wallet balance: ${response.statusCode} - ${response.body}");
+        Get.snackbar('Error', 'Wallet API: Failed to fetch wallet balance (Status: ${response.statusCode}})');
         //Get.snackbar('Error', 'Failed to fetch wallet balance: ${response.statusCode}');
+        mtnBalance.value = '0.00';
+        orangeBalance.value = '0.00';
+        walletGatewayDetails.clear();
       }
     } catch (e) {
       print("Error fetching wallet balance: $e");
+      Get.snackbar('Error', 'Wallet API: $e');
       //Get.snackbar('Error', 'An error occurred: $e');
+      mtnBalance.value = '0.00';
+      orangeBalance.value = '0.00';
+      walletGatewayDetails.clear();
     } finally {
       isLoading(false);
     }
@@ -334,13 +375,11 @@ class WalletCurrency {
   final int id;
   final String name;
   String symbol;
-  final String thumb;
 
   WalletCurrency({
     required this.id,
     required this.name,
     required this.symbol,
-    required this.thumb,
   });
 
   factory WalletCurrency.fromJson(Map<String, dynamic> json) {
@@ -348,7 +387,6 @@ class WalletCurrency {
       id: json['id'] != null ? json['id'] as int : throw FormatException("Missing id"),
       name: json['name'] != null ? json['name'] as String : throw FormatException("Missing name"),
       symbol: json['symbol'] != null ? json['symbol'] as String : throw FormatException("Missing symbol"),
-      thumb: json['thumb'] != null ? json['thumb'] as String : throw FormatException("Missing thumb"),
     );
   }
 }

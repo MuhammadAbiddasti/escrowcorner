@@ -1,15 +1,18 @@
-import 'package:dacotech/view/screens/2fa_security/screen_2fa_security.dart';
-import 'package:dacotech/view/screens/change_password/screen_change_password.dart';
-import 'package:dacotech/view/screens/settings/screen_fees_charges.dart';
-import 'package:dacotech/view/screens/login/screen_login_history.dart';
-import 'package:dacotech/view/screens/managers/screen_managers.dart';
+import 'package:escrowcorner/view/screens/2fa_security/screen_2fa_security.dart';
+import 'package:escrowcorner/view/screens/change_password/screen_change_password.dart';
+import 'package:escrowcorner/view/screens/settings/screen_fees_charges.dart';
+import 'package:escrowcorner/view/screens/login/screen_login_history.dart';
+import 'package:escrowcorner/view/screens/managers/screen_managers.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
+import '../../../widgets/common_header/common_header.dart';
+import '../../controller/language_controller.dart';
 import '../applications/screen_merchant.dart';
 import '../user_profile/user_profile_controller.dart';
 import 'screen_general_settings.dart';
+import '../../controller/language_controller.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 
@@ -26,14 +29,11 @@ class ScreenSettingsPortion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final languageController = Get.find<LanguageController>();
     return Scaffold(backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: const Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          AppBarProfileButton(),
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('settings'),
+        managerId: userProfileController.userId.value,
       ),
       body: Container(
         color: const Color(0xffE6F0F7), // background color for the whole screen
@@ -47,31 +47,37 @@ class ScreenSettingsPortion extends StatelessWidget {
                   _buildSettingsTile(
                     context,
                     icon: Icons.settings,
-                    title: 'General Settings',
+                    titleKey: 'general_settings',
                     targetScreen: ScreenGeneralSettings(), // Define your next screen here
                   ),
-                  _buildSettingsTile(
-                    context,
-                    icon: Icons.vpn_key,
-                    title: 'API Keys',
-                    targetScreen: ScreenMerchant(),
-                  ),
+                  // _buildSettingsTile(
+                  //   context,
+                  //   icon: Icons.branding_watermark,
+                  //   title: 'Branding Settings',
+                  //   targetScreen: DynamicBrandingSettingsScreen(),
+                  // ),
+                  // _buildSettingsTile(
+                  //   context,
+                  //   icon: Icons.vpn_key,
+                  //   title: 'API Keys',
+                  //   targetScreen: ScreenMerchant(),
+                  // ),
                   _buildSettingsTile(
                     context,
                     icon: Icons.security,
-                    title: '2FA Security',
+                    titleKey: '2fa_security',
                     targetScreen: Screen2faSecurity(),
                   ),
                   _buildSettingsTile(
                     context,
                     icon: Icons.lock,
-                    title: 'Change Password',
+                    titleKey: 'change_password',
                     targetScreen: ScreenChangePassword(),
                   ),
                   _buildSettingsTile(
                     context,
                     icon: Icons.supervisor_account,
-                    title: 'Managers',
+                    titleKey: 'managers',
                     targetScreen: ScreenManagers(),
                   ),
                   // _buildSettingsTile(
@@ -80,11 +86,11 @@ class ScreenSettingsPortion extends StatelessWidget {
                   //   title: 'Charges or Fees',
                   //   targetScreen: ScreenFeesCharges(),
                   // ),
-                  _buildSetTile(
-                    context,
-                    icon: Icons.book,
-                    title: 'API Documentation',
-                  ),
+                  // _buildSetTile(
+                  //   context,
+                  //   icon: Icons.book,
+                  //   title: 'API Documentation',
+                  // ),
                   // _buildUrlTile(
                   //   context,
                   //   icon: Icons.book,
@@ -94,7 +100,7 @@ class ScreenSettingsPortion extends StatelessWidget {
                   _buildSettingsTile(
                     context,
                     icon: Icons.history,
-                    title: 'Login History',
+                    titleKey: 'login_history',
                     targetScreen: ScreenLoginHistory(),
                   ),
                 ],
@@ -108,9 +114,10 @@ class ScreenSettingsPortion extends StatelessWidget {
 
   Widget _buildSettingsTile(BuildContext context, {
     required IconData icon,
-    required String title,
+    required String titleKey,
     required Widget targetScreen,
   }) {
+    final languageController = Get.find<LanguageController>();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: GestureDetector(
@@ -139,10 +146,13 @@ class ScreenSettingsPortion extends StatelessWidget {
               children: [
                 Icon(icon, color: Colors.black54),
                 SizedBox(width: 16), // Space between icon and title
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
+                Obx(() {
+                  final _ = languageController.selectedLanguage.value;
+                  return Text(
+                    languageController.getTranslation(titleKey),
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  );
+                }),
               ],
             ),
           ),

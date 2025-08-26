@@ -7,6 +7,13 @@
   return token;  // Return the token or null
  }
 
+ // Function to check if user is logged in
+ Future<bool> isUserLoggedIn() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('auth_token');
+  return token != null && token.isNotEmpty;
+ }
+
 
  // Function to save walletId
  Future<void> saveWalletId(String walletId) async {

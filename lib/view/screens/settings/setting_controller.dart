@@ -7,6 +7,7 @@ import 'dart:convert';
 import '../../../widgets/custom_token/constant_token.dart';
 import '../../../widgets/custom_api_url/constant_url.dart';
 import '../user_profile/user_profile_controller.dart';
+import 'package:escrowcorner/view/controller/language_controller.dart';
 
 class SettingController extends GetxController {
   var isLoading = false.obs;
@@ -21,6 +22,20 @@ class SettingController extends GetxController {
   var notifyWithdrawals = false.obs;
   var mtnLowBalanceController = TextEditingController();
   var orangeLowBalanceController = TextEditingController();
+  
+  // Site details variables
+  var siteName = 'EscrowCorner'.obs;
+  var siteTitle = ''.obs;
+  var siteIcon = ''.obs;
+  var siteLogo = ''.obs;
+  var siteAddress = '123 Street, New York, USA'.obs;
+  var siteContactNumber = '+01234567890'.obs;
+  var siteAdminEmail = 'admin@admin.com'.obs;
+  var siteOpeningHours = 'Monday - Friday 9:00 AM - 6:00 PM'.obs;
+  var siteNewsletterTitle = 'Stay Updated'.obs;
+  var siteNewsletter = 'Stay updated with our latest news and offers.'.obs;
+  var socialLinks = <Map<String, dynamic>>[].obs;
+  
   final UserProfileController userController = Get.put(UserProfileController());
 
 
@@ -29,6 +44,80 @@ class SettingController extends GetxController {
   void onInit() {
     super.onInit();
     //fetchCharges(c);
+    fetchSiteDetails(); // Fetch site details on initialization
+    
+    // Listen for language changes to refresh site details
+    try {
+      final languageController = Get.find<LanguageController>();
+      ever(languageController.selectedLanguage, (_) {
+        fetchSiteDetails(); // Refresh site details when language changes
+      });
+    } catch (e) {
+      print('LanguageController not available yet: $e');
+    }
+  }
+  
+  // Fetch site details from API
+  Future<void> fetchSiteDetails() async {
+    try {
+      // Get the current locale from LanguageController
+      final languageController = Get.find<LanguageController>();
+      final currentLocale = languageController.getCurrentLanguageLocale();
+      
+      final url = Uri.parse('$baseUrl/api/get_site_details/$currentLocale');
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        
+        if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
+          final data = jsonResponse['data'];
+          siteName.value = data['site_name'] ?? 'EscrowCorner';
+          siteTitle.value = data['title'] ?? '';
+          siteIcon.value = data['site_icon'] ?? '';
+          siteLogo.value = data['site_logo'] ?? '';
+          siteAddress.value = data['address'] ?? '123 Street, New York, USA';
+          siteContactNumber.value = data['contact_number'] ?? '+01234567890';
+          siteAdminEmail.value = data['admin_email'] ?? 'admin@admin.com';
+          siteOpeningHours.value = data['opening_hours'] ?? 'Monday - Friday 9:00 AM - 6:00 PM';
+          siteNewsletterTitle.value = data['newsletter_title'] ?? 'Stay Updated';
+          siteNewsletter.value = data['newsletter'] ?? 'Stay updated with our latest news and offers.';
+          
+                     // Parse social links - handle both possible field names
+           if (data['social_links'] != null) {
+             socialLinks.value = List<Map<String, dynamic>>.from(data['social_links']);
+             print('Social links loaded from "social_links": ${socialLinks.length} links');
+           } else if (data['social_lnks'] != null) {
+             socialLinks.value = List<Map<String, dynamic>>.from(data['social_lnks']);
+             print('Social links loaded from "social_lnks": ${socialLinks.length} links');
+           } else {
+             print('No social links found in API response. Available keys: ${data.keys.toList()}');
+           }
+           
+           if (socialLinks.isNotEmpty) {
+             print('=== SOCIAL LINKS DEBUG INFO ===');
+             for (var link in socialLinks) {
+               print('Social link: ${link['url']}');
+               print('  - Icon filename: ${link['icon']}');
+               print('  - Full icon URL: $baseUrl/assets/social/${link['icon']}');
+               print('  - Alternative URLs:');
+               print('    * $baseUrl/storage/social/${link['icon']}');
+               print('    * $baseUrl/images/social/${link['icon']}');
+               print('    * $baseUrl/uploads/social/${link['icon']}');
+               print('    * $baseUrl/public/assets/social/${link['icon']}');
+               print('---');
+             }
+           }
+           
+           print('Site details loaded: ${siteName.value}');
+        }
+      } else {
+        print('Failed to load site details: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching site details: $e');
+      // Keep default values on error
+    }
   }
   void showLoadingSpinner(BuildContext context) {
     showDialog(
@@ -160,7 +249,8 @@ class SettingController extends GetxController {
 
         // Force update the radio button value in case of any manual adjustments
         depselectedRole.refresh(); // Manually trigger the GetX observable update
-        Get.snackbar("Success", "$message",
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('success'), message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,);
@@ -168,7 +258,8 @@ class SettingController extends GetxController {
         throw Exception('Failed to update deposit charge');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to process the request',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Failed to process the request',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -209,7 +300,8 @@ class SettingController extends GetxController {
         String message = jsonResponse['updated']['original']['message'].toString();
         // Force update the radio button value in case of any manual adjustments
         witselectedRole.refresh(); // Manually trigger the GetX observable update
-        Get.snackbar("Success", "$message",
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('success'), message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,);
@@ -217,7 +309,8 @@ class SettingController extends GetxController {
         throw Exception('Failed to update withdrawal charge');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to process the request',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Failed to process the request',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -273,7 +366,8 @@ class SettingController extends GetxController {
 
         if (jsonResponse['success'] == true) {
           // Update local state after successful save
-          Get.snackbar("Success", "Settings updated successfully!",
+          final languageController = Get.find<LanguageController>();
+          Get.snackbar(languageController.getTranslation('success'), "Settings updated successfully!",
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,);
@@ -289,7 +383,8 @@ class SettingController extends GetxController {
       }
     } catch (e) {
       print("Error: $e");
-      Get.snackbar('Error', 'Failed to update settings',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Failed to update settings',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -315,7 +410,8 @@ class SettingController extends GetxController {
 
     // Ensure the updated number is not empty
     if (updatedNumber.isEmpty || updatedNumber.length != 10) {
-      Get.snackbar('Error', 'Please enter a valid 10-digit MTN MoMo number',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Please enter a valid 10-digit MTN MoMo number',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.orange,
         colorText: Colors.white,);
@@ -340,20 +436,23 @@ class SettingController extends GetxController {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         String message = jsonResponse['message'] ?? 'MoMo number updated successfully';
-        Get.snackbar("Success", message,
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('success'), message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,);
       } else {
         final Map<String, dynamic> errorResponse = jsonDecode(response.body);
         String errorMessage = errorResponse['message'] ?? 'Failed to update MTN MoMo number';
-        Get.snackbar('Error', errorMessage,
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('error'), errorMessage,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update: $e',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Failed to update: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -377,7 +476,8 @@ class SettingController extends GetxController {
 
     // Ensure the updated number is not empty
     if (updatedNumber.isEmpty || updatedNumber.length != 10) {
-      Get.snackbar('Error', 'Please enter a valid 10-digit MTN MoMo number',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Please enter a valid 10-digit MTN MoMo number',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.orange,
         colorText: Colors.white,
@@ -403,20 +503,23 @@ class SettingController extends GetxController {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         String message = jsonResponse['message'] ?? 'MoMo number updated successfully';
-        Get.snackbar("Success", message,
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('success'), message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,);
       } else {
         final Map<String, dynamic> errorResponse = jsonDecode(response.body);
         String errorMessage = errorResponse['message'] ?? 'Failed to update MTN MoMo number';
-        Get.snackbar('Error', errorMessage,
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('error'), errorMessage,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to process the request',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Failed to process the request',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -452,7 +555,8 @@ class SettingController extends GetxController {
         String message = jsonResponse['updated']['original']['message'].toString();
 
         // Handle the response as needed
-        Get.snackbar("Success", "$message",
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('success'), "$message",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,);
@@ -460,7 +564,8 @@ class SettingController extends GetxController {
         throw Exception('Failed to save allowed IPs');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to process the request',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Failed to process the request',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -558,7 +663,8 @@ class SettingController extends GetxController {
 
   Future<void> saveMtnLowBalance() async {
     isLoading.value = true;
-    Get.snackbar("Success", "Update Successfully");
+    final languageController = Get.find<LanguageController>();
+    Get.snackbar(languageController.getTranslation('success'), "Update Successfully");
     String? token = await getToken(); // Implement your getToken method
     if (token == null) {
       //Get.snackbar('Error', 'Token is null');
@@ -581,7 +687,8 @@ class SettingController extends GetxController {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         // Handle the response as needed
-        Get.snackbar("Success", "$jsonResponse",
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('success'), "$jsonResponse",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,);
@@ -589,7 +696,8 @@ class SettingController extends GetxController {
         throw Exception('Failed to save MTN low balance amount');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to process the request',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Failed to process the request',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -623,7 +731,8 @@ class SettingController extends GetxController {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         // Handle the response as needed
-        Get.snackbar("Success", "$jsonResponse",
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('success'), "$jsonResponse",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,);
@@ -631,7 +740,8 @@ class SettingController extends GetxController {
         throw Exception('Failed to save Orange low balance amount');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to process the request',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Failed to process the request',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -674,8 +784,11 @@ class SettingController extends GetxController {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
 
         if (jsonResponse['success'] == true) {
-          // Show success message only once
-          Get.snackbar("Success", "Email alerts updated successfully!",
+          final message = (jsonResponse['updated']?['original']?['message']?.toString())
+              ?? jsonResponse['message']?.toString()
+              ?? 'Email alerts updated successfully!';
+          final languageController = Get.find<LanguageController>();
+          Get.snackbar(languageController.getTranslation('success'), message,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,);
@@ -694,7 +807,8 @@ class SettingController extends GetxController {
       }
     } catch (e) {
       print("Error: $e");
-      Get.snackbar('Error', 'Failed to update email alerts',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Failed to update email alerts',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -738,7 +852,8 @@ class SettingController extends GetxController {
 
         if (jsonResponse['success'] == true) {
           // Update local state after successful save
-          Get.snackbar("Success", "Settings updated successfully!",
+          final languageController = Get.find<LanguageController>();
+          Get.snackbar(languageController.getTranslation('success'), "Settings updated successfully!",
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,);
@@ -759,7 +874,8 @@ class SettingController extends GetxController {
       }
     } catch (e) {
       print("Error: $e");
-      Get.snackbar('Error', 'Failed to update settings',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Failed to update settings',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);

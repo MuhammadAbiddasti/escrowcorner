@@ -1,5 +1,5 @@
-import 'package:dacotech/view/screens/login/login_controller.dart';
-import 'package:dacotech/widgets/custom_bottom_container/custom_bottom_container.dart';
+import 'package:escrowcorner/view/screens/login/login_controller.dart';
+import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
@@ -7,35 +7,38 @@ import '../../../widgets/custom_button/damaspay_button.dart';
 import '../../Home_Screens/custom_leading_appbar.dart';
 import '../../theme/damaspay_theme/Damaspay_theme.dart';
 import 'deposit_withdraw_request_controller.dart';
+import '../../../widgets/common_header/common_header.dart';
+import '../user_profile/user_profile_controller.dart';
+import '../../controller/language_controller.dart';
 
 class WithdrawOtpVerificationScreen extends StatelessWidget {
   final String paymentMethodId;
   final String amount;
   final String phoneNumber;
+  final String confirmNumber;
   final String? description;
 
   WithdrawOtpVerificationScreen({
     required this.paymentMethodId,
     required this.amount,
     required this.phoneNumber,
+    required this.confirmNumber,
     this.description,
   });
   final DepositWithdrawRequestController otpController = Get.put(DepositWithdrawRequestController());
   final TextEditingController otpCodeController = TextEditingController();
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   Widget build(BuildContext context) {
     final otpMessage = Get.arguments as String?;
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(backgroundColor: Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomLeadingAppbar(),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
-      ),
+             appBar: CommonHeader(
+         title: languageController.getTranslation('otp_verification'),
+         managerId: userProfileController.userId.value,
+       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -55,31 +58,31 @@ class WithdrawOtpVerificationScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Text(
-                  otpMessage ?? 'Enter the code sent to your email',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[700],
-                  ),
-                  textAlign: TextAlign.center,
-                ).paddingOnly(bottom: 15),
-                TextField(
-                  controller: otpCodeController,
-                  decoration: InputDecoration(
-                    labelText: 'Enter Code',
-                    labelStyle: TextStyle(color: Colors.black),
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
+                                 Text(
+                   otpMessage ?? languageController.getTranslation('enter_code_sent_to_email'),
+                   style: TextStyle(
+                     fontSize: 20,
+                     fontWeight: FontWeight.bold,
+                     color: Colors.grey[700],
+                   ),
+                   textAlign: TextAlign.center,
+                 ).paddingOnly(bottom: 15),
+                                 TextField(
+                   controller: otpCodeController,
+                   decoration: InputDecoration(
+                     labelText: languageController.getTranslation('enter_code'),
+                     labelStyle: TextStyle(color: Colors.black),
+                     prefixIcon: Icon(Icons.email),
+                     border: OutlineInputBorder(
+                       borderSide: BorderSide(color: Colors.black),
+                       borderRadius: BorderRadius.circular(8),
+                     ),
+                     focusedBorder: OutlineInputBorder(
+                       borderSide: BorderSide(color: Colors.black),
+                       borderRadius: BorderRadius.circular(8),
+                     ),
+                   ),
+                 ),
                 SizedBox(height: 20),
                 FFButtonWidget(
                   onPressed: () async {
@@ -96,9 +99,10 @@ class WithdrawOtpVerificationScreen extends StatelessWidget {
                       paymentMethodId: paymentMethodId,
                       amount: amount,
                       phoneNumber: phoneNumber,
+                      confirmNumber: confirmNumber,
                     );
                   },
-                  text: 'VERIFY',
+                                     text: languageController.getTranslation('verify'),
                   options: FFButtonOptions(
                     width: Get.width,
                     height: 45.0,
@@ -121,7 +125,7 @@ class WithdrawOtpVerificationScreen extends StatelessWidget {
             ),
           ).paddingSymmetric(horizontal: 20),
           Spacer(),
-          CustomBottomContainer(),
+          CustomBottomContainerPostLogin(),
         ],
       ),
     );

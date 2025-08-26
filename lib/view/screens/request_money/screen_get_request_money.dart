@@ -1,6 +1,6 @@
-import 'package:dacotech/view/screens/request_money/controller_requestmoney.dart';
-import 'package:dacotech/view/screens/request_money/screen_new_requestmoney.dart';
-import 'package:dacotech/view/screens/user_profile/user_profile_controller.dart';
+import 'package:escrowcorner/view/screens/request_money/controller_requestmoney.dart';
+import 'package:escrowcorner/view/screens/request_money/screen_new_requestmoney.dart';
+import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
@@ -11,6 +11,7 @@ import '../../../widgets/custom_ballance_container/custom_btc_container.dart';
 import '../../../widgets/custom_button/custom_button.dart';
 import '../../controller/logo_controller.dart';
 import '../managers/manager_permission_controller.dart';
+import 'screen_request_money_otp.dart';
 
 class ScreenGetRequestMonay extends StatelessWidget {
   LogoController logoController = Get.put(LogoController());
@@ -37,7 +38,7 @@ class ScreenGetRequestMonay extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: controller.userId.value,),
         actions: [
@@ -192,7 +193,7 @@ class ScreenGetRequestMonay extends StatelessWidget {
                                               backGroundColor: _getButtonColor(requestMoney.status, requestMoney.requestedBy),
                                               text: _getButtonText(requestMoney.status, requestMoney.requestedBy),
                                               onPressed: () {
-                                                _getButtonAction(requestMoney.status, requestMoney.requestedBy);
+                                                _getButtonAction(requestMoney.status, requestMoney.requestedBy, requestMoney.id);
                                               }))
                                         ]);
                                       }).toList(),
@@ -213,7 +214,7 @@ class ScreenGetRequestMonay extends StatelessWidget {
         ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: CustomBottomContainer()
+            child: CustomBottomContainerPostLogin()
           )
         ]
       ),
@@ -292,7 +293,7 @@ class ScreenGetRequestMonay extends StatelessWidget {
   }
 
 
-  VoidCallback? _getButtonAction(String status, String requestedBy) {
+  VoidCallback? _getButtonAction(String status, String requestedBy, String requestId) {
     //print('Debugging _getButtonAction...');
     //print('Status: "$status", RequestedBy: "$requestedBy", CurrentUser: "${controller.email.value}"');
 
@@ -302,15 +303,17 @@ class ScreenGetRequestMonay extends StatelessWidget {
     // Check if button text is "Confirm" and the current user is not the requester
     if (buttonText == 'Confirm' && !isCurrentUser) {
       //print('Button clicked! Proceeding to confirm the request.');
-      // Ensure the ID is available and not null
-      print('Request ID: ${requestMoneyController.id.value}');
+      print('Request ID: $requestId');
 
-      if (requestMoneyController.id.value != null) {
-        // Trigger the confirmRequestMoney method
-        requestMoneyController.confirmRequestMoney(requestMoneyController.id.value);
+      if (requestId.isNotEmpty) {
+        // Navigate to OTP verification screen instead of directly confirming
+        Get.to(() => ScreenRequestMoneyOtp(
+          requestId: requestId,
+          userEmail: controller.email.value,
+        ));
       } else {
-        print('Error: Request ID is null');
-        Get.snackbar('Error', 'Request ID is null',
+        print('Error: Request ID is empty');
+        Get.snackbar('Error', 'Request ID is empty',
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,);

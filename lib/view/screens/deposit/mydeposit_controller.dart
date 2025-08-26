@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:dacotech/view/screens/withdraw/withdrawal_controller.dart';
+import 'package:escrowcorner/view/screens/withdraw/withdrawal_controller.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import '../../../widgets/custom_token/constant_token.dart';

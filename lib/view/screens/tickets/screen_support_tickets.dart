@@ -1,9 +1,10 @@
-import 'package:dacotech/view/screens/tickets/screen_new_ticket.dart';
-import 'package:dacotech/view/screens/tickets/screen_ticket_details.dart';
+import 'package:escrowcorner/view/screens/tickets/screen_new_ticket.dart';
+import 'package:escrowcorner/view/screens/tickets/screen_ticket_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
 import '../../../widgets/custom_button/custom_button.dart';
@@ -12,20 +13,37 @@ import '../managers/manager_permission_controller.dart';
 import '../user_profile/user_profile_controller.dart';
 import 'ticket_controller.dart';
 
-class ScreenSupportTicket extends StatelessWidget {
+class ScreenSupportTicket extends StatefulWidget {
+  @override
+  _ScreenSupportTicketState createState() => _ScreenSupportTicketState();
+}
+
+class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
   final LogoController logoController = Get.put(LogoController());
   final TicketController ticketsController = Get.put(TicketController());
-  final UserProfileController userProfileController =Get.find<UserProfileController>();
-  final ManagersPermissionController controller =Get.find<ManagersPermissionController>();
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
+  final ManagersPermissionController controller = Get.find<ManagersPermissionController>();
+  final ScrollController scrollController = ScrollController();
 
   @override
   void initState() {
-    //super.initState();
-    // Fetch escrows only once when the screen is initialized
+    super.initState();
     ticketsController.fetchTickets();
+    scrollController.addListener(_onScroll);
   }
-  void onInit() {
-    ticketsController.fetchTickets();
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (scrollController.position.pixels >= scrollController.position.maxScrollExtent - 200) {
+      if (!ticketsController.isLoadingMore.value && ticketsController.hasMoreData.value) {
+        ticketsController.loadMoreTickets();
+      }
+    }
   }
   @override
   Widget build(BuildContext context) {
@@ -35,7 +53,7 @@ class ScreenSupportTicket extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar:  AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -44,165 +62,597 @@ class ScreenSupportTicket extends StatelessWidget {
 
         ],
       ),
-      body: Stack(
+      body: Column(
         children: [
-          RefreshIndicator(
-          onRefresh: ()async{
-            ticketsController.fetchTickets();
-          },
-          child: ListView(
-            children:[
-              Center(
+          // Add New Ticket Button Section
+          if (isManager &&
+              allowedModules.containsKey('Support Ticket') &&
+              allowedModules['Support Ticket']!.contains('add_support_ticket'))
+            Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: Color(0xffFFFFFF),
+              ),
               child: Column(
                 children: [
-                  //CustomBtcContainer().paddingOnly(top: 20),
-                  if (isManager &&
-                      allowedModules.containsKey('Support Ticket') &&
-                      allowedModules['Support Ticket']!.contains('add_support_ticket'))
-                    Container(
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: Color(0xffFFFFFF),
-                      ),
-                      child: Column(
-                        children: [
-                          CustomButton(
-                            text: "ADD NEW",
-                            onPressed: () {
-                              Get.to(ScreenNewTicket());
-                            },
-                          ).paddingSymmetric(horizontal: 20, vertical: 15),
-                        ],
-                      ),
-                    ).paddingOnly(top: 20)
-                  else if (isManager)
-                    SizedBox(height: 50), // Add some space when `add_send` is not allowed.
-                  if (isNotManager)
-                    Container(
-                      //height: MediaQuery.of(context).size.height * .15,
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: Color(0xffFFFFFF),
-                      ),
-                      child: Column(
-                        children: [
-                          CustomButton(
-                            text: "ADD NEW",
-                            onPressed: () {
-                              Get.to(ScreenNewTicket());
-                            },
-                          ).paddingSymmetric(horizontal: 20, vertical: 15)
-                        ],
-                      ),
-                    ).paddingOnly(top: 20),
-                  Container(
-                    height: MediaQuery.of(context).size.height*0.6,
-                    width: MediaQuery.of(context).size.width,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Color(0xffFFFFFF),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          "My Tickets",
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                              color: Color(0xff18CE0F),
-                              fontFamily: 'Nunito'),
-                        ),
-                        Divider(color: Color(0xffDDDDDD),),
-                        Obx(() {
-                          if (ticketsController.isLoading.value) {
-                            return Center(child: SpinKitFadingFour(
-                              duration: Duration(seconds: 3),
-                              size: 120,
-                              color: Colors.green,
-                            ));
-                          }
-                          else if (ticketsController.tickets.isEmpty) {
-                            return Text(
-                              "You have not created any tickets.",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 14,
-                                  color: Color(0xff484848),
-                                  fontFamily: 'Nunito'),
-                              textAlign: TextAlign.center,
-                            ).paddingOnly(top: 15, bottom: 20);
-                          }
-                          else {
-                            return Expanded(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: SingleChildScrollView(
-                                  child: DataTable(
-                                    columns: const [
-                                      DataColumn(label: Text('Category')),
-                                      DataColumn(label: Text('\tTicket ID')),
-                                     // DataColumn(label: Text('Title')),
-                                      DataColumn(label: Text('Status')),
-                                      DataColumn(label: Text('Last Updated')),
-                                      DataColumn(label: Text('Action')),
-                                    ],
-                                    rows: ticketsController.tickets.map((ticket) {
-                                      String categoryName = ticketsController.categories
-                                          .firstWhere(
-                                              (category) {
-                                            int categoryId = int.tryParse(ticket.category) ?? -1;
-                                            return category.id == categoryId;
-                                          },
-                                          orElse: () => Category(id: 0, name: 'Unknown', createdAt: '', updatedAt: '')
-                                      )
-                                          .name;
-                                      return DataRow(cells: [
-                                        DataCell(Text(categoryName)),
-                                        DataCell(TextButton(
-                                          onPressed: () {
-                                            ticketsController.fetchTicketDetail(ticket.ticket_id);
-                                            Get.to(ScreenTicketDetails(ticketId: ticket.ticket_id,));
-                                          },
-                                          child: Text("#${ticket.ticket_id} - ${ticket.title}",style:TextStyle(color: Colors.blue)),
-                                        )),
-                                        //DataCell(Text(ticket.title,style: TextStyle(color: Colors.blue),)),
-                                        DataCell(Text(ticket.status)),
-                                        DataCell(Text('${DateFormat('yyyy-MM-dd  HH:mm a').format(DateTime.parse(ticket.lastUpdated))}')),
-                                        DataCell(
-                                          CustomButton(
-                                            width: 80,
-                                            height: 30,
-                                            text: 'View',
-                                            onPressed: () {
-                                              ticketsController.fetchTicketDetail(ticket.ticket_id);
-                                              Get.to(ScreenTicketDetails(ticketId: ticket.ticket_id,));
-                                            },
-                                          ),
-                                        ),
-                                      ]);
-                                    }).toList(),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                        }),
-                      ],
-                    ),
-                  ).paddingSymmetric(horizontal: 15,vertical: 15),
+                  CustomButton(
+                    text: "ADD NEW",
+                    onPressed: () {
+                      Get.to(ScreenNewTicket());
+                    },
+                  ).paddingSymmetric(horizontal: 20, vertical: 15),
                 ],
               ),
-            ),]
+            ).paddingOnly(top: 20)
+          else if (isManager)
+            SizedBox(height: 50), // Add some space when `add_send` is not allowed.
+          if (isNotManager)
+            Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: Color(0xffFFFFFF),
+              ),
+              child: Column(
+                children: [
+                  CustomButton(
+                    text: "ADD NEW",
+                    onPressed: () {
+                      Get.to(ScreenNewTicket());
+                    },
+                  ).paddingSymmetric(horizontal: 20, vertical: 15)
+                ],
+              ),
+            ).paddingOnly(top: 20),
+          
+          // Tickets List Section
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ticketsController.currentPage.value = 1;
+                ticketsController.hasMoreData.value = true;
+                await ticketsController.fetchTickets();
+              },
+              child: Obx(() {
+                if (ticketsController.isLoading.value) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                    ),
+                  );
+                }
+                
+                if (ticketsController.tickets.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.support_agent,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'No Tickets Found',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'You have not created any support tickets yet',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                                      return ListView.builder(
+                        controller: scrollController,
+                        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                        itemCount: ticketsController.tickets.length + (ticketsController.hasMoreData.value ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == ticketsController.tickets.length) {
+                            // Show loading indicator at the bottom
+                            return Obx(() {
+                              if (ticketsController.isLoadingMore.value) {
+                                return Container(
+                                  padding: EdgeInsets.all(20),
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                                    ),
+                                  ),
+                                );
+                              } else if (ticketsController.hasMoreData.value) {
+                                return Container(
+                                  padding: EdgeInsets.all(20),
+                                  child: Center(
+                                    child: Text(
+                                      'Scroll to load more tickets',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                return Container(
+                                  padding: EdgeInsets.all(20),
+                                  child: Center(
+                                    child: Text(
+                                      'No more tickets to load',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            });
+                          }
+                          
+                          final ticket = ticketsController.tickets[index];
+                          return _buildTicketCard(ticket);
+                        },
+                      );
+              }),
+            ),
+          ),
+          
+          // Bottom Container
+          CustomBottomContainerPostLogin(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTicketCard(dynamic ticket) {
+    // Use the category name directly from the ticket object
+    String categoryName = ticket.category;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 15),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.grey.shade50,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            ticketsController.fetchTicketDetail(ticket.ticket_id);
+            Get.to(ScreenTicketDetails(ticketId: ticket.ticket_id));
+          },
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with Title (Clickable)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          ticketsController.fetchTicketDetail(ticket.ticket_id);
+                          Get.to(ScreenTicketDetails(ticketId: ticket.ticket_id));
+                        },
+                        child: Text(
+                          "#${ticket.ticket_id} - ${ticket.title}",
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.grey.shade400,
+                      size: 16,
+                    ),
+                  ],
+                ),
+                
+                SizedBox(height: 12),
+                
+                // Status Badge
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(ticket.status).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _getStatusColor(ticket.status).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    ticket.status.toUpperCase(),
+                    style: TextStyle(
+                      color: _getStatusColor(ticket.status),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 16),
+                
+                // Ticket Details
+                _buildDetailRow('Category', categoryName, Icons.category),
+                SizedBox(height: 12),
+                _buildDetailRow('Last Updated', DateFormat('yyyy-MM-dd HH:mm a').format(DateTime.parse(ticket.lastUpdated)), Icons.access_time),
+                
+                // Attachments Section - Dynamic from API data (download only, no visual display)
+                if (ticket.attachment != null && ticket.attachment!.isNotEmpty) ...[
+                  _buildAttachmentsFromApi(ticket.attachment!),
+                ],
+                
+                SizedBox(height: 16),
+                
+                // Action Button
+                Container(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ticketsController.fetchTicketDetail(ticket.ticket_id);
+                      Get.to(ScreenTicketDetails(ticketId: ticket.ticket_id));
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.visibility, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'View Details',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: CustomBottomContainer()
-          )
-        ]
       ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade800,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'open':
+        return Colors.blue;
+      case 'closed':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'in progress':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildAttachmentsFromApi(String attachmentsJson) {
+    // Mimic the website logic: @if(!empty($ticket->attachments))
+    if (attachmentsJson.isEmpty) {
+      return Container();
+    }
+
+    List<String> attachments = [];
+    
+    try {
+      // Mimic: $attachments = json_decode($ticket->attachments, true);
+      List<dynamic> jsonAttachments = jsonDecode(attachmentsJson);
+      
+      // Mimic: @if(is_array($attachments))
+      if (jsonAttachments is List) {
+        // Mimic: @foreach($attachments as $attachment)
+        attachments = jsonAttachments.map((attachment) => attachment.toString()).toList();
+      }
+    } catch (e) {
+      print('Error parsing attachments JSON: $e');
+      return Container();
+    }
+
+    // If no valid attachments found
+    if (attachments.isEmpty) {
+      return Container();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Individual download links - mimic @foreach($attachments as $attachment)
+        ...attachments.map((attachment) => Column(
+          children: [
+            _buildDownloadLink(attachment),
+            SizedBox(height: 6),
+          ],
+        )).toList(),
+      ],
+    );
+  }
+
+  Widget _buildDownloadLink(String attachmentUrl) {
+    // Extract filename from URL for display
+    String fileName = attachmentUrl.split('/').last;
+    
+    // Ensure the URL has the base URL prepended
+    String fullUrl = attachmentUrl;
+    if (!attachmentUrl.startsWith('http')) {
+      // If it's a relative path, prepend the base URL
+      fullUrl = '${ticketsController.apiBaseUrl}/$attachmentUrl';
+    }
+    
+    print('Original attachment URL: $attachmentUrl');
+    print('Full download URL: $fullUrl');
+    
+    return InkWell(
+      onTap: () {
+        // Direct download using the full attachment URL
+        ticketsController.downloadAttachmentFromUrl(fullUrl, fileName);
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.blue.shade200,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.download,
+              size: 16,
+              color: Colors.blue.shade600,
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Download Attachment Files',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDownloadButton(String fileName) {
+    return InkWell(
+      onTap: () {
+        ticketsController.downloadAttachment(fileName);
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.blue.shade200,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.download,
+              size: 16,
+              color: Colors.blue.shade600,
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                fileName,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentsSection(String attachment) {
+    // Parse attachment string - it might be JSON array or comma-separated
+    List<String> attachments = [];
+    
+    try {
+      // Try to parse as JSON first
+      List<dynamic> jsonAttachments = jsonDecode(attachment);
+      attachments = jsonAttachments.map((item) => item.toString()).toList();
+    } catch (e) {
+      // If not JSON, try comma-separated
+      attachments = attachment.split(',').map((item) => item.trim()).where((item) => item.isNotEmpty).toList();
+    }
+
+    if (attachments.isEmpty) {
+      return Container();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.attach_file,
+                size: 18,
+                color: Colors.orange.shade600,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Attachments (${attachments.length})',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        ...attachments.map((fileName) => Container(
+          margin: EdgeInsets.only(bottom: 6),
+          child: InkWell(
+            onTap: () {
+              ticketsController.downloadAttachment(fileName);
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.blue.shade200,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.download,
+                    size: 16,
+                    color: Colors.blue.shade600,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      fileName,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        )).toList(),
+      ],
     );
   }
 }

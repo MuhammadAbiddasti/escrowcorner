@@ -1,4 +1,4 @@
-import 'package:dacotech/widgets/custom_bottom_container/custom_bottom_container.dart';
+import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
@@ -29,7 +29,7 @@ class _ScreenFeesChargesState extends State<ScreenFeesCharges> {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: const Color(0xff0766AD),
+        backgroundColor: const Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -232,7 +232,7 @@ class _ScreenFeesChargesState extends State<ScreenFeesCharges> {
             ],
           ).paddingSymmetric(horizontal: 15,vertical: 10),
           Spacer(),
-          CustomBottomContainer()
+          CustomBottomContainerPostLogin()
         ],
       ),
     );

@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:dacotech/widgets/custom_token/constant_token.dart';
-import 'package:dacotech/widgets/custom_api_url/constant_url.dart';
+import 'package:escrowcorner/widgets/custom_token/constant_token.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
+import 'package:escrowcorner/view/controller/language_controller.dart';
 
 class TwoFactorController extends GetxController {
   // Reactive variables for email and google 2FA
@@ -119,7 +120,6 @@ class TwoFactorController extends GetxController {
     print("Token used for OTP verification: $token");
 
     final url = Uri.parse("$baseUrl/api/verifyOtpCode");
-    showLoadingSpinner(context);
 
     try {
       final request = http.MultipartRequest('POST', url);
@@ -140,25 +140,36 @@ class TwoFactorController extends GetxController {
         final data = json.decode(responseBody);
 
         if (data['status'] == 1) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('OTP verified successfully')),
+          final languageController = Get.find<LanguageController>();
+          final successMessage = (data['message']?.toString()) ?? languageController.getTranslation('otp_verified_successfully');
+          Get.snackbar(
+            languageController.getTranslation('success'),
+            successMessage,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
           );
           return true;  // Return true if OTP is verified successfully
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data['message'] ?? 'Invalid OTP code'),
-              backgroundColor: Colors.red,
-            ),
+          final languageController = Get.find<LanguageController>();
+          final errorMessage = (data['message']?.toString()) ?? 'Invalid OTP code';
+          Get.snackbar(
+            languageController.getTranslation('error'),
+            errorMessage,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
           );
           return false;  // Return false if OTP verification failed
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Invalid OTP code'),
-            backgroundColor: Colors.red,
-          ),
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(
+          languageController.getTranslation('error'),
+          'Invalid OTP code',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
         );
         return false;  // Return false if the status code isn't 200
       }
@@ -168,14 +179,79 @@ class TwoFactorController extends GetxController {
       return false;  // Return false in case of an exception
     } finally {
       isLoading.value = false;
-      Navigator.pop(context);
+      // No modal spinner to dismiss here; button shows loader in UI
 
+    }
+  }
+
+  Future<bool> verifyGoogleOtpCode(BuildContext context, String otp) async {
+    isLoading.value = true;
+    String? token = await getToken();
+    print("Token used for Google OTP verification: $token");
+
+    final url = Uri.parse("$baseUrl/api/verifyGoogleOtpCode");
+
+    try {
+      final request = http.MultipartRequest('POST', url);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.fields['otp_code'] = otp;
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      print("Status Code for Google OTP Verification: ${response.statusCode}");
+      print("Response Body for Google OTP Verification: $responseBody");
+
+      final languageController = Get.find<LanguageController>();
+
+      if (response.statusCode == 200) {
+        final data = json.decode(responseBody);
+        final bool success = (data['success'] == true) || (data['status'] == 1);
+        final String message = (data['message']?.toString()) ?? languageController.getTranslation('otp_verified_successfully');
+
+        if (success) {
+          Get.snackbar(
+            languageController.getTranslation('success'),
+            message,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+          );
+          return true;
+        } else {
+          Get.snackbar(
+            languageController.getTranslation('error'),
+            message.isNotEmpty ? message : 'Invalid OTP code',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+          return false;
+        }
+      } else {
+        Get.snackbar(
+          languageController.getTranslation('error'),
+          'Invalid OTP code',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    } catch (e) {
+      print("Exception in Google OTP Verification: ${e.toString()}");
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), e.toString());
+      return false;
+    } finally {
+      isLoading.value = false;
+      // No modal spinner to dismiss here; button shows loader in UI
     }
   }
 
   // Method to fetch the QR code
   Future<void> fetchQRCode() async {
-    final String apiUrl = "$baseUrl/api/security";
+    final String apiUrl = "$baseUrl/api/getSecurityQRCode";
     String? bearerToken = await getToken();
     isLoading.value = true;
     errorMessage.value = '';
@@ -193,9 +269,14 @@ class TwoFactorController extends GetxController {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // Extract QR Code Base64 String and Secret
-        final qrCodeBase64 = data['data']['qrCode'] ?? ''; // Extract Base64 string
-        qrCodeValue.value = data['data']['google2fa_secret'] ?? ''; // Extract the secret code
+        // Extract QR Code Base64 String and Secret (support multiple shapes)
+        final dynamic dataNode = (data['data'] ?? {});
+        final dynamic userNode = (data['user'] ?? dataNode['user'] ?? {});
+        final String qrCodeBase64 = (dataNode['qrCode'] ?? data['qrCode'] ?? '') as String;
+        final String secret = (userNode['google2fa_secret']?.toString() ?? dataNode['google2fa_secret']?.toString() ?? '');
+
+        // Update secret value observable
+        qrCodeValue.value = secret;
 
         // Check if QR Code Base64 is valid
         if (qrCodeBase64.startsWith("data:image")) {

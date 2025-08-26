@@ -1,14 +1,17 @@
 import 'dart:io';
 
-import 'package:dacotech/view/screens/escrow_system/request_escrow/request_escrow_controller.dart';
-import 'package:dacotech/view/screens/escrow_system/screen_escrow_details.dart';
-import 'package:dacotech/widgets/custom_bottom_container/custom_bottom_container.dart';
+import 'package:escrowcorner/view/screens/escrow_system/request_escrow/request_escrow_controller.dart';
+import 'package:escrowcorner/view/screens/escrow_system/screen_escrow_details.dart';
+import 'package:escrowcorner/view/screens/escrow_system/escrow_controller.dart';
+import 'package:escrowcorner/view/screens/escrow_system/models/escrow_models.dart';
+import 'package:escrowcorner/view/controller/language_controller.dart';
+import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../widgets/custom_appbar/custom_appbar.dart';
 import '../../../../widgets/custom_button/damaspay_button.dart';
+import '../../../../widgets/common_header/common_header.dart';
 import '../../../theme/damaspay_theme/Damaspay_theme.dart';
 import '../../user_profile/user_profile_controller.dart';
 import '../escrow_controller.dart';
@@ -22,6 +25,7 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
+  final TextEditingController productNameController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
   bool acceptTerms = false;
   final UserEscrowsController escrowController = Get.put(UserEscrowsController());
@@ -30,15 +34,15 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
   String? selectedCategory;
   String? selectedCurrency;
   final ImagePicker _picker = ImagePicker();
-  File? selectedFile;
+  List<File> selectedFiles = [];
 
   Future<void> _pickImageFile() async {
-    // Use ImagePicker to pick an image
-    final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
+    // Use ImagePicker to pick multiple images
+    final List<XFile> files = await _picker.pickMultiImage();
 
-    if (file != null) {
+    if (files.isNotEmpty) {
       setState(() {
-        selectedFile = File(file.path); // Convert XFile to File
+        selectedFiles.addAll(files.map((file) => File(file.path))); // Convert XFiles to Files
       });
     }
   }
@@ -46,21 +50,25 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
   Future<void> _pickPdfFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowMultiple: false,
+        allowMultiple: true,
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'pdf', 'doc'],
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc'],
       );
 
-      if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
+      if (result != null && result.files.isNotEmpty) {
         setState(() {
-          selectedFile = File(result.files.single.path!);
+          selectedFiles.addAll(
+            result.files
+                .where((file) => file.path != null)
+                .map((file) => File(file.path!))
+          );
         });
-        print("Picked file: ${selectedFile?.path}");
+        print("Picked files: ${selectedFiles.length} files");
       } else {
-        print("No file selected.");
+        print("No files selected.");
       }
     } catch (e) {
-      print("Error picking file: $e");
+      print("Error picking files: $e");
     }
   }
 
@@ -104,6 +112,7 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
     // Fetch escrows only once when the screen is initialized
     escrowController.fetchCategories();
     escrowController.fetchCurrencies();
+    escrowController.fetchPaymentMethods();
   }
   void onInit() {
     escrowController.fetchCategories();
@@ -115,15 +124,9 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
 
     return  Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar:  AppBar(
-        backgroundColor: Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-
-        ],
+      appBar: CommonHeader(
+        title: 'New Request Escrow',
+        managerId: userProfileController.userId.value,
       ),
       body: SingleChildScrollView(
           child: Center(
@@ -175,7 +178,7 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                         ),
                       ),
                       Text(
-                        "User Email",
+                        "Recipient Email",
                         style: TextStyle(
                             fontWeight: FontWeight.w400,
                             fontSize: 14,
@@ -208,16 +211,26 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                             fontFamily: 'Nunito'),
                       ).paddingOnly(top: 10,bottom: 10),
                       Obx(() {
+                        // Listen to language changes to refresh the dropdown
+                        final currentLocale = languageController.getCurrentLanguageLocale();
+                        
                         return DropdownButtonFormField<EscrowCategory>(
                           items: escrowController.categories.map((EscrowCategory category) {
                             return DropdownMenuItem<EscrowCategory>(
                               value: category,
-                              child: Text(category.title),
+                              child: Container(
+                                width: double.infinity,
+                                child: Text(
+                                  category.getLocalizedTitle(currentLocale),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
                             );
                           }).toList(),
                           onChanged: (value) {
                             escrowController.selectedCategory.value = value;
-                            print("Selected Category: ${value?.title}");
+                            print("Selected Category: ${value?.getLocalizedTitle(currentLocale)}");
                           },
                           value: escrowController.selectedCategory.value,
                           icon: escrowController.isLoading.value
@@ -239,6 +252,7 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                               borderSide: BorderSide(color: Color(0xff666565)),
                             ),
                           ),
+                          isExpanded: true, // Make dropdown take full width
                         );
                       }),
                       Text(
@@ -261,6 +275,76 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                           onChanged: (value) {
                             escrowController.selectedCurrencyId.value = value;
                             print("Selected Currency ID: $value");
+                          },
+                          icon: escrowController.isLoading.value
+                              ? SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                              : Icon(Icons.arrow_drop_down, color: Color(0xff666565)),
+                          decoration: InputDecoration(
+                            contentPadding: EdgeInsets.only(top: 4, left: 5),
+                            border: OutlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xff666565)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xff666565)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xff666565)),
+                            ),
+                          ),
+                        );
+                      }),
+                      Text(
+                        "Payment Method",
+                        style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            color: Color(0xff484848),
+                            fontFamily: 'Nunito'),
+                      ).paddingOnly(top: 10,bottom: 10),
+                      Obx(() {
+                        print('=== PAYMENT METHODS DEBUG ===');
+                        print('Payment methods count: ${escrowController.paymentMethods.length}');
+                        print('Is loading: ${escrowController.isLoading.value}');
+                        print('Selected payment method ID: ${escrowController.selectedPaymentMethodId.value}');
+                        
+                        if (escrowController.paymentMethods.isNotEmpty) {
+                          print('Payment methods details:');
+                          for (var method in escrowController.paymentMethods) {
+                            print('  ID: ${method.id}, Name: "${method.name}", PaymentMethodName: "${method.paymentMethodName}"');
+                          }
+                        }
+                        
+                        if (escrowController.paymentMethods.isEmpty) {
+                          return Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Color(0xff666565)),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              escrowController.isLoading.value 
+                                  ? 'Loading payment methods...' 
+                                  : 'No payment methods available',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          );
+                        }
+                        
+                        return DropdownButtonFormField<int>(
+                          value: escrowController.selectedPaymentMethodId.value,
+                          items: escrowController.paymentMethods.map((EscrowPaymentMethod paymentMethod) {
+                            return DropdownMenuItem<int>(
+                              value: paymentMethod.id,
+                              child: Text(paymentMethod.paymentMethodName ?? paymentMethod.name ?? "Unknown"),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            escrowController.selectedPaymentMethodId.value = value;
+                            print("Selected Payment Method ID: $value");
                           },
                           icon: escrowController.isLoading.value
                               ? SizedBox(
@@ -309,6 +393,31 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                           ),
                         ),
                       ),
+                      Text(
+                        "Product Name",
+                        style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            color: Color(0xff484848),
+                            fontFamily: 'Nunito'),
+                      ).paddingOnly(top: 10,bottom: 10),
+                      TextField(
+                        controller: productNameController,
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.only(top: 4, left: 5),
+                          hintText: "Enter product name",
+                          hintStyle: TextStyle(color: Color(0xffA9A9A9)),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xff666565)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xff666565)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xff666565)),
+                          ),
+                        ),
+                      ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -341,13 +450,71 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                         ],
                       ),
                       Text(
-                        "Attachment (Optional)",
+                        "Product photos or information",
                         style: TextStyle(
                             fontWeight: FontWeight.w400,
                             fontSize: 14,
                             color: Color(0xff484848),
                             fontFamily: 'Nunito'),
                       ).paddingOnly(top: 10,bottom: 10),
+                      // Display selected files
+                      if (selectedFiles.isNotEmpty) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Selected Files (${selectedFiles.length}):",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: Color(0xff484848),
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              ...selectedFiles.asMap().entries.map((entry) {
+                                int index = entry.key;
+                                File file = entry.value;
+                                return Container(
+                                  margin: EdgeInsets.only(bottom: 5),
+                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          file.path.split('/').last,
+                                          style: TextStyle(fontSize: 12),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.close, size: 16, color: Colors.red),
+                                        onPressed: () {
+                                          setState(() {
+                                            selectedFiles.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                      ],
+                      
                       InkWell(
                         onTap: () => _showPickerOptions(context),
                         child: Container(
@@ -358,9 +525,9 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                               border: Border.all(color: Colors.black)
                           ),
                           child: Center(child:
-                          Text(selectedFile != null
-                              ? 'File Selected'
-                              : "Choose File",)),
+                          Text(selectedFiles.isNotEmpty
+                              ? 'Add More Files'
+                              : "Choose Files",)),
                         ),
                       ),
                       SizedBox(height: 20),
@@ -477,7 +644,9 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                             currency: '${escrowController.selectedCurrencyId}',        // Pass the selected currency ID directly
                             description: noteController.text.isNotEmpty ? noteController.text : "No description provided",
                             escrowTermConditions: acceptTerms,
-                            attachment: selectedFile != null ? File(selectedFile!.path) : null,
+                            attachments: selectedFiles.isNotEmpty ? selectedFiles : null,
+                            productName: productNameController.text.isNotEmpty ? productNameController.text : null,
+                            paymentMethodId: escrowController.selectedPaymentMethodId.value,
                           );
                           requestEscrowController.fetchRequestEscrows();
                         },
@@ -506,7 +675,7 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                     ],
                   ).paddingSymmetric(horizontal: 10),
                 ).paddingSymmetric(horizontal: 10,vertical: 20),
-                CustomBottomContainer()
+                CustomBottomContainerPostLogin()
               ],
             ),
           )

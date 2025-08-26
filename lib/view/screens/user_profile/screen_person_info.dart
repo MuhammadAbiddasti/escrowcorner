@@ -1,8 +1,9 @@
-import 'package:dacotech/widgets/custom_api_url/constant_url.dart';
-import 'package:dacotech/widgets/custom_appbar/custom_appbar.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
+import '../../../widgets/common_layout/common_layout.dart';
+import '../../../widgets/common_header/common_header.dart';
+import '../../controller/language_controller.dart';
 import '../../../widgets/custom_button/custom_button.dart';
 import '../../../widgets/custom_button/damaspay_button.dart';
 import '../../controller/logo_controller.dart';
@@ -11,7 +12,7 @@ import 'user_profile_controller.dart';
 
 class ScreenPersonInfo extends StatelessWidget {
   final LogoController logoController = Get.put(LogoController());
-  final UserProfileController userProfileController = Get.put(UserProfileController());
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
   FocusNode firstNameFocusNode = FocusNode();
   FocusNode lastNameFocusNode = FocusNode();
   FocusNode userNameFocusNode = FocusNode();
@@ -27,27 +28,23 @@ class ScreenPersonInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final languageController = Get.find<LanguageController>();
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('personal_information'),
+        managerId: userProfileController.userId.value,
       ),
       body: RefreshIndicator(
-        onRefresh: () async{
+        onRefresh: () async {
           await userProfileController.fetchUserDetails();
         },
         child: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
           child: Center(
             child: Column(
               children: [
                 buildProfileInfoSection(context),
-                CustomBottomContainer(),
               ],
             ),
           ),
@@ -80,6 +77,7 @@ class ScreenPersonInfo extends StatelessWidget {
 
 
   Widget buildProfileInfoSection(BuildContext context) {
+    final languageController = Get.find<LanguageController>();
     return Container(
       //height: MediaQuery.of(context).size.height,
       width: MediaQuery.of(context).size.width * 0.9,
@@ -90,22 +88,28 @@ class ScreenPersonInfo extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Personal Information",
-            style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: Color(0xff18CE0F),
-                fontFamily: 'Nunito'),
-          ).paddingOnly(top: 10),
-          Text(
-            "Profile Picture",
-            style: TextStyle(
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
-                color: Color(0xff484848),
-                fontFamily: 'Nunito'),
-          ).paddingOnly(top: 10),
+          Obx(() {
+            final _ = languageController.selectedLanguage.value;
+            return Text(
+              languageController.getTranslation('personal_information'),
+              style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: Color(0xff18CE0F),
+                  fontFamily: 'Nunito'),
+            ).paddingOnly(top: 10);
+          }),
+          Obx(() {
+            final _ = languageController.selectedLanguage.value;
+            return Text(
+              languageController.getTranslation('profile_picture'),
+              style: TextStyle(
+                  fontWeight: FontWeight.w400,
+                  fontSize: 14,
+                  color: Color(0xff484848),
+                  fontFamily: 'Nunito'),
+            ).paddingOnly(top: 10);
+          }),
           Container(
             height: MediaQuery.of(context).size.height * 0.45,
             width: MediaQuery.of(context).size.width * 0.8,
@@ -144,14 +148,17 @@ class ScreenPersonInfo extends StatelessWidget {
             }),
           ),
 
-          Text(
-            "Upload Profile Picture",
-            style: TextStyle(
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
-                color: Color(0xff484848),
-                fontFamily: 'Nunito'),
-          ).paddingOnly(top: 10),
+          Obx(() {
+            final _ = languageController.selectedLanguage.value;
+            return Text(
+              languageController.getTranslation('upload_profile_picture'),
+              style: TextStyle(
+                  fontWeight: FontWeight.w400,
+                  fontSize: 14,
+                  color: Color(0xff484848),
+                  fontFamily: 'Nunito'),
+            ).paddingOnly(top: 10);
+          }),
 
           Row(
             children: [
@@ -165,10 +172,13 @@ class ScreenPersonInfo extends StatelessWidget {
                     color: Color(0xffDDDDDD),
                   ),
                   child: Center(
-                    child: Text(
-                      "Choose File",
-                      style: TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
-                    ),
+                    child: Obx(() {
+                      final _ = languageController.selectedLanguage.value;
+                      return Text(
+                        languageController.getTranslation('choose_file'),
+                        style: TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
+                      );
+                    }),
                   ),
                 ),
               ),
@@ -188,17 +198,17 @@ class ScreenPersonInfo extends StatelessWidget {
             ],
           ),
 
-          buildTextField("First Name", userProfileController.firstNameController,firstNameFocusNode),
-          buildTextField("Last Name", userProfileController.lastNameController,lastNameFocusNode),
-          buildTextField("User Name", userProfileController.userNameController,userNameFocusNode, readOnly: true),
-          buildTextField("Email", userProfileController.emailController,emailFocusNode, readOnly: true),
+          buildTextField(languageController.getTranslation('first_name'), userProfileController.firstNameController,firstNameFocusNode, fieldKey: 'first_name'),
+          buildTextField(languageController.getTranslation('last_name'), userProfileController.lastNameController,lastNameFocusNode, fieldKey: 'last_name'),
+          buildTextField(languageController.getTranslation('user_name'), userProfileController.userNameController,userNameFocusNode, readOnly: true, fieldKey: 'user_name'),
+          buildTextField(languageController.getTranslation('email'), userProfileController.emailController,emailFocusNode, readOnly: true, fieldKey: 'email'),
           FFButtonWidget(
             onPressed: () async {
               // Adding a delay of 2 seconds before the API call
               await Future.delayed(Duration(seconds: 2));
              await userProfileController.updateUserDetails();
             },
-            text: 'Save',
+            text: languageController.getTranslation('save'),
             options: FFButtonOptions(
               width: Get.width,
               height: 45.0,
@@ -225,7 +235,7 @@ class ScreenPersonInfo extends StatelessWidget {
     ).paddingOnly(top: 20, bottom: 20);
   }
 
-  Widget buildTextField(String label, TextEditingController controller,FocusNode focusNode, {bool readOnly = false}) {
+  Widget buildTextField(String label, TextEditingController controller,FocusNode focusNode, {bool readOnly = false, String? fieldKey}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -243,9 +253,9 @@ class ScreenPersonInfo extends StatelessWidget {
             focusNode: focusNode,
             controller: controller,
             onChanged: (value) {
-              if (label == "First Name") {
+              if (fieldKey == 'first_name') {
                 userProfileController.firstName.value = value;
-              } else if (label == "Last Name") {
+              } else if (fieldKey == 'last_name') {
                 userProfileController.lastName.value = value;
               }
             },

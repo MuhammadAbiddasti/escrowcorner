@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../widgets/custom_appbar/custom_appbar.dart';
+import '../../../widgets/common_header/common_header.dart';
+import '../../controller/language_controller.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
 import '../../../widgets/custom_ballance_container/custom_btc_container.dart';
 import '../../../widgets/custom_button/custom_button.dart';
@@ -29,6 +31,7 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
   final TextEditingController _confPasswordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   void initState() {
@@ -46,15 +49,7 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
-      ),
+      appBar: CommonHeader(title: Get.find<LanguageController>().getTranslation('edit_manager'), managerId: userProfileController.userId.value),
       body: SingleChildScrollView(
         child: Center(
           child: Column(
@@ -69,14 +64,14 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Email",
+                    Obx(() => Text(
+                      languageController.getTranslation('email'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
                           color: Color(0xff484848),
                           fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
+                    ).paddingOnly(top: 10, bottom: 10)),
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -84,21 +79,21 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
                         ),
                         borderRadius: BorderRadius.circular(5), // Rounded corners
                       ),
-                      child: CustomNewField(
+                      child: Obx(() => CustomNewField(
                         obscureText: false,
                         controller: _emailController,
-                        hint: "Email",
+                        hint: languageController.getTranslation('email'),
                         textStyle: TextStyle(fontSize: 13),
-                      ),
+                      )),
                     ),
-                    Text(
-                      "First Name",
+                    Obx(() => Text(
+                      languageController.getTranslation('first_name'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
                           color: Color(0xff484848),
                           fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
+                    ).paddingOnly(top: 10, bottom: 10)),
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -106,21 +101,21 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
                         ),
                         borderRadius: BorderRadius.circular(5), // Rounded corners
                       ),
-                      child: CustomNewField(
+                      child: Obx(() => CustomNewField(
                         obscureText: false,
                         controller: _firstNameController,
-                        hint: "First Name",
+                        hint: languageController.getTranslation('first_name'),
                         textStyle: TextStyle(fontSize: 13),
-                      ),
+                      )),
                     ),
-                    Text(
-                      "Last Name",
+                    Obx(() => Text(
+                      languageController.getTranslation('last_name'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
                           color: Color(0xff484848),
                           fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
+                    ).paddingOnly(top: 10, bottom: 10)),
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -128,21 +123,21 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
                         ),
                         borderRadius: BorderRadius.circular(5), // Rounded corners
                       ),
-                      child: CustomNewField(
+                      child: Obx(() => CustomNewField(
                         obscureText: false,
                         controller: _lastNameController,
-                        hint: "Last Name",
+                        hint: languageController.getTranslation('last_name'),
                         textStyle: TextStyle(fontSize: 13),
-                      ),
+                      )),
                     ),
-                    Text(
-                      "Phone Number",
+                    Obx(() => Text(
+                      languageController.getTranslation('phone_number'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
                           color: Color(0xff484848),
                           fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
+                    ).paddingOnly(top: 10, bottom: 10)),
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -150,21 +145,21 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
                         ),
                         borderRadius: BorderRadius.circular(5), // Rounded corners
                       ),
-                      child: CustomNewField(
+                      child: Obx(() => CustomNewField(
                         obscureText: false,
                         controller: _phoneController,
-                        hint: "Phone",
+                        hint: languageController.getTranslation('phone'),
                         textStyle: TextStyle(fontSize: 13),
-                      ),
+                      )),
                     ),
-                    Text(
-                      "Password",
+                    Obx(() => Text(
+                      languageController.getTranslation('password'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
                           color: Color(0xff484848),
                           fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
+                    ).paddingOnly(top: 10, bottom: 10)),
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -172,22 +167,22 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
                         ),
                         borderRadius: BorderRadius.circular(5), // Rounded corners
                       ),
-                      child: CustomNewField(
+                      child: Obx(() => CustomNewField(
                         obscureText: false,
                         controller: _passwordController,
-                        hint: "Password",
+                        hint: languageController.getTranslation('password'),
                         textStyle: TextStyle(fontSize: 13),
                         isPasswordField: true,
-                      ),
+                      )),
                     ),
-                    Text(
-                      "Confirm Password",
+                    Obx(() => Text(
+                      languageController.getTranslation('confirm_password'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
                           color: Color(0xff484848),
                           fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
+                    ).paddingOnly(top: 10, bottom: 10)),
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -195,15 +190,15 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
                         ),
                         borderRadius: BorderRadius.circular(5),
                       ),
-                      child: CustomNewField(
+                      child: Obx(() => CustomNewField(
                         obscureText: false,
                         controller: _confPasswordController,
-                        hint: "Confirm Password",
+                        hint: languageController.getTranslation('confirm_password'),
                         textStyle: TextStyle(fontSize: 13),
                         isPasswordField: true,
-                      ),
+                      )),
                     ),
-                    FFButtonWidget(
+                    Obx(() => FFButtonWidget(
                       onPressed: () async {
                        await managersController.editManager(
                           id: widget.manager!.id.toString(),
@@ -215,7 +210,7 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
                           phone: _phoneController.text,
                         );
                       },
-                      text: 'Update Manager',
+                      text: languageController.getTranslation('update_manager'),
                       options: FFButtonOptions(
                         width: Get.width,
                         height: 45.0,
@@ -236,11 +231,11 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
                         ),
                         borderRadius: BorderRadius.circular(8.0),
                       ),
-                    ).paddingOnly(top: 20),
+                    ).paddingOnly(top: 20)),
                   ],
                 ).paddingSymmetric(horizontal: 15),
               ).paddingOnly(top: 20, bottom: 15),
-              CustomBottomContainer()
+              CustomBottomContainerPostLogin()
             ],
           ),
         ),

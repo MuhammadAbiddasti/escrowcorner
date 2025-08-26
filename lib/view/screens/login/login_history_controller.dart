@@ -1,5 +1,5 @@
-import 'package:dacotech/widgets/custom_token/constant_token.dart';
-import 'package:dacotech/widgets/custom_api_url/constant_url.dart';
+import 'package:escrowcorner/widgets/custom_token/constant_token.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';

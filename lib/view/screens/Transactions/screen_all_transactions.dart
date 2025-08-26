@@ -1,5 +1,5 @@
-import 'package:dacotech/view/screens/payment_links/payment_link_controller.dart';
-import 'package:dacotech/widgets/custom_appbar/custom_appbar.dart';
+import 'package:escrowcorner/view/screens/payment_links/payment_link_controller.dart';
+import 'package:escrowcorner/widgets/custom_appbar/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
@@ -14,14 +14,14 @@ class ScreenAllTransactions extends StatelessWidget {
   final LogoController logoController = Get.put(LogoController());
   final TransactionsController transactionsController =
       Get.put(TransactionsController());
-  final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: Color(0xffE6F0F7),
-        appBar: AppBar(
-          backgroundColor: Color(0xff0766AD),
+              appBar: AppBar(
+        backgroundColor: Color(0xff191f28),
           title: AppBarTitle(),
           leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
           actions: [
@@ -254,7 +254,7 @@ class ScreenAllTransactions extends StatelessWidget {
                   ],
                 ).paddingSymmetric(horizontal: 15),
               ).paddingOnly(top: 15, bottom: 15),
-              CustomBottomContainer()
+              CustomBottomContainerPostLogin()
             ])))));
   }
 

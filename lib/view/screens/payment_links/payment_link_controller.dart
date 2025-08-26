@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:dacotech/view/screens/payment_links/screen_paymentlinks.dart';
+import 'package:escrowcorner/view/screens/payment_links/screen_paymentlinks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
@@ -110,7 +110,7 @@ class PaymentLinkController extends GetxController {
       return;
     }
 
-    final url = Uri.parse('$baseUrl/api/payment_method');
+    final url = Uri.parse('$baseUrl/api/getPaymentMethods');
 
     final response = await http.get(
       url,
@@ -121,11 +121,28 @@ class PaymentLinkController extends GetxController {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-      final List<dynamic> data = jsonResponse['data'];
       print("Payment :${response.body}");
-      final List<PaymentMethod> fetchedMethods =
-          data.map((item) => PaymentMethod.fromJson(item)).toList();
-      paymentMethods.assignAll(fetchedMethods);
+      
+      // Handle the correct response structure: data.payment_method
+      List<dynamic> paymentMethodsList = [];
+      if (jsonResponse['data'] != null && jsonResponse['data']['payment_method'] != null) {
+        paymentMethodsList = jsonResponse['data']['payment_method'] as List;
+      }
+      
+      if (paymentMethodsList.isNotEmpty) {
+        final List<PaymentMethod> fetchedMethods =
+            paymentMethodsList.map((item) => PaymentMethod.fromJson(item)).toList();
+        paymentMethods.assignAll(fetchedMethods);
+        
+        // Automatically select the first payment method if none is selected
+        if (selectedMethod.value == null && fetchedMethods.isNotEmpty) {
+          selectedMethod.value = fetchedMethods.first;
+        }
+      } else {
+        print('No payment methods found in response');
+        paymentMethods.clear();
+        selectedMethod.value = null;
+      }
     } else {
       throw Exception('Failed to load payment methods');
     }
@@ -284,7 +301,7 @@ class PaymentLinkController extends GetxController {
       return;
     }
 
-    final url = Uri.parse('https://damaspay.com/api/delete_payment_link/$paymentLinkId');
+    final url = Uri.parse('$baseUrl/api/delete_payment_link/$paymentLinkId');
     final headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',

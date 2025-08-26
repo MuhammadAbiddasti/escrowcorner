@@ -7,6 +7,16 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../widgets/custom_token/constant_token.dart';
 import '../../../widgets/custom_api_url/constant_url.dart';
+import '../../../view/screens/managers/manager_permission_controller.dart';
+import '../../controller/language_controller.dart';
+
+// Utility function to safely get UserProfileController
+UserProfileController getUserProfileController() {
+  if (!Get.isRegistered<UserProfileController>()) {
+    Get.put(UserProfileController(), permanent: true);
+  }
+  return Get.find<UserProfileController>();
+}
 
 class UserProfileController extends GetxController {
   var firstName = ''.obs;
@@ -62,6 +72,8 @@ class UserProfileController extends GetxController {
     final token = await getToken();
     if (token == null) {
       print('Token is null');
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'UserProfile API: Token is null');
       return;
     }
     isLoading.value = true;
@@ -91,7 +103,7 @@ class UserProfileController extends GetxController {
       // Update user details
       firstName.value = userDetails['first_name'] ?? '';
       lastName.value = userDetails['last_name'] ?? '';
-      userName.value = userDetails['name'] ?? '';
+      userName.value = userDetails['username'] ?? '';
       userId.value = userDetails['id']?.toString() ?? '';
       email.value = userDetails['email'] ?? '';
       dob.value = userDetails['dob'] ?? '';
@@ -138,7 +150,14 @@ class UserProfileController extends GetxController {
       // }
       print('wallet_id: ${walletId.value}');
       // print('user_is: ${userId.value}');
+      // Only fetch manager permissions if user is a manager
+      if (isManager.value == '1') {
+        final managerPermissionController = Get.find<ManagersPermissionController>();
+        managerPermissionController.fetchManagerPermissions(userId.value);
+      }
     } else {
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'UserProfile API: Failed to load user details (Status: ${response.statusCode})');
       throw Exception('Failed to load user details');
     }
     isLoading.value=false;
@@ -152,7 +171,7 @@ class UserProfileController extends GetxController {
       }
 
       final response = await http.get(
-        Uri.parse('https://damaspay.com/api/getPermissions'),
+        Uri.parse('$baseUrl/api/getPermissions'),
         headers: {
           'Authorization': 'Bearer $token',
         },
@@ -190,7 +209,8 @@ class UserProfileController extends GetxController {
 
     final token = await getToken();
     if (token == null ) {
-      Get.snackbar('Error', 'Session expired. Please login again.');
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Session expired. Please login again.');
       return;
     }
 
@@ -230,29 +250,42 @@ class UserProfileController extends GetxController {
       if (response.statusCode == 200) {
         final data = jsonDecode(responseBody);
         if (data['success'] == true) {
-          Get.snackbar('Success', 'User details updated successfully',
+          final message = data['message'] ?? 'Profile updated successfully';
+          final languageController = Get.find<LanguageController>();
+          Get.snackbar(languageController.getTranslation('success'), message,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,);
         } else {
-          Get.snackbar('Error', data['message'] ?? 'Failed to update user details');
+          final languageController = Get.find<LanguageController>();
+          Get.snackbar(languageController.getTranslation('error'), data['message'] ?? 'Failed to update user details');
         }
       } else if (response.statusCode == 302) {
         final redirectUrl = response.headers['location'];
         print('Unexpected redirection to: $redirectUrl');
-        Get.snackbar('Error', 'Redirected to: $redirectUrl',
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('error'), 'Redirected to: $redirectUrl',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,);
       } else {
-        Get.snackbar('Error', 'Failed to update user details: ${response.reasonPhrase}',
+        final languageController = Get.find<LanguageController>();
+        String apiMessage;
+        try {
+          final data = jsonDecode(responseBody);
+          apiMessage = data['message']?.toString() ?? 'Failed to update user details: ${response.reasonPhrase}';
+        } catch (_) {
+          apiMessage = 'Failed to update user details: ${response.reasonPhrase}';
+        }
+        Get.snackbar(languageController.getTranslation('error'), apiMessage,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,);
         print('Error Response Body: $responseBody');
       }
     } catch (e) {
-      Get.snackbar('Error', 'An error occurred: $e');
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'An error occurred: $e');
       print('Exception: $e');
     } finally {
       isLoading(false);

@@ -1,12 +1,13 @@
 import 'dart:convert';
-import 'package:dacotech/view/screens/change_password/password_verification_screen.dart';
-import 'package:dacotech/view/screens/change_password/screen_change_password.dart';
-import 'package:dacotech/view/screens/settings/screen_settings_portion.dart';
-import 'package:dacotech/widgets/custom_api_url/constant_url.dart';
+import 'package:escrowcorner/view/screens/change_password/password_verification_screen.dart';
+import 'package:escrowcorner/view/screens/change_password/screen_change_password.dart';
+import 'package:escrowcorner/view/screens/settings/screen_settings_portion.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
 import 'package:http/http.dart' as http;
-import 'package:dacotech/widgets/custom_token/constant_token.dart';
+import 'package:escrowcorner/widgets/custom_token/constant_token.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../controller/language_controller.dart';
 import 'package:path/path.dart';
 
 class ChangePasswordController extends GetxController {
@@ -22,7 +23,8 @@ class ChangePasswordController extends GetxController {
     String newPasswordConfirmation = confirmNewPasswordController.text;
 
     if (newPassword != newPasswordConfirmation) {
-      Get.snackbar('Message', 'New password and confirmation do not match',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), languageController.getTranslation('new_password_not_matched_with_confirm_password'),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -30,7 +32,8 @@ class ChangePasswordController extends GetxController {
     }
 
     if (newPassword.isEmpty || newPasswordConfirmation.isEmpty || oldPassword.isEmpty) {
-      Get.snackbar('Message', 'Please fill all fields',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), languageController.getTranslation('please_fill_in_all_fields'),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -49,7 +52,7 @@ class ChangePasswordController extends GetxController {
       final body = jsonEncode({
         'old_password': oldPassword,
         'new_password': newPassword,
-        'new_password_confirmation': newPasswordConfirmation,
+        'confirm_new_password': newPasswordConfirmation,
       });
 
       final response = await http.post(
@@ -65,7 +68,8 @@ class ChangePasswordController extends GetxController {
         var jsonResponse = jsonDecode(response.body);
 
         if (jsonResponse['status'] == 'success') {
-          Get.snackbar('Success', jsonResponse['message'] ?? 'Password changed successfully',
+          final languageController = Get.find<LanguageController>();
+          Get.snackbar(languageController.getTranslation('success'), jsonResponse['message'] ?? languageController.getTranslation('password_changed_successfully'),
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,);
@@ -74,7 +78,8 @@ class ChangePasswordController extends GetxController {
           newPasswordController.clear();
           confirmNewPasswordController.clear();
         } else {
-          Get.snackbar('Error', jsonResponse['message'] ?? 'Failed to change password',
+          final languageController = Get.find<LanguageController>();
+          Get.snackbar(languageController.getTranslation('error'), jsonResponse['message'] ?? 'Failed to change password',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.red,
             colorText: Colors.white,);
@@ -85,13 +90,15 @@ class ChangePasswordController extends GetxController {
         var errorResponse = jsonDecode(response.body);
         String errorMessage = errorResponse['message'] ?? 'An error occurred';
 
-        Get.snackbar('Error', errorMessage,
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(languageController.getTranslation('error'), errorMessage,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Something went wrong: $e',
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(languageController.getTranslation('error'), 'Something went wrong: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,);
@@ -118,12 +125,11 @@ class ChangePasswordController extends GetxController {
     try {
 
       final response = await http.get(
-        Uri.parse(url),
+        Uri.parse('$url?change_password=1'),
         headers: {
           "Authorization": "Bearer $token",
           "Content-Type": "application/json",
         },
-        //body: json.encode(body), // Send the request body as JSON
       );
 
       print("response code ${response.statusCode}");

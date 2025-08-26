@@ -1,14 +1,14 @@
 import 'dart:developer';
-import 'package:dacotech/view/screens/managers/manager_permission_controller.dart';
-import 'package:dacotech/view/screens/payment_links/payment_link_controller.dart';
-import 'package:dacotech/view/screens/settings/setting_controller.dart';
-import 'package:dacotech/view/screens/tickets/ticket_controller.dart';
-import 'package:dacotech/view/screens/Transactions/transaction_controller.dart';
-import 'package:dacotech/view/screens/user_profile/user_profile_controller.dart';
-import 'package:dacotech/view/screens/virtual_cards/virtualcard_controller.dart';
-import 'package:dacotech/view/controller/wallet_controller.dart';
-import 'package:dacotech/view/screens/withdraw/withdrawal_controller.dart';
-import 'package:dacotech/widgets/custom_token/constant_token.dart';
+import 'package:escrowcorner/view/screens/managers/manager_permission_controller.dart';
+import 'package:escrowcorner/view/screens/payment_links/payment_link_controller.dart';
+import 'package:escrowcorner/view/screens/settings/setting_controller.dart';
+import 'package:escrowcorner/view/screens/tickets/ticket_controller.dart';
+import 'package:escrowcorner/view/screens/Transactions/transaction_controller.dart';
+import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
+import 'package:escrowcorner/view/screens/virtual_cards/virtualcard_controller.dart';
+import 'package:escrowcorner/view/controller/wallet_controller.dart';
+import 'package:escrowcorner/view/screens/withdraw/withdrawal_controller.dart';
+import 'package:escrowcorner/widgets/custom_token/constant_token.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
@@ -27,6 +27,7 @@ import '../screens/dashboard/dashboard_controller.dart';
 import '../screens/login/login_controller.dart';
 import '../screens/login/login_history_controller.dart';
 import '../screens/deposit/mydeposit_controller.dart';
+import '../controller/language_controller.dart';
 
 class LogoutController extends GetxController {
   var isLoading = false.obs;
@@ -46,7 +47,9 @@ class LogoutController extends GetxController {
 
     isLoading.value = true;
 
-    final url = '$baseUrl/api/logout';
+    final languageController = Get.find<LanguageController>();
+    final currentLocale = languageController.getCurrentLanguageLocale();
+    final url = '$baseUrl/api/logout/$currentLocale';
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -55,35 +58,47 @@ class LogoutController extends GetxController {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        if (responseData['success']) {
+        if (responseData['success'] == true) {
           await prefs.clear();
           log("Token cleared: $token");
           showLoadingSpinner(context);
-          // Use Future.delayed or WidgetsBinding to ensure navigation happens after the current frame
           Future.delayed(Duration(milliseconds: 100), () {
             Get.offAll(() => ScreenHome());
           });
 
+          final languageController = Get.find<LanguageController>();
+          final msg = responseData['message'] ?? 'Logged out successfully';
           Get.snackbar(
-            'Success',
-            'Logged out successfully',
+            languageController.getTranslation('success'),
+            msg,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,
           );
         } else {
+          final languageController = Get.find<LanguageController>();
+          final msg = responseData['message']?.toString() ?? 'Logout failed';
           Get.snackbar(
-            'Error',
-            'Logout failed: ${responseData['message']}',
+            languageController.getTranslation('error'),
+            msg,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.red,
             colorText: Colors.white,
           );
         }
       } else {
+        // Try to parse JSON error body for message (e.g., 401 unauthenticated)
+        String msg;
+        try {
+          final responseData = jsonDecode(response.body);
+          msg = responseData['message']?.toString() ?? 'Failed to logout: ${response.statusCode}';
+        } catch (_) {
+          msg = 'Failed to logout: ${response.statusCode}';
+        }
+        final languageController = Get.find<LanguageController>();
         Get.snackbar(
-          'Error',
-          'Failed to logout: ${response.statusCode}',
+          languageController.getTranslation('error'),
+          msg,
           backgroundColor: Colors.red,
           snackPosition: SnackPosition.BOTTOM,
           colorText: Colors.white,
@@ -117,5 +132,4 @@ class LogoutController extends GetxController {
         }
     );
   }
-
 }

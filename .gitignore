@@ -41,3 +41,56 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Additional entries for better Flutter project management
+*.lock
+!pubspec.lock
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Generated files
+*.dart.js
+*.js
+*.js.map
+
+# Coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Android build files
+android/app/.cxx/
+android/app/build/
+android/build/
+android/local.properties
+android/.gradle/
+
+# iOS build files
+ios/Pods/
+ios/Runner.xcworkspace/xcshareddata/
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

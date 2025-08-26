@@ -19,7 +19,7 @@ class ScreenAddVirtualCard extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar:  AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
        // leading: PopupMenuButtonLeading(),
         actions: [
@@ -212,7 +212,7 @@ class ScreenAddVirtualCard extends StatelessWidget {
            ),
            Align(
                alignment: Alignment.bottomRight,
-               child: CustomBottomContainer())
+               child: CustomBottomContainerPostLogin())
          ],
       ),
     );

@@ -1,4 +1,4 @@
-import 'package:dacotech/view/screens/managers/controller_managers.dart';
+import 'package:escrowcorner/view/screens/managers/controller_managers.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
@@ -11,6 +11,8 @@ import '../../controller/logo_controller.dart';
 import '../../theme/damaspay_theme/Damaspay_theme.dart';
 import '../change_password/textfeild.dart';
 import '../user_profile/user_profile_controller.dart';
+import '../../../widgets/common_header/common_header.dart';
+import '../../controller/language_controller.dart';
 
 // Create controllers outside of the widget
 
@@ -26,21 +28,14 @@ class ScreenNewManager extends StatelessWidget {
   LogoController logoController =Get.put(LogoController());
  ManagersController managersController =Get.find();
   final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
-      ),
+      appBar: CommonHeader(title: Get.find<LanguageController>().getTranslation('create_manager'), managerId: userProfileController.userId.value),
       body: SingleChildScrollView(
         child: Center(
           child: Column(
@@ -55,14 +50,14 @@ class ScreenNewManager extends StatelessWidget {
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Email",
+                Obx(() => Text(
+                  languageController.getTranslation('email'),
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
                       fontSize: 14,
                       color: Color(0xff484848),
                       fontFamily: 'Nunito'),
-                ).paddingOnly(top: 10, bottom: 10),
+                ).paddingOnly(top: 10, bottom: 10)),
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
@@ -70,22 +65,22 @@ class ScreenNewManager extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(5), // Rounded corners
                   ),
-                  child: CustomNewField(
+                  child: Obx(() => CustomNewField(
                     obscureText: false,
                     controller: _emailController,
-                    hint: "Email",
+                    hint: languageController.getTranslation('email'),
                     textStyle: TextStyle(fontSize: 13),
-                  ),
+                  )),
                 ),
 
-                Text(
-                  "First Name",
+                Obx(() => Text(
+                  languageController.getTranslation('first_name'),
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
                       fontSize: 14,
                       color: Color(0xff484848),
                       fontFamily: 'Nunito'),
-                ).paddingOnly(top: 10, bottom: 10),
+                ).paddingOnly(top: 10, bottom: 10)),
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
@@ -93,21 +88,21 @@ class ScreenNewManager extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(5), // Rounded corners
                   ),
-                  child: CustomNewField(
+                  child: Obx(() => CustomNewField(
                     obscureText: false,
                     controller: _firstNameController,
-                    hint: "First Name",
+                    hint: languageController.getTranslation('first_name'),
                     textStyle: TextStyle(fontSize: 13),
-                  ),
+                  )),
                 ),
-                Text(
-                  "Last Name",
+                Obx(() => Text(
+                  languageController.getTranslation('last_name'),
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
                       fontSize: 14,
                       color: Color(0xff484848),
                       fontFamily: 'Nunito'),
-                ).paddingOnly(top: 10, bottom: 10),
+                ).paddingOnly(top: 10, bottom: 10)),
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
@@ -115,21 +110,21 @@ class ScreenNewManager extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(5), // Rounded corners
                   ),
-                  child: CustomNewField(
+                  child: Obx(() => CustomNewField(
                     obscureText: false,
                     controller: _lastNameController,
-                    hint: "Last Name",
+                    hint: languageController.getTranslation('last_name'),
                     textStyle: TextStyle(fontSize: 13),
-                  ),
+                  )),
                 ),
-                Text(
-                  "Phone Number",
+                Obx(() => Text(
+                  languageController.getTranslation('phone_number'),
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
                       fontSize: 14,
                       color: Color(0xff484848),
                       fontFamily: 'Nunito'),
-                ).paddingOnly(top: 10, bottom: 10),
+                ).paddingOnly(top: 10, bottom: 10)),
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
@@ -137,21 +132,21 @@ class ScreenNewManager extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(5), // Rounded corners
                   ),
-                  child: CustomNewField(
+                  child: Obx(() => CustomNewField(
                     obscureText: false,
                     controller: _phoneController,
-                    hint: "Phone",
+                    hint: languageController.getTranslation('phone'),
                     textStyle: TextStyle(fontSize: 13),
-                  ),
+                  )),
                 ),
-                Text(
-                  "Password",
+                Obx(() => Text(
+                  languageController.getTranslation('password'),
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
                       fontSize: 14,
                       color: Color(0xff484848),
                       fontFamily: 'Nunito'),
-                ).paddingOnly(top: 10, bottom: 10),
+                ).paddingOnly(top: 10, bottom: 10)),
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
@@ -159,23 +154,22 @@ class ScreenNewManager extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(5), // Rounded corners
                   ),
-                  child: CustomNewField(
+                  child: Obx(() => CustomNewField(
                     obscureText: false,
                     controller: _passwordController,
-                    hint: "Password",
+                    hint: languageController.getTranslation('password'),
                     textStyle: TextStyle(fontSize: 13),
                     isPasswordField: true,
-                  ),
+                  )),
                 ),
-
-                Text(
-                  "Confirm Password",
+                Obx(() => Text(
+                  languageController.getTranslation('confirm_password'),
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
                       fontSize: 14,
                       color: Color(0xff484848),
                       fontFamily: 'Nunito'),
-                ).paddingOnly(top: 10, bottom: 10),
+                ).paddingOnly(top: 10, bottom: 10)),
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
@@ -183,15 +177,15 @@ class ScreenNewManager extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(5), // Rounded corners
                   ),
-                  child: CustomNewField(
+                  child: Obx(() => CustomNewField(
                     obscureText: false,
                     controller: _confPasswordController,
-                    hint: "Confirm Password",
+                    hint: languageController.getTranslation('confirm_password'),
                     textStyle: TextStyle(fontSize: 13),
                     isPasswordField: true,
-                  ),
+                  )),
                 ),
-                FFButtonWidget(
+                Obx(() => FFButtonWidget(
                   onPressed: () async {
                     // Adding a delay of 3 seconds before the API call
                     await Future.delayed(Duration(seconds: 2));
@@ -205,7 +199,7 @@ class ScreenNewManager extends StatelessWidget {
                       phone: _phoneController.text,
                     );
                   },
-                  text: 'Create Manager',
+                  text: languageController.getTranslation('create_manager'),
                   options: FFButtonOptions(
                     width: Get.width,
                     height: 45.0,
@@ -226,11 +220,11 @@ class ScreenNewManager extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(8.0),
                   ),
-                ).paddingOnly(top: 15),
+                ).paddingOnly(top: 15)),
               ],
             ).paddingSymmetric(horizontal: 15),
           ).paddingOnly(top: 20, bottom: 15),
-              CustomBottomContainer()
+              CustomBottomContainerPostLogin()
             ],
           ),
         ),

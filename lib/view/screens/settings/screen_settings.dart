@@ -1,11 +1,13 @@
-import 'package:dacotech/view/screens/settings/setting_controller.dart';
-import 'package:dacotech/widgets/custom_bottom_container/custom_bottom_container.dart';
-import 'package:dacotech/widgets/custom_ballance_container/custom_btc_container.dart';
-import 'package:dacotech/widgets/custom_button/custom_button.dart';
+import 'package:escrowcorner/view/screens/settings/setting_controller.dart';
+import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
+import 'package:escrowcorner/widgets/custom_ballance_container/custom_btc_container.dart';
+import 'package:escrowcorner/widgets/custom_button/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
+import '../../../widgets/common_header/common_header.dart';
+import '../../controller/language_controller.dart';
 import '../../controller/logo_controller.dart';
 import '../../controller/logout_controller.dart';
 import '../user_profile/user_profile_controller.dart';
@@ -15,20 +17,17 @@ class ScreenSettings extends StatelessWidget {
   final LogoController logoController = Get.find();
   final LogoutController logoutController = Get.put(LogoutController());
   final SettingController chargesController = Get.put(SettingController());
-  final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
 
   @override
   Widget build(BuildContext context) {
+    final languageController = Get.find<LanguageController>();
+    final userProfileController = Get.find<UserProfileController>();
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('settings'),
+        managerId: userProfileController.userId.value,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -499,7 +498,7 @@ class ScreenSettings extends StatelessWidget {
             ).paddingSymmetric(horizontal: 15),
                   ),
             SizedBox(height: 10,),
-            CustomBottomContainer()
+            CustomBottomContainerPostLogin()
           ],
         ),
       )

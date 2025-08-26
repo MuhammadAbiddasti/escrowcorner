@@ -1,20 +1,24 @@
-import 'package:dacotech/view/Home_Screens/screen_forgotPassword.dart';
-import 'package:dacotech/view/screens/login/screen_login.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:country_picker/country_picker.dart';
-import 'package:country_code_picker/country_code_picker.dart';
+
 import '../../../widgets/custom_appbar/custom_appbar.dart';
 import '../../../widgets/custom_button/damaspay_button.dart';
 import '../../../widgets/custom_textField/custom_field.dart';
+
 import '../../controller/logo_controller.dart';
 import '../../theme/damaspay_theme/Damaspay_theme.dart';
 import 'sign_up_controller.dart';
 import '../../Home_Screens/custom_leading_appbar.dart'; // Adjust the path as necessary
 
+import '../../../widgets/language_selector/language_selector_widget.dart';
+import '../../controller/language_controller.dart'; // Added for language selection
+import 'package:shared_preferences/shared_preferences.dart';
+import '../login/screen_login.dart';
+
 class ScreenSignUp extends StatelessWidget {
   final SignUpController signUpController = Get.put(SignUpController());
   final LogoController logoController = Get.put(LogoController());
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   Widget build(BuildContext context) {
@@ -22,32 +26,55 @@ class ScreenSignUp extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff0f9373),
         title: AppBarTitle(),
         leading: CustomLeadingAppbar(),
         actions: [
+          QuickLanguageSwitcher(),
           IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.language, color: Colors.green, size: 30),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon:
-                Icon(Icons.account_circle, color: Color(0xffFEA116), size: 30),
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              final token = prefs.getString('auth_token');
+              if (token == null || token.isEmpty) {
+                Get.offAll(() => ScreenLogin());
+              }
+            },
+            icon: Icon(Icons.account_circle, color: Color(0xffFEA116), size: 30),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            buildHeaderImage(context),
-            buildSignUpForm(context),
-            buildTermsAndConditions(),
-            buildSignUpButton(context),
-            buildForgotPassword(),
-            buildSignInOption(),
-          ],
+      body: RefreshIndicator(
+        onRefresh: () async {
+          signUpController.nameController.clear();
+          signUpController.firstNameController.clear();
+          signUpController.lastNameController.clear();
+          signUpController.emailController.clear();
+          signUpController.passwordController.clear();
+          signUpController.confirmPasswordController.clear();
+          signUpController.phoneController.clear();
+          signUpController.countrypic.clear();
+          signUpController.countrycode.clear();
+          signUpController.isChecked.value = false;
+          signUpController.selectedCountry.value = '';
+          signUpController.countryCode.value = '+237';
+          
+          // Reset signup language to local default (do not change global app language)
+          signUpController.selectedLanguage.value = 'English';
+          signUpController.selectedLanguageId.value = 1;
+          signUpController.selectedLanguageLocale.value = 'en';
+          signUpController.languagepic.text = 'English';
+        },
+        child: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              buildHeaderImage(context),
+              buildSignUpForm(context),
+              buildTermsAndConditions(),
+              buildSignUpButton(context),
+            ],
+          ),
         ),
       ),
     );
@@ -64,7 +91,11 @@ class ScreenSignUp extends StatelessWidget {
           bottomRight: Radius.circular(30),
         ),
         boxShadow: [
-          BoxShadow(offset: Offset(1, 1), blurRadius: 6, color: Colors.grey),
+          BoxShadow(
+            offset: Offset(1, 1),
+            blurRadius: 10,
+            color: Colors.grey,
+          )
         ],
       ),
       child: Column(
@@ -72,12 +103,21 @@ class ScreenSignUp extends StatelessWidget {
         children: [
           Container(
             height: 250,
-            //width: Get.width * .84,
+            width: Get.width * .83,
             child: Image(
               image: AssetImage("assets/images/signup.png"),
               fit: BoxFit.fill,
             ),
           ).paddingOnly(top: 10),
+          Text(
+            languageController.getTranslation('create_account'),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 28,
+              color: Color(0xff666565),
+              fontFamily: 'Nunito',
+            ),
+          ).paddingOnly(top: 20),
         ],
       ),
     );
@@ -88,31 +128,19 @@ class ScreenSignUp extends StatelessWidget {
       key: _formKey,
       child: Column(
         children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: Text(
-              "User Signup",
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: Color(0xff484848),
-                fontSize: 28,
-                fontFamily: 'Nunito',
-              ),
-            ).paddingOnly(top: 30),
-          ),
           CustomField(
-              label: "User Name",
+              label: languageController.getTranslation('user_name'),
               //controller: signUpController.nameController,
               controller: signUpController.nameController,
               counterColor: Colors.black),
           CustomField(
-              label: "First Name",
+              label: languageController.getTranslation('first_name'),
               controller: signUpController.firstNameController),
           CustomField(
-              label: "Last Name",
+              label: languageController.getTranslation('last_name'),
               controller: signUpController.lastNameController),
           CustomField(
-            label: 'Email',
+            label: languageController.getTranslation('email'),
             controller: signUpController.emailController,
             keyboardType: TextInputType.emailAddress,
           ),
@@ -121,11 +149,27 @@ class ScreenSignUp extends StatelessWidget {
             signUpController.countrypic.text = signUpController.selectedCountry.value;
             return CustomField(
               readOnly: true,
-              label: "Select Your Country",
+              label: languageController.getTranslation('select_your_country'),
               controller: signUpController.countrypic, // Pass the TextEditingController
               suffix: IconButton(
                 onPressed: () {
                   _showCountrySelectionDialog(context); // Show country selection dialog
+                },
+                icon: Icon(Icons.expand_more),
+              ),
+            );
+          }),
+          // Language selection (read-only field with dialog, similar to country)
+          Obx(() {
+            // Rebuild when the signup-selected language changes, but do not sync from global header
+            final _ = signUpController.selectedLanguage.value;
+            return CustomField(
+              readOnly: true,
+              label: languageController.getTranslation('select_your_language'),
+              controller: signUpController.languagepic,
+              suffix: IconButton(
+                onPressed: () {
+                  _showLanguageSelectionDialog(context);
                 },
                 icon: Icon(Icons.expand_more),
               ),
@@ -149,7 +193,7 @@ class ScreenSignUp extends StatelessWidget {
               ),
               Expanded(
                 child: CustomField(
-                  label: "Mobile Number",
+                  label: languageController.getTranslation('enter_whatsapp_number'),
                   controller: signUpController.phoneController,
                   keyboardType: TextInputType.phone,
                 ),
@@ -158,11 +202,11 @@ class ScreenSignUp extends StatelessWidget {
           ).paddingSymmetric(horizontal: 25),
 
           CustomField(
-              label: "Password",
+              label: languageController.getTranslation('password'),
               controller: signUpController.passwordController,
               isPasswordField: true),
           CustomField(
-              label: "Repeat Password",
+              label: languageController.getTranslation('repeat_password'),
               controller: signUpController.confirmPasswordController,
               isPasswordField: true),
         ],
@@ -186,9 +230,9 @@ class ScreenSignUp extends StatelessWidget {
           text: TextSpan(
             style: TextStyle(color: Color(0xff666565), fontSize: 16.0),
             children: <TextSpan>[
-              TextSpan(text: 'I read and agree to the '),
+              TextSpan(text: languageController.getTranslation('i_read_and_agree_to_the')),
               TextSpan(
-                text: 'Terms of Usage',
+                text: languageController.getTranslation('terms_of_usage'),
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
@@ -211,7 +255,7 @@ class ScreenSignUp extends StatelessWidget {
         print("${signUpController.countrycode.value.text}");
          await signUpController.signUp(context);
       },
-      text: 'SIGN UP',
+      text: languageController.getTranslation('sign_up'),
       options: FFButtonOptions(
         width: Get.width,
         height: 45.0,
@@ -235,56 +279,6 @@ class ScreenSignUp extends StatelessWidget {
     ).paddingSymmetric(horizontal: 20, vertical: 10);
   }
 
-  Widget buildForgotPassword() {
-    return TextButton(
-      onPressed: () {
-        Get.to(() => ScreenForgotPassword());
-      },
-      child: Text(
-        "Forgot Password?",
-        style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: Color(0xff666565)),
-      ),
-    ).paddingSymmetric(horizontal: 10, vertical: 5);
-  }
-
-  Widget buildSignInOption() {
-    return Row(
-      children: [
-        Text(
-          "Have an account?",
-          style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: Color(0xff666565)),
-        ).paddingOnly(bottom: 20),
-        SizedBox(width: 20),
-        GestureDetector(
-          onTap: () {
-            Get.to(() => ScreenLogin());
-          },
-          child: Container(
-            height: 25,
-            width: 68,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Color(0xffCDE0EF)),
-            child: Center(
-              child: Text(
-                "Sign In",
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff666565)),
-              ),
-            ),
-          ).paddingOnly(bottom: 20),
-        ),
-      ],
-    ).paddingSymmetric(horizontal: 20);
-  }
   void updateCountryCode(String countryCode) {
     // Set the country code reactively
     signUpController.countryCode.value = countryCode;
@@ -295,7 +289,7 @@ class ScreenSignUp extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Select Country'),
+          title: Text(languageController.getTranslation('select_country')),
           content: Container(
             width: double.maxFinite,
             child: Obx(() {
@@ -326,7 +320,59 @@ class ScreenSignUp extends StatelessWidget {
       },
     );
   }
-
+  
+  void _showLanguageSelectionDialog(BuildContext context) {
+    final lc = Get.find<LanguageController>();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(languageController.getTranslation('select_your_language')),
+          content: Container(
+            width: double.maxFinite,
+            child: Obx(() {
+              if (lc.isLoading.value) {
+                return Center(child: CircularProgressIndicator());
+              }
+              if (lc.hasError.value) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(languageController.getTranslation('failed_to_load_languages')),
+                    SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => lc.refreshLanguages(),
+                      child: Text(languageController.getTranslation('retry')),
+                    )
+                  ],
+                );
+              }
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: lc.languages.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final language = lc.languages[index];
+                  return ListTile(
+                    leading: Icon(Icons.language),
+                    title: Text(language.name),
+                    subtitle: Text(language.locale.toUpperCase()),
+                    onTap: () {
+                      // Only update signup-local selection; do not change global app language
+                      signUpController.selectedLanguage.value = language.name;
+                      signUpController.selectedLanguageId.value = language.id;
+                      signUpController.selectedLanguageLocale.value = language.locale;
+                      signUpController.languagepic.text = language.name;
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              );
+            }),
+          ),
+        );
+      },
+    );
+  }
 }
 class Country {
   final String name;

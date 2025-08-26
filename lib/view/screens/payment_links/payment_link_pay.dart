@@ -1,5 +1,5 @@
-import 'package:dacotech/view/screens/payment_links/payment_link_controller.dart';
-import 'package:dacotech/widgets/custom_bottom_container/custom_bottom_container.dart';
+import 'package:escrowcorner/view/screens/payment_links/payment_link_controller.dart';
+import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -16,7 +16,7 @@ class PaymentLinkPay extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -143,7 +143,7 @@ class PaymentLinkPay extends StatelessWidget {
             }),
           ).paddingSymmetric(horizontal: 20,vertical: 15),
           Align(alignment: Alignment.bottomCenter,
-              child: CustomBottomContainer())
+              child: CustomBottomContainerPostLogin())
         ],
       )
     );

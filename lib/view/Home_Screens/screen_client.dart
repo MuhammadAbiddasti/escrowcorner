@@ -1,11 +1,11 @@
-import 'package:dacotech/view/Home_Screens/screen_about.dart';
-import 'package:dacotech/view/Home_Screens/screen_contact.dart';
-import 'package:dacotech/view/Home_Screens/screen_home.dart';
-import 'package:dacotech/view/screens/login/screen_login.dart';
-import 'package:dacotech/view/Home_Screens/screen_newsletter.dart';
-import 'package:dacotech/view/Home_Screens/screen_services.dart';
-import 'package:dacotech/view/screens/register/screen_signup.dart';
-import 'package:dacotech/view/Home_Screens/screen_team.dart';
+import 'package:escrowcorner/view/Home_Screens/screen_about.dart';
+import 'package:escrowcorner/view/Home_Screens/screen_contact.dart';
+import 'package:escrowcorner/view/Home_Screens/screen_home.dart';
+import 'package:escrowcorner/view/screens/login/screen_login.dart';
+import 'package:escrowcorner/view/Home_Screens/screen_newsletter.dart';
+import 'package:escrowcorner/view/Home_Screens/screen_services.dart';
+import 'package:escrowcorner/view/screens/register/screen_signup.dart';
+import 'package:escrowcorner/view/Home_Screens/screen_team.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -13,24 +13,47 @@ import 'package:get/get.dart';
 
 import '../../widgets/custom_appbar/custom_appbar.dart';
 import '../../widgets/custom_button/custom_button.dart';
-import '../controller/logo_controller.dart';
+
 import 'custom_leading_appbar.dart';
+import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
+import 'package:escrowcorner/widgets/custom_token/constant_token.dart';
 
 class ScreenClient extends StatelessWidget {
-  final LogoController logoController = Get.put(LogoController());
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(backgroundColor: Color(0xff0766AD),
+      appBar: AppBar(backgroundColor: Color(0xff0f9373),
         title: AppBarTitle(),
         leading: CustomLeadingAppbar(),
         actions: [
           IconButton(onPressed: (){}, icon: Icon(Icons.language,color: Colors.green,size: 30,)),
-          IconButton(onPressed: (){
-            Get.to(ScreenLogin());
-          }, icon: Icon(Icons.account_circle,color: Color(0xffFEA116),
-            size: 30,))
+          FutureBuilder<bool>(
+            future: isUserLoggedIn(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return IconButton(
+                  onPressed: () {},
+                  icon: Icon(Icons.account_circle, color: Color(0xffFEA116), size: 30),
+                );
+              }
+              
+              final isLoggedIn = snapshot.data ?? false;
+              
+              if (isLoggedIn) {
+                // User is logged in, show profile button
+                return AppBarProfileButton();
+              } else {
+                // User is not logged in, show login button
+                return IconButton(
+                  onPressed: () {
+                    Get.to(ScreenLogin());
+                  },
+                  icon: Icon(Icons.account_circle, color: Color(0xffFEA116), size: 30),
+                );
+              }
+            },
+          ),
         ],
       ),
       body: SingleChildScrollView(

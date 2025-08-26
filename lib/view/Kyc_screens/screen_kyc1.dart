@@ -1,12 +1,17 @@
 import 'package:country_picker/country_picker.dart';
-import 'package:dacotech/view/Kyc_screens/screen_kyc2.dart';
-import 'package:dacotech/view/screens/user_profile/user_profile_controller.dart';
+import 'package:escrowcorner/view/Kyc_screens/screen_kyc2.dart';
+import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/custom_appbar/custom_appbar.dart';
 import '../../widgets/custom_button/custom_button.dart';
 import 'kyc_controller.dart';
+import 'dart:ui';
+import 'package:url_launcher/url_launcher.dart';
+import '../../widgets/custom_api_url/constant_url.dart';
+import '../controller/language_controller.dart';
+import '../../widgets/common_header/common_header.dart';
 
 class ScreenKyc1 extends StatefulWidget {
   @override
@@ -18,7 +23,10 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
 
   TextEditingController dateController = TextEditingController();
 
-  final UserProfileController controller = Get.find<UserProfileController>();
+  final UserProfileController controller =
+      Get.isRegistered<UserProfileController>()
+          ? Get.find<UserProfileController>()
+          : Get.put(UserProfileController());
 @override
   void setState(VoidCallback fn) {
   controller.fetchUserDetails();
@@ -33,49 +41,16 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
 
   @override
   Widget build(BuildContext context) {
+    final languageController = Get.find<LanguageController>();
     //kycController.fetchKycStatus();
+    // Remove KYC status checks for blocking UI
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: const Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: controller.kyc.value == '3'
-            ? CustomPopupMenu(managerId: controller.userId.value,)
-            : IconButton(
-                icon: Icon(Icons.menu,
-                color: Colors.white,), // Menu icon as fallback
-                onPressed: () {
-                  // Show SnackBar with KYC status message when menu button is clicked
-                  final kycMessage = getKycStatusMessage(controller.kyc.value);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(kycMessage),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                },
-              ),
-        actions: [
-          controller.kyc.value == '3'
-              ?AppBarProfileButton()
-              : IconButton(
-            icon: Icon(Icons.account_circle,
-              color: Color(0xffFEAF39),
-              size: 30,),
-            onPressed: () {
-              // Show SnackBar with KYC status message when menu button is clicked
-              final kycMessage = getKycStatusMessage(controller.kyc.value);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(kycMessage),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            },
-          ),
-
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('general_kyc'),
+        managerId: controller.userId.value,
       ),
+      // Always show the KYC form/content, never block or restrict
       body: RefreshIndicator(
         onRefresh: () async {
           await controller.fetchUserDetails();
@@ -83,8 +58,9 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
         child: SingleChildScrollView(
           child: Column(
             children: [
+              // Remove rejection message and blocking UI
+              // The form is always shown and is filled with user data
               Container(
-                //height: MediaQuery.of(context).size.height * .75,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
@@ -94,60 +70,109 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "KYC Setting",
+                      languageController.getTranslation('kyc_setting'),
                       style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
                           color: Colors.black87),
                     ).paddingOnly(bottom: 20, top: 10),
                     Obx(() {
-                      print("KYC Status: ${controller.kyc.value}");
+                      final kycValue = controller.kyc.value ?? '';
+                      print("KYC Status: $kycValue");
 
                       final Map<String, dynamic> statusStyles = {
                         '0': {
-                          'message': 'KYC Status: Pending',
+                          'message': languageController.getTranslation('kyc_status_pending'),
                           'textColor': Colors.blue,
                           'containerColor': Colors.blue.withOpacity(0.1),
                         },
                         '1': {
-                          'message': 'KYC Status: Pending for Approval',
+                          'message': languageController.getTranslation('kyc_status_pending_for_approval'),
                           'textColor': Colors.orange,
                           'containerColor': Colors.orange.withOpacity(0.1),
                         },
                         '2': {
-                          'message': 'KYC Status: Rejected. Submit Again',
+                          'message': languageController.getTranslation('kyc_status_rejected_submit_again'),
                           'textColor': Colors.red,
                           'containerColor': Colors.red.withOpacity(0.1),
                         },
                         '3': {
-                          'message': 'KYC Status: Approved',
+                          'message': languageController.getTranslation('your_kyc_status_is_approved'),
                           'textColor': Colors.green,
                           'containerColor': Colors.green.withOpacity(0.1),
                         },
                       };
 
-                      // Determine styles based on KYC status, defaulting to "Unknown" if not matched
-                      final statusStyle = statusStyles[controller.kyc.value] ?? statusStyles['Unknown']!;
+                      final statusStyle = statusStyles[kycValue] ?? {'message': '', 'textColor': Colors.black, 'containerColor': Colors.transparent};
 
-                      return Container(
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: statusStyle['containerColor'],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          statusStyle['message'],
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: statusStyle['textColor'],
+                      // Show message and hide form if KYC is not approved
+                      if (kycValue != '3') {
+                        return GestureDetector(
+                          onTap: () async {
+                            if (await canLaunch(baseUrl)) {
+                              await launch(baseUrl);
+                            }
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            margin: EdgeInsets.symmetric(vertical: 24),
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: statusStyle['containerColor'],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  languageController.getTranslation('please_complete_kyc_visit_the_website'),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: statusStyle['textColor'],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                SizedBox(height: 10),
+                                Text(
+                                  baseUrl,
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    decoration: TextDecoration.underline,
+                                    fontSize: 16,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        );
+                      }
+
+                      // Only show the form if KYC is approved
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: statusStyle['containerColor'],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              statusStyle['message'],
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: statusStyle['textColor'],
+                              ),
+                            ),
+                          ),
+                        ],
                       );
                     }),
 
                     Text(
-                      "First Name:",
+                      languageController.getTranslation('first_name'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -159,7 +184,7 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
                       hintText: '',
                     ),
                     Text(
-                      "Last Name:",
+                      languageController.getTranslation('last_name'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -171,7 +196,7 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
                       hintText: '',
                     ),
                     Text(
-                      "Birth Day:",
+                      languageController.getTranslation('birth_day'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -198,7 +223,7 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
                             // Format the selected date and set it to the controller
                             String formattedDate =
                                 DateFormat('MM-dd-yyyy').format(selectedDate);
-                            dateController.text = formattedDate;
+                            controller.dobController.text = formattedDate;
                           }
                         },
                         icon:
@@ -206,7 +231,7 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
                       ),
                     ),
                     Text(
-                      "Address line 1:",
+                      languageController.getTranslation('address_line_1'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -218,7 +243,7 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
                       hintText: '',
                     ),
                     Text(
-                      "City:",
+                      languageController.getTranslation('city'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -230,19 +255,7 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
                       hintText: '',
                     ),
                     Text(
-                      "Zip Code:",
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
-                    _buildTextField(
-                      controller: controller.zipController,
-                      hintText: '',
-                    ),
-                    Text(
-                      "Country:",
+                      languageController.getTranslation('country'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -268,7 +281,7 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
                       hintText: '',
                     ),
                     Text(
-                      "Whatsapp Number:",
+                      languageController.getTranslation('whatsapp_number'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
@@ -343,17 +356,18 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
   }
 
   String getKycStatusMessage(String kycStatus) {
+    final languageController = Get.find<LanguageController>();
     switch (kycStatus) {
       case '0':
-        return 'Your KYC status is Pending';
+        return languageController.getTranslation('your_kyc_status_is_pending');
       case '1':
-        return 'Your KYC status is Pending for Approval';
+        return languageController.getTranslation('your_kyc_status_is_under_review');
       case '2':
-        return 'Your KYC status is Rejected. Submit Again';
+        return languageController.getTranslation('your_kyc_has_been_rejected_upload_again');
       case '3':
-        return 'Your KYC status is Approved';
+        return languageController.getTranslation('your_kyc_status_is_approved');
       default:
-        return 'Your KYC status is Unknown';
+        return languageController.getTranslation('your_kyc_status_is_unknown');
     }
   }
 }

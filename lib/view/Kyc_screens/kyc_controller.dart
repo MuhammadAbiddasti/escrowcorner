@@ -1,5 +1,5 @@
-import 'package:dacotech/view/screens/user_profile/user_profile_controller.dart';
-import 'package:dacotech/widgets/custom_api_url/constant_url.dart';
+import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import '../../widgets/custom_token/constant_token.dart';

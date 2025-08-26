@@ -1,4 +1,4 @@
-import 'package:dacotech/view/Kyc_screens/screen_kyc3.dart';
+import 'package:escrowcorner/view/Kyc_screens/screen_kyc3.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

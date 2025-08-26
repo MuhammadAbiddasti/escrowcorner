@@ -1,6 +1,6 @@
-import 'package:dacotech/view/screens/virtual_cards/virtualcard_controller.dart';
-import 'package:dacotech/view/screens/virtual_cards/screen_add_virtualcard.dart';
-import 'package:dacotech/widgets/custom_button/custom_button.dart';
+import 'package:escrowcorner/view/screens/virtual_cards/virtualcard_controller.dart';
+import 'package:escrowcorner/view/screens/virtual_cards/screen_add_virtualcard.dart';
+import 'package:escrowcorner/widgets/custom_button/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
@@ -27,8 +27,8 @@ class ScreenVirtualCard extends StatelessWidget {
 
     return Scaffold(
         backgroundColor: Color(0xffE6F0F7),
-        appBar: AppBar(
-          backgroundColor: Color(0xff0766AD),
+              appBar: AppBar(
+        backgroundColor: Color(0xff191f28),
           title: AppBarTitle(),
           //leading: PopupMenuButtonLeading(),
           actions: [
@@ -132,7 +132,7 @@ class ScreenVirtualCard extends StatelessWidget {
                           );
                         }))
                       ])).paddingOnly(top: 20,bottom: 30),
-                  CustomBottomContainer()
+                  CustomBottomContainerPostLogin()
             ])),
           ),
         ));

@@ -1,16 +1,21 @@
-import 'package:dacotech/view/screens/withdraw/screen_withdraw_otp.dart';
-import 'package:dacotech/view/screens/withdraw/screen_withdrawal.dart';
-import 'package:dacotech/widgets/custom_api_url/constant_url.dart';
+import 'package:escrowcorner/view/screens/withdraw/screen_withdraw_otp.dart';
+import 'package:escrowcorner/view/screens/withdraw/screen_withdrawal.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/custom_token/constant_token.dart';
+import '../../controller/language_controller.dart';
 
 class DepositWithdrawRequestController extends GetxController {
   var isLoading = false.obs;
+  final LanguageController languageController = Get.find<LanguageController>();
+  
+  // Temporary variable to store trx from makeWithdrawRequest
+  String? tempTrx;
   // Method to make a deposit request
-  Future<void> makeDepositRequest({
+  Future<bool> makeDepositRequest({
     required String methodId,
     required String amount,
     required String phoneNumber,
@@ -27,7 +32,7 @@ class DepositWithdrawRequestController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
-      return;
+      return false;
     }
 
     try {
@@ -57,49 +62,54 @@ class DepositWithdrawRequestController extends GetxController {
         final data = json.decode(response.body);
         if (data['status'] == "success") {
           Get.snackbar(
-            "Success",
-            data['message'] ?? "Deposit request successful!",
+            languageController.getTranslation('success'),
+            data['message'] ?? '', // Only show API message, no fallback
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,
           );
+          return true; // Return true on success
         } else {
           Get.snackbar(
-            "Error",
-            data['message'] ?? "Something went wrong",
+            languageController.getTranslation('error'),
+            data['message'] ?? '', // Only show API message, no fallback
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.red,
             colorText: Colors.white,
           );
+          return false; // Return false on API error
         }
       } else {
         final errorData = json.decode(response.body);
         Get.snackbar(
-          "Error",
-          errorData['message'] ?? "Unexpected error occurred",
+          languageController.getTranslation('error'),
+          errorData['message'] ?? '', // Only show API message, no fallback
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
         print("Error: $errorData");
+        return false; // Return false on HTTP error
       }
     } catch (e) {
       Get.snackbar(
-        "Error",
-        "Failed to connect to the server",
+        languageController.getTranslation('error'),
+        languageController.getTranslation('failed_to_connect_to_server'),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
       print("Exception: $e");
+      return false; // Return false on exception
     }
   }
 
 
-  Future<void> makeWithdrawRequest({
+  Future<bool> makeWithdrawRequest({
     required String methodId,
     required String amount,
     required String phoneNumber,
+    required String confirmNumber,
     required String description,
   }) async {
     final String url = "$baseUrl/api/makeWithdrawRequest";
@@ -107,7 +117,7 @@ class DepositWithdrawRequestController extends GetxController {
     if (token == null) {
       Get.snackbar('Error', 'Token is null');
       isLoading.value = false; // Stop loading
-      return;
+      return false;
     }
     try {
       // Prepare request body
@@ -115,6 +125,7 @@ class DepositWithdrawRequestController extends GetxController {
         "payment_method_id": methodId.toString(), // Convert methodId to String
         "amount": amount,
         "payee_number": phoneNumber,
+        "confirm_number": confirmNumber,
         "description": description,
       };
 
@@ -137,53 +148,97 @@ class DepositWithdrawRequestController extends GetxController {
       // Check response status
       if (response.statusCode == 200) {
         if (data['status'] == "success") {
-          Get.snackbar(
-            "Success",
-            data['message'] ?? "Withdraw request successful!",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-          );
+          // Check if OTP is enabled in the response
+          int isEnabledOtp = int.tryParse(data['is_enabled_otp'].toString()) ?? 0;
+          
+                     if (isEnabledOtp == 1) {
+             // Store trx in temporary variable for later use
+             tempTrx = data['trx'];
+             
+             // OTP is enabled, navigate to OTP screen with dynamic heading
+             String textHeading = data['text_heading'] ?? 'Enter the code sent to your email';
+             Get.to(() => WithdrawOtpVerificationScreen(
+               paymentMethodId: methodId,
+               amount: amount,
+               phoneNumber: phoneNumber,
+               confirmNumber: confirmNumber,
+             ), arguments: textHeading);
+             return true;
+                      } else {
+             // OTP is not enabled, call submitWithdrawRequest API
+             String? trx = data['trx'];
+             if (trx != null && trx.isNotEmpty) {
+               bool submitSuccess = await submitWithdrawRequest(trx);
+               if (submitSuccess) {
+                 print("Withdrawal successful without OTP, screen will be reset by UI");
+                 // The UI will handle the screen reset
+               }
+               return submitSuccess;
+             } else {
+               // No trx received, show error
+               Get.snackbar(
+                 languageController.getTranslation('error'),
+                 languageController.getTranslation('transaction_id_not_received'),
+                 snackPosition: SnackPosition.BOTTOM,
+                 backgroundColor: Colors.red,
+                 colorText: Colors.white,
+               );
+               return false;
+             }
+           }
         } else {
           Get.snackbar(
-            "Error",
-            data['message'] ?? "Something went wrong",
+            languageController.getTranslation('error'),
+            data['message'] ?? '', // Only show API message, no fallback
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.red,
             colorText: Colors.white,
           );
+          return false;
         }
       } else {
         // Handle error responses
         Get.snackbar(
-          "Error",
-          data['message'] ?? "Unexpected error occurred",
+          languageController.getTranslation('error'),
+          data['message'] ?? '', // Only show API message, no fallback
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
         print("Error: $data");
+        return false;
       }
     } catch (e) {
       // Exception handling
       Get.snackbar(
-        "Error",
-        "Failed to connect to the server",
+        languageController.getTranslation('error'),
+        languageController.getTranslation('failed_to_connect_to_server'),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
       print("Exception: $e");
+      return false;
     }
   }
 
 
-  Future<void> sendOtpRequest({
+  Future<bool> sendOtpRequest({
     required String paymentMethodId,
     required String amount,
     required String phoneNumber,
+    required String confirmNumber,
   }) async {
-    const String url = "https://damaspay.com/api/send_otp";
+    // Build URL with query parameters for GET request
+    final Uri uri = Uri.parse("$baseUrl/api/send_otp").replace(
+      queryParameters: {
+        "payment_method_id": paymentMethodId,
+        "amount": amount,
+        "phone_number": phoneNumber,
+        "confirm_number": confirmNumber,
+      },
+    );
+    
     String? token = await getToken(); // Ensure you have a method to get the Bearer token
 
     if (token == null) {
@@ -191,17 +246,15 @@ class DepositWithdrawRequestController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);
-      return;
+      return false;
     }
     try {
-
       final response = await http.get(
-        Uri.parse(url),
+        uri,
         headers: {
           "Authorization": "Bearer $token",
           "Content-Type": "application/json",
         },
-        //body: json.encode(body), // Send the request body as JSON
       );
 
       print("response code ${response.statusCode}");
@@ -213,7 +266,7 @@ class DepositWithdrawRequestController extends GetxController {
 
         if (data['status'] == 1) {
           // Successfully sent OTP, navigate to OTP screen
-          Get.snackbar("Success", data['message'] ?? "OTP sent successfully!",
+          Get.snackbar(languageController.getTranslation('success'), data['message'] ?? '', // Only show API message, no fallback
               snackPosition: SnackPosition.BOTTOM,
               backgroundColor: Colors.green,
               colorText: Colors.white);
@@ -222,26 +275,31 @@ class DepositWithdrawRequestController extends GetxController {
           Get.to(() => WithdrawOtpVerificationScreen(
               paymentMethodId: paymentMethodId,
               amount: amount,
-              phoneNumber: phoneNumber),
+              phoneNumber: phoneNumber,
+              confirmNumber: confirmNumber),
               arguments: message); // Pass message as argument
+          return true; // Return true on success
         } else {
-          Get.snackbar("Error", data['message'] ?? "Failed to send OTP",
+          Get.snackbar(languageController.getTranslation('error'), data['message'] ?? '', // Only show API message, no fallback
               snackPosition: SnackPosition.BOTTOM,
               backgroundColor: Colors.red,
               colorText: Colors.white);
+          return false; // Return false on API error
         }
       } else {
-        Get.snackbar("Error", "Unexpected error occurred",
+        Get.snackbar(languageController.getTranslation('error'), languageController.getTranslation('unexpected_error_occurred'),
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.red,
             colorText: Colors.white);
+        return false; // Return false on HTTP error
       }
     } catch (e) {
-      Get.snackbar("Error", "Failed to connect to the server",
+      Get.snackbar(languageController.getTranslation('error'), languageController.getTranslation('failed_to_connect_to_server'),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);
       print("Exception: $e");
+      return false; // Return false on exception
     }
   }
 
@@ -250,8 +308,9 @@ class DepositWithdrawRequestController extends GetxController {
     required String paymentMethodId,
     required String amount,
     required String phoneNumber,
+    required String confirmNumber,
   }) async {
-    const String url = "https://damaspay.com/api/verifyOtp";
+    final String url = "$baseUrl/api/verifyOtp";
     String? token = await getToken();
 
     if (token == null) {
@@ -269,19 +328,20 @@ class DepositWithdrawRequestController extends GetxController {
       // Prepare request body
       final Map<String, dynamic> body = {
         "otp_code": otpCode,
+        "payment_method_id": paymentMethodId,
+        "amount": amount,
+        "phone_number": phoneNumber,
+        "confirm_number": confirmNumber,
       };
 
-      // Use a custom client to handle redirects
-      final client = http.Client();
-      final request = http.Request('POST', Uri.parse(url))
-        ..headers.addAll({
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
           "Authorization": "Bearer $token",
           "Content-Type": "application/json",
-        })
-        ..body = json.encode(body);
-
-      final streamedResponse = await client.send(request);
-      final response = await http.Response.fromStream(streamedResponse);
+        },
+        body: json.encode(body),
+      );
 
       print("response code ${response.statusCode}");
       print("response body ${response.body}");
@@ -289,26 +349,34 @@ class DepositWithdrawRequestController extends GetxController {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        if (data['status'] == 1) {
-          // Get.snackbar(
-          //   "Success",
-          //   data['message'] ?? "OTP verified successfully!",
-          //   snackPosition: SnackPosition.BOTTOM,
-          //   backgroundColor: Colors.green,
-          //   colorText: Colors.white,
-          // );
-          await Future.delayed(const Duration(seconds: 2));
-          await makeWithdrawRequest(
-            methodId: paymentMethodId,
-            amount: amount,
-            phoneNumber: phoneNumber,
-            description: "Withdrawal request after OTP verification",
-          );
-          Get.off(() => ScreenWithdrawal());
-        } else {
+                 if (data['status'] == 1) {
+           // OTP verified successfully, now call submitWithdrawRequest API
+           // Use the stored trx from makeWithdrawRequest response
+           if (tempTrx != null && tempTrx!.isNotEmpty) {
+             bool submitSuccess = await submitWithdrawRequest(tempTrx!);
+             if (submitSuccess) {
+               // Withdrawal submitted successfully, navigate back to withdrawal screen
+               // Clear the temporary trx
+               tempTrx = null;
+               Get.off(() => ScreenWithdrawal());
+             } else {
+               // Error occurred during withdrawal submission
+               // Stay on OTP screen to let user try again
+             }
+           } else {
+             // No trx stored from makeWithdrawRequest
+             Get.snackbar(
+               languageController.getTranslation('error'),
+               languageController.getTranslation('transaction_id_not_stored'),
+               snackPosition: SnackPosition.BOTTOM,
+               backgroundColor: Colors.red,
+               colorText: Colors.white,
+             );
+           }
+         } else {
           Get.snackbar(
-            "Error",
-            data['message'] ?? "Failed to verify OTP",
+            languageController.getTranslation('error'),
+            data['message'] ?? '', // Only show API message, no fallback
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.red,
             colorText: Colors.white,
@@ -316,17 +384,19 @@ class DepositWithdrawRequestController extends GetxController {
         }
       } else if (response.statusCode == 302) {
         // Handle redirect
+        final errorData = json.decode(response.body);
         Get.snackbar(
-          "Error",
-          "Redirect detected. Please check the API endpoint.",
+          languageController.getTranslation('error'),
+          errorData['message'] ?? '', // Only show API message, no fallback
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
       } else {
+        final errorData = json.decode(response.body);
         Get.snackbar(
-          "Error",
-          "Unexpected error occurred",
+          languageController.getTranslation('error'),
+          errorData['message'] ?? '', // Only show API message, no fallback
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -334,8 +404,8 @@ class DepositWithdrawRequestController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        "Error",
-        "Failed to connect to the server",
+        languageController.getTranslation('error'),
+        languageController.getTranslation('failed_to_connect_to_server'),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -343,4 +413,93 @@ class DepositWithdrawRequestController extends GetxController {
       print("Exception: $e");
     }
   }
+
+  Future<bool> submitWithdrawRequest(String trx) async {
+    final String url = "$baseUrl/api/submitWithdrawRequest";
+    String? token = await getToken();
+
+    if (token == null) {
+      Get.snackbar(
+        languageController.getTranslation('error'),
+        languageController.getTranslation('token_is_null'),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+
+    try {
+      // Prepare request body with trx parameter
+      final Map<String, dynamic> body = {
+        "trx": trx,
+      };
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+        body: json.encode(body),
+      );
+
+      print("submitWithdrawRequest response code: ${response.statusCode}");
+      print("submitWithdrawRequest response body: ${response.body}");
+
+             if (response.statusCode == 200) {
+         final data = json.decode(response.body);
+         
+         if (data['status'] == "success" || data['success'] == true) {
+           // Withdrawal submitted successfully, show success message
+           Get.snackbar(
+             languageController.getTranslation('success'),
+             data['message'] ?? '', // Only show API message, no fallback
+             snackPosition: SnackPosition.BOTTOM,
+             backgroundColor: Colors.green,
+             colorText: Colors.white,
+           );
+           
+           print("Withdrawal successful with OTP, screen will be reset by UI");
+           // The UI will handle the screen reset
+           
+           return true;
+         } else {
+           // Show error message
+           Get.snackbar(
+             languageController.getTranslation('error'),
+             data['message'] ?? '', // Only show API message, no fallback
+             snackPosition: SnackPosition.BOTTOM,
+             backgroundColor: Colors.red,
+             colorText: Colors.white,
+           );
+           return false;
+         }
+       } else {
+         // Handle HTTP error responses
+         final errorData = json.decode(response.body);
+         Get.snackbar(
+           languageController.getTranslation('error'),
+           errorData['message'] ?? '', // Only show API message, no fallback
+           snackPosition: SnackPosition.BOTTOM,
+           backgroundColor: Colors.red,
+           colorText: Colors.white,
+         );
+         print("Error: $errorData");
+         return false;
+       }
+    } catch (e) {
+      // Exception handling
+      Get.snackbar(
+        languageController.getTranslation('error'),
+        languageController.getTranslation('failed_to_connect_to_server'),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      print("Exception: $e");
+      return false;
+    }
+  }
+
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:dacotech/view/screens/escrow_system/send_escrow/screen_escrow_list.dart';
+import 'package:escrowcorner/view/screens/escrow_system/send_escrow/screen_escrow_list.dart';
+import 'package:escrowcorner/view/screens/escrow_system/models/escrow_models.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -8,6 +9,7 @@ import '../../../../widgets/custom_api_url/constant_url.dart';
 import '../../../../widgets/custom_token/constant_token.dart';
 import '../rejected_escrow/get_rejected_escrow.dart';
 import '../rejected_escrow/rejected_escrow_controller.dart';
+import '../../../controller/language_controller.dart';
 
 class SendEscrowsController extends GetxController {
   var isLoading = false.obs;
@@ -15,14 +17,85 @@ class SendEscrowsController extends GetxController {
   final escrowDetail = <DetailsSendEscrow>[].obs;
   final RejectedEscrowController rejectController = Get.put(RejectedEscrowController());
 
+  // Observable variables for escrow information
+  var escrowInformation = <DetailsSendEscrow>[].obs;
+  var isLoadingInformation = false.obs;
+  
+  // Method to check if data is already loaded
+  bool get hasData => escrows.isNotEmpty;
+  
+  // Method to preserve data across navigation
+  void preserveData() {
+    // This method can be called to ensure data is not cleared during navigation
+    print("Preserving send escrow data. Current count: ${escrows.length}");
+  }
+  
+  // Method to handle navigation state changes
+  void onScreenVisible() {
+    print("Send escrow screen became visible. Current data count: ${escrows.length}");
+    // If we have data, ensure loading state is false
+    if (escrows.isNotEmpty) {
+      isLoading.value = false;
+    }
+  }
+  
+  // Method to reset loading state if data is available
+  void resetLoadingIfDataAvailable() {
+    if (escrows.isNotEmpty) {
+      isLoading.value = false;
+      print("Reset loading state because data is available");
+    }
+  }
+  
+  // Method to clear data only when explicitly needed
+  void clearData() {
+    escrows.clear();
+    escrowDetail.clear();
+    escrowInformation.clear();
+    print("Send escrow data cleared");
+  }
+  
+  // Method to force refresh data (ignores existing data check)
+  Future<void> forceRefreshData() async {
+    print("Force refreshing send escrow data");
+    await fetchSendEscrows(forceRefresh: true);
+  }
+  
+  // Method to check if we should show loading state
+  bool get shouldShowLoading => isLoading.value && escrows.isEmpty;
+  
+  // Method to handle navigation from other escrow screens
+  void handleNavigationFromOtherScreen() {
+    print("Handling navigation from other escrow screen");
+    // If we have data, don't show loading
+    if (escrows.isNotEmpty) {
+      isLoading.value = false;
+      print("Data already available, hiding loader");
+    } else {
+      print("No data available, will show loader");
+    }
+  }
 
-  Future<void> fetchSendEscrows() async {
+
+  Future<void> fetchSendEscrows({bool forceRefresh = false}) async {
+    // If data is already loaded and not forcing refresh, don't show loading state
+    if (escrows.isNotEmpty && !forceRefresh) {
+      print("Data already available, skipping fetch");
+      return;
+    }
+    
     isLoading.value = true;
     String? token = await getToken();
     final url = Uri.parse("$baseUrl/api/sendEscrow");
 
     if (token == null) {
-      Get.snackbar('Error', 'Token not found');
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(
+        languageController.getTranslation('error'),
+        languageController.getTranslation('token_not_found'),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       isLoading.value = false;
       return;
     }
@@ -68,45 +141,65 @@ class SendEscrowsController extends GetxController {
   }
 
   Future<void> fetchEscrowDetail(int id) async {
+    print("=== fetchEscrowDetail called with ID: $id ===");
     isLoading.value = true;
     String? token = await getToken();
+    print("Token: ${token != null ? 'Token exists' : 'Token is null'}");
 
     try {
+      final url = "$baseUrl/api/escrowagreement/$id";
+      print("Calling API URL: $url");
+      
       final response = await http.get(
-        Uri.parse("$baseUrl/api/sendEscrowDetails/$id"),
+        Uri.parse(url),
         headers: {
           "Authorization": "Bearer $token",
           "Content-Type": "application/json",
         },
       );
 
+      print("Response status code: ${response.statusCode}");
+      print("Response headers: ${response.headers}");
       print("Response body: ${response.body}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
-        if (responseData['status'] == 'success' && responseData['data'] != null) {
-          final DetailsSendEscrow escrow = DetailsSendEscrow.fromJson(responseData['data']);
+        print("Parsed response data: $responseData");
+        print("Response status: ${responseData['status']}");
+        
+        if (responseData['status'] == 'success') {
+          print("Status is success, parsing escrow details...");
+          // Parse the response directly since escrow details are at root level
+          final DetailsSendEscrow escrow = DetailsSendEscrow.fromJson(responseData);
+          print("Parsed escrow object: $escrow");
           escrowDetail.assignAll([escrow]); // Assign to observable list
+          print("Escrow details loaded successfully: ${escrowDetail.length} items");
+          print("escrowDetail value: ${escrowDetail.value}");
         } else {
           escrowDetail.clear();
-          print("No details available");
+          print("No details available - status not success: ${responseData['status']}");
         }
       } else {
         print("Failed to fetch escrow details. Status code: ${response.statusCode}");
+        print("Error response body: ${response.body}");
+        escrowDetail.clear();
       }
     } catch (e) {
       print("Error fetching escrow details: $e");
+      print("Error stack trace: ${StackTrace.current}");
+      escrowDetail.clear();
     } finally {
       isLoading.value = false;
+      print("=== fetchEscrowDetail completed ===");
     }
   }
 
-  Future<void> escrowRelease(String eid) async {
+  Future<Map<String, dynamic>?> escrowRelease(String eid) async {
     final String? token = await getToken(); // Ensure getToken() fetches your auth token
     final Uri url = Uri.parse("$baseUrl/api/escrowRelease");
+    
     if (token == null) {
-      Get.snackbar('Error', 'Token not found');
-      return;
+      return {'status': 'error', 'message': 'Token not found'};
     }
 
     try {
@@ -120,35 +213,39 @@ class SendEscrowsController extends GetxController {
       );
       print("response body: ${response.body}");
       print("response code: ${response.statusCode}");
+      
+      final data = json.decode(response.body);
+      
       if (response.statusCode == 200) {
-        Get.snackbar('Success', 'Escrow release processed successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,);
-        Get.off(ScreenEscrowList());
-        await fetchSendEscrows();
-        // Handle the response data as needed
+        // Return the API response for the UI to handle
+        return data;
       } else {
-        final data = json.decode(response.body);
-        String message = data['message'] ?? 'Failed to process escrow release';
-        Get.snackbar('Message', message,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,);
+        // Return error response
+        return {
+          'status': 'error',
+          'message': data['message'] ?? 'Failed to process escrow release'
+        };
       }
     } catch (e) {
-      Get.snackbar('Error', 'An error occurred: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,);
+      return {
+        'status': 'error',
+        'message': 'An error occurred: ${e.toString()}'
+      };
     }
   }
 
   Future<void> escrowReject(String eid) async {
     final String? token = await getToken(); // Ensure getToken() fetches your auth token
     final Uri url = Uri.parse("$baseUrl/api/reject?eid=$eid");
+    final languageController = Get.find<LanguageController>();
+    
     if (token == null) {
-      Get.snackbar('Error', 'Token not found');
+      Get.snackbar(
+        languageController.getTranslation('error'),
+        languageController.getTranslation('token_not_found'),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return;
     }
 
@@ -163,29 +260,90 @@ class SendEscrowsController extends GetxController {
       print("response body: ${response.body}");
       print("response code: ${response.statusCode}");
       if (response.statusCode == 200) {
-        Get.snackbar('Success', 'Escrow reject processed successfully',
+        Get.snackbar(
+          languageController.getTranslation('success'),
+          languageController.getTranslation('escrow_reject_processed_successfully'),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
-          colorText: Colors.white,);
+          colorText: Colors.white,
+        );
         Get.off(GetRejectedEscrow());
         await rejectController.fetchRejectedEscrows();
         // Handle the response data as needed
       } else {
         final data = json.decode(response.body);
-        String message = data['message'] ?? 'Failed to process escrow reject';
-        Get.snackbar('Message', message,
+        String message = data['message'] ?? languageController.getTranslation('failed_to_process_escrow_reject');
+        Get.snackbar(
+          languageController.getTranslation('message'),
+          message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white,);
+          colorText: Colors.white,
+        );
       }
     } catch (e) {
-      Get.snackbar('Error', 'An error occurred: ${e.toString()}',
+      Get.snackbar(
+        languageController.getTranslation('error'),
+        languageController.getTranslation('an_error_occurred'),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
-        colorText: Colors.white,);
+        colorText: Colors.white,
+      );
     }
   }
 
+  // Fetch escrow information from API
+  Future<void> fetchEscrowInformation(int id) async {
+    try {
+      isLoadingInformation.value = true;
+      print('Fetching escrow information for ID: $id');
+      
+      final String? token = await getToken();
+      if (token == null) {
+        print('Error: No auth token available');
+        isLoadingInformation.value = false;
+        return;
+      }
+      
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/view_information/$id'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('Information API Response: ${response.statusCode} - ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        
+        if (responseData['success'] == true || responseData['status'] == 'success') {
+          // Parse the information data - try different response structures
+          try {
+            final informationData = DetailsSendEscrow.fromJson(responseData);
+            escrowInformation.value = [informationData];
+            print('Escrow information loaded successfully');
+          } catch (parseError) {
+            print('Error parsing information data: $parseError');
+            // Try to create a basic object if parsing fails
+            escrowInformation.value = [];
+          }
+        } else {
+          print('Failed to load escrow information: ${responseData['message'] ?? 'Unknown error'}');
+          escrowInformation.value = [];
+        }
+      } else {
+        print('Failed to fetch escrow information: ${response.statusCode}');
+        escrowInformation.value = [];
+      }
+    } catch (e) {
+      print('Error fetching escrow information: $e');
+      escrowInformation.value = [];
+    } finally {
+      isLoadingInformation.value = false;
+    }
+  }
 
 
 }
@@ -262,21 +420,26 @@ class Escrow {
   }
 }
 
-
-
 class DetailsSendEscrow {
   final int id;
   final String? title; // Nullable field
   final String? attachment; // Nullable field
-  final double gross; // Changed to double for numeric consistency
+  final String gross; // Changed to String to preserve exact decimal format
   final String description;
   final String? currencySymbol; // Nullable field
   final int status;
-  final int fee;
-  final int escrows_hpd;
+  final String fee; // Changed to String to preserve exact decimal format
+  final int escrows_hpd; // Required field but will have default value
   final String? senderEmail; // Nullable field
   final String? receiverEmail; // Nullable field
-  final DateTime? createdAt; // Made nullable
+  final String? createdAt; // Changed to String to preserve "13 hours ago" format
+  final String? paymentMethodName; // Added payment method name
+  final String? productName; // Added product name
+  final int? escrowCategoryId; // Added escrow category ID
+  final int? paymentMethodId; // Added payment method ID
+  final int? agreement; // Added agreement field
+  final String net; // Changed to String to preserve exact decimal format
+  final EscrowCategory? escrowCategory; // Added escrow category object
 
   DetailsSendEscrow({
     required this.id,
@@ -287,10 +450,17 @@ class DetailsSendEscrow {
     this.currencySymbol,
     required this.status,
     required this.fee,
-    required this.escrows_hpd,
+    this.escrows_hpd = 0, // Made optional with default value
     this.senderEmail,
     this.receiverEmail,
     this.createdAt,
+    this.paymentMethodName, // Added to constructor
+    this.productName, // Added to constructor
+    this.escrowCategoryId, // Added to constructor
+    this.paymentMethodId, // Added to constructor
+    this.agreement, // Added to constructor
+    required this.net, // Added to constructor
+    this.escrowCategory, // Added to constructor
   });
 
   String get statusLabel {
@@ -307,21 +477,38 @@ class DetailsSendEscrow {
   }
 
   factory DetailsSendEscrow.fromJson(Map<String, dynamic> json) {
+    print("Parsing DetailsSendEscrow from JSON: $json");
+    
+    final escrow = json['escrow'];
+    final sender = json['sender'];
+    final receiver = json['receiver'];
+    final escrowCategory = escrow?['escrow_category']; // Parse escrow category from nested escrow object
+    
+    print("Escrow data: $escrow");
+    print("Sender data: $sender");
+    print("Receiver data: $receiver");
+    print("Escrow Category data: $escrowCategory");
+    
     return DetailsSendEscrow(
-      id: json['escrow']?['id'] ?? 0,
-      title: json['escrow']?['title'],
-      attachment: json['attachment'],
-      gross: double.tryParse(json['escrow']?['gross']?.toString() ?? '0.000') ?? 0.0,
-      description: json['escrow']?['description'] ?? '', // Default value
-      currencySymbol: json['escrow']?['currency_symbol'],
-      status: json['escrow']?['status'] ?? 0,
-      fee: json['escrow_fee'] ?? 0,
-      escrows_hpd: _parseHoldingPeriod(json['escrows_hpd']),
-      senderEmail: json['sender']?['email'],
-      receiverEmail: json['receiver']?['email'],
-      createdAt: json['escrow']?['created_at'] != null
-          ? DateTime.tryParse(json['escrow']['created_at'])
-          : null, // Safely parse nullable DateTime
+      id: escrow?['id'] ?? 0,
+      title: escrow?['title'],
+      attachment: escrow?['attachment'], // Fixed: parse from escrow.attachment
+      gross: json['gross']?.toString() ?? '0.000', // Parse from root level
+      description: escrow?['description'] ?? '', // Default value
+      currencySymbol: escrow?['currency_symbol'],
+      status: escrow?['status'] ?? 0,
+      fee: json['fee']?.toString() ?? '0.000', // Parse from root level
+      escrows_hpd: _parseHoldingPeriod(json['holding_period']), // Parse from root level 'holding_period'
+      senderEmail: sender?['email'],
+      receiverEmail: receiver?['email'],
+      createdAt: json['created_at']?.toString(), // Parse from root level
+      paymentMethodName: escrow?['payment_method']?['payment_method_name'], // Correctly parse from nested escrow.payment_method
+      productName: escrow?['product_name'], // Parse product name
+      escrowCategoryId: escrow?['escrow_category_id'], // Parse escrow category ID
+      paymentMethodId: escrow?['payment_method_id'], // Parse payment method ID
+      agreement: escrow?['agreement'], // Parse agreement field
+      net: json['net']?.toString() ?? '0.000', // Parse net amount
+      escrowCategory: escrowCategory != null ? EscrowCategory.fromJson(escrowCategory) : null, // Parse escrow category object
     );
   }
 
@@ -335,6 +522,11 @@ class DetailsSendEscrow {
       }
     }
     return 0; // Default to 0 if no number is found
+  }
+
+  @override
+  String toString() {
+    return 'DetailsSendEscrow{id: $id, title: $title, gross: $gross, description: $description, status: $status, fee: $fee, escrows_hpd: $escrows_hpd, senderEmail: $senderEmail, receiverEmail: $receiverEmail, paymentMethodName: $paymentMethodName, productName: $productName}';
   }
 }
 

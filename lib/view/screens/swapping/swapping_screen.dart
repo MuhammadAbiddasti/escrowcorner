@@ -1,4 +1,4 @@
-import 'package:dacotech/view/screens/swapping/swapping_controller.dart';
+import 'package:escrowcorner/view/screens/swapping/swapping_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -48,7 +48,7 @@ class _SwappingScreenState extends State<SwappingScreen> {
 
     return Scaffold(backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -301,7 +301,7 @@ class _SwappingScreenState extends State<SwappingScreen> {
                 ).paddingSymmetric(horizontal: 15),
               ).paddingOnly(top: 20,bottom: 30),
 
-              CustomBottomContainer().paddingOnly(top: 60),
+              CustomBottomContainerPostLogin().paddingOnly(top: 60),
             ],
           ),
         ),

@@ -1,8 +1,8 @@
-import 'package:dacotech/view/screens/login/login_controller.dart';
-import 'package:dacotech/view/Home_Screens/screen_forgotPassword.dart';
-import 'package:dacotech/view/screens/register/screen_signup.dart';
-import 'package:dacotech/widgets/custom_button/custom_button.dart';
-import 'package:dacotech/widgets/custom_textField/custom_field.dart';
+import 'package:escrowcorner/view/screens/login/login_controller.dart';
+import 'package:escrowcorner/view/Home_Screens/screen_forgotPassword.dart';
+import 'package:escrowcorner/view/screens/register/screen_signup.dart';
+
+import 'package:escrowcorner/widgets/custom_textField/custom_field.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
@@ -10,24 +10,35 @@ import '../../../widgets/custom_button/damaspay_button.dart';
 import '../../controller/logo_controller.dart';
 import '../../Home_Screens/custom_leading_appbar.dart';
 import '../../theme/damaspay_theme/Damaspay_theme.dart';
+import '../../controller/language_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../widgets/language_selector/language_selector_widget.dart';
+import '../../../widgets/language_selector/language_selector_widget.dart';
 
 class ScreenLogin extends StatelessWidget {
   final LogoController logoController = Get.put(LogoController());
   final LoginController loginController= Get.put(LoginController());
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(backgroundColor: Color(0xffE6F0F7),
-        appBar: AppBar(backgroundColor: Color(0xff0766AD),
+        appBar: AppBar(backgroundColor: Color(0xff0f9373),
           title: AppBarTitle(),
           leading: CustomLeadingAppbar(),
           actions: [
-            IconButton(onPressed: (){}, icon: Icon(Icons.language,color: Colors.green,size: 30,)),
-            IconButton(onPressed: (){
-              //Get.to(ScreenKyc1());
-            }, icon: Icon(Icons.account_circle,color: Color(0xffFEA116),
-              size: 30,))
+            QuickLanguageSwitcher(),
+            IconButton(
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                final token = prefs.getString('auth_token');
+                if (token == null || token.isEmpty) {
+                  Get.offAll(() => ScreenLogin());
+                }
+              },
+              icon: Icon(Icons.account_circle,color: Color(0xffFEA116), size: 30,),
+            )
           ],
         ),
         body:
@@ -57,7 +68,7 @@ class ScreenLogin extends StatelessWidget {
               ),
               Align(
                 alignment: Alignment.topCenter,
-                child: Text("User Login",style: TextStyle(
+                child: Text(languageController.getTranslation('user_login'),style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 28,
                   color: Color(0xff666565),
@@ -66,23 +77,25 @@ class ScreenLogin extends StatelessWidget {
               ),
               SizedBox(height: 10,),
               CustomField(
-                label: "Email",
+                label: languageController.getTranslation('email'),
                 controller: loginController.emailController,
               ),
               CustomField(
-                label: 'password',
+                label: languageController.getTranslation('password'),
                 controller: loginController.passwordController,
                 isPasswordField: true,
               ),
               FFButtonWidget(
                 onPressed: () async {
                   if (!loginController.isLoading.value) {
-                    await loginController.login(context);
-                    loginController.emailController.clear();
-                    loginController.passwordController.clear();
+                    final success = await loginController.login(context);
+                    if (success) {
+                      loginController.emailController.clear();
+                      loginController.passwordController.clear();
+                    }
                   }
                 },
-                text: 'LOGIN',
+                text: languageController.getTranslation('login'),
                 options: FFButtonOptions(
                   width: Get.width,
                   height: 45.0,
@@ -113,7 +126,7 @@ class ScreenLogin extends StatelessWidget {
               TextButton(onPressed: (){
                 Get.to(ScreenForgotPassword());
               }, child: Text(
-                "Forgot Password?",style: TextStyle(
+                languageController.getTranslation('forget_password'),style: TextStyle(
                 fontSize: 14,fontWeight: FontWeight.w400,
                 color: Color(0xff666565)
 
@@ -122,7 +135,7 @@ class ScreenLogin extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    "Don't have an account?",style: TextStyle(
+                    languageController.getTranslation('dont_have_an_account_yet'),style: TextStyle(
                       fontSize: 14,fontWeight: FontWeight.w400,
                       color: Color(0xff666565)
                   ),
@@ -140,7 +153,7 @@ class ScreenLogin extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          "Sign Up",style: TextStyle(
+                          languageController.getTranslation('sign_up'),style: TextStyle(
                             fontSize: 14,fontWeight: FontWeight.w400,
                             color: Color(0xff666565)
 

@@ -1,8 +1,10 @@
-import 'package:dacotech/view/screens/login/login_history_controller.dart';
-import 'package:dacotech/widgets/custom_bottom_container/custom_bottom_container.dart';
+import 'package:escrowcorner/view/screens/login/login_history_controller.dart';
+import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
+import '../../../widgets/common_header/common_header.dart';
+import '../../controller/language_controller.dart';
 import '../user_profile/user_profile_controller.dart';
 
 class ScreenLoginHistory extends StatelessWidget {
@@ -14,15 +16,7 @@ class ScreenLoginHistory extends StatelessWidget {
     controller.fetchLoginDetails(context);
     return Scaffold(
       backgroundColor: const Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: const Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
-      ),
+      appBar: CommonHeader(title: Get.find<LanguageController>().getTranslation('login_history'), managerId: userProfileController.userId.value),
       body: Stack(
         children:[
           RefreshIndicator(
@@ -42,31 +36,31 @@ class ScreenLoginHistory extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      Text(
-                        "Login History",
+                      Obx(() => Text(
+                        Get.find<LanguageController>().getTranslation('login_history'),
                         style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
                             color: Color(0xff18CE0F),
-                            fontFamily: 'Nunito'),).paddingOnly(top: 10),
+                            fontFamily: 'Nunito'),)).paddingOnly(top: 10),
                       Obx(() {
                         if (controller.isLoading.value) {
                           return Center(child: CircularProgressIndicator());
                         } else if (controller.loginHistory.isEmpty) {
-                          return Center(child: Text('No login history found.'));
+                          return Center(child: Obx(() => Text(Get.find<LanguageController>().getTranslation('no_login_history_found'))));
                         } else {
                           return Expanded(
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal, // Enable horizontal scrolling for DataTable
                               child: SingleChildScrollView(
                                 child: DataTable(
-                                  columns: const [
-                                    DataColumn(label: Text('Sr No',style: TextStyle(fontWeight: FontWeight.bold),)),
-                                    DataColumn(label: Text('User Name',style: TextStyle(fontWeight: FontWeight.bold),)),
-                                    DataColumn(label: Text('Login Date',style: TextStyle(fontWeight: FontWeight.bold),)),
-                                    DataColumn(label: Text('IP Address',style: TextStyle(fontWeight: FontWeight.bold),)),
-                                    DataColumn(label: Text('Login Device',style: TextStyle(fontWeight: FontWeight.bold),)),
-                                    DataColumn(label: Text('Login Browser',style: TextStyle(fontWeight: FontWeight.bold),)),
+                                  columns: [
+                                    DataColumn(label: Obx(() => Text(Get.find<LanguageController>().getTranslation('sr_no'), style: TextStyle(fontWeight: FontWeight.bold)))),
+                                    DataColumn(label: Obx(() => Text(Get.find<LanguageController>().getTranslation('user_name'), style: TextStyle(fontWeight: FontWeight.bold)))),
+                                    DataColumn(label: Obx(() => Text(Get.find<LanguageController>().getTranslation('login_date'), style: TextStyle(fontWeight: FontWeight.bold)))),
+                                    DataColumn(label: Obx(() => Text(Get.find<LanguageController>().getTranslation('ip_address'), style: TextStyle(fontWeight: FontWeight.bold)))),
+                                    DataColumn(label: Obx(() => Text(Get.find<LanguageController>().getTranslation('login_device'), style: TextStyle(fontWeight: FontWeight.bold)))),
+                                    DataColumn(label: Obx(() => Text(Get.find<LanguageController>().getTranslation('login_browser'), style: TextStyle(fontWeight: FontWeight.bold)))),
                                   ],
                                   rows: List<DataRow>.generate(
                                     controller.loginHistory.length,
@@ -98,8 +92,10 @@ class ScreenLoginHistory extends StatelessWidget {
             ),]
           ),
         ),
-          Align(alignment: Alignment.bottomCenter,
-              child: CustomBottomContainer())
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: CustomBottomContainerPostLogin(),
+          ),
         ]
       ),
     );

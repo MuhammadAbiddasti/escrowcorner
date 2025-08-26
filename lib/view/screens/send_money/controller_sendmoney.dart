@@ -1,5 +1,5 @@
-import 'package:dacotech/view/screens/send_money/screen_get_all_sendmoney.dart';
-import 'package:dacotech/widgets/custom_api_url/constant_url.dart';
+import 'package:escrowcorner/view/screens/send_money/screen_get_all_sendmoney.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -23,16 +23,21 @@ class SendMoneyController extends GetxController {
   var unreadRequestMoneyCount = 0.obs;
   var unreadSupportTicketCount = 0.obs;
 
+  var paymentMethods = <PaymentMethod>[].obs;
+  var selectedPaymentMethod = Rxn<PaymentMethod>();
+
 
   final emailController = TextEditingController();
   final amountController = TextEditingController();
   final noteController = TextEditingController();
+  final methodController = TextEditingController();
 
   @override
   void onInit() {
     super.onInit();
     fetchAllSendMoney();
     fetchSendmoneyCurrencies();
+    fetchPaymentMethods();
   }
   // Method to Send Money
   Future<void> sendMoney(BuildContext context) async {
@@ -74,6 +79,18 @@ class SendMoneyController extends GetxController {
     final email = emailController.text;
     final note = noteController.text;
     final currencyId = selectedCurrency.value!.id;
+    final paymentMethodId = selectedPaymentMethod.value?.id?.toString() ?? '';
+    print('Selected Payment Method:  [32m [1m [4m${selectedPaymentMethod.value} [0m');
+    print('Payment Method ID sent to API: $paymentMethodId');
+
+    final body = json.encode({
+      'currency': currencyId.toString(),
+      'amount': amount,
+      'email': email,
+      'description': note,
+      'method_id': paymentMethodId,
+    });
+    print('Request body: $body');
 
     String? token = await getToken();
     if (token == null) {
@@ -89,13 +106,6 @@ class SendMoneyController extends GetxController {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
     };
-
-    final body = json.encode({
-      'currency': currencyId.toString(),
-      'amount': amount,
-      'email': email,
-      'description': note,
-    });
 
     try {
       isLoading.value = true;
@@ -277,6 +287,41 @@ class SendMoneyController extends GetxController {
       }
   }
 
+  // Fetch payment methods from API
+  Future<void> fetchPaymentMethods() async {
+    String? token = await getToken();
+    if (token == null) {
+      Get.snackbar('Error', 'Token is null');
+      return;
+    }
+    final url = Uri.parse('$baseUrl/api/getPaymentMethods');
+    try {
+      final response = await http.get(url, headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      });
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['data']['payment_method'] != null && data['data']['payment_method'] is List) {
+          final List<PaymentMethod> fetchedMethods = (data['data']['payment_method'] as List)
+              .map((e) => PaymentMethod.fromJson(e))
+              .toList();
+          paymentMethods.value = fetchedMethods;
+          
+          // Automatically select the first payment method if none is selected
+          if (selectedPaymentMethod.value == null && fetchedMethods.isNotEmpty) {
+            selectedPaymentMethod.value = fetchedMethods.first;
+          }
+        }
+      } else {
+        Get.snackbar('Error', 'Failed to fetch payment methods');
+      }
+    } catch (e) {
+      print('Error fetching payment methods: $e');
+      Get.snackbar('Error', 'Failed to fetch payment methods');
+    }
+  }
+
   Future<void> fetchUnreadTransferMoneyCount() async {
     String url = "$baseUrl/api/countUnReadTransferMoney";
     String? token = await getToken(); // Ensure you have a method to get the Bearer token
@@ -445,6 +490,19 @@ class SendMoney {
       currency: json['currency'] != null ? json['currency']['name'].toString() : 'Unknown Currency',
       amount: json['gross'] ?? '',
       dateTime: json['created_at'] ?? '',
+    );
+  }
+}
+
+// Model class for Payment Method
+class PaymentMethod {
+  final int id;
+  final String name;
+  PaymentMethod({required this.id, required this.name});
+  factory PaymentMethod.fromJson(Map<String, dynamic> json) {
+    return PaymentMethod(
+      id: json['id'],
+      name: json['payment_method_name'],
     );
   }
 }

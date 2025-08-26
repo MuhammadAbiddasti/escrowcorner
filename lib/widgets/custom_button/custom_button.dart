@@ -6,6 +6,7 @@ class CustomButton extends StatelessWidget {
   double? width,height;
   final VoidCallback onPressed;
   final Color? textColor;
+  final TextStyle? textStyle;
   final Color? backGroundColor;
   final List<Color>? buttonColor;
   final BoxDecoration? customDecoration;
@@ -13,6 +14,9 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Debug print to see loading state
+    print("CustomButton build - text: $text, loading: $loading, loading type: ${loading.runtimeType}");
+    
     return Container(
       width: width??Get.width,
       height: height??45,
@@ -28,8 +32,28 @@ class CustomButton extends StatelessWidget {
             ),
             backgroundColor: backGroundColor ?? Color(0xff18CE0F),
           ),
-          onPressed: onPressed, child: Text(text,style: TextStyle(color: textColor??Colors.white,
-          fontWeight: FontWeight.w500,fontSize: 14),)
+          onPressed: loading ? null : onPressed, 
+          child: loading 
+            ? Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              )
+            : Center(
+                child: Text(
+                  text,
+                  style: textStyle ?? TextStyle(
+                    color: textColor ?? Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14
+                  ),
+                ),
+              )
         // .paddingSymmetric(horizontal: 20
       )
 
@@ -43,6 +67,7 @@ class CustomButton extends StatelessWidget {
     this.height,
     required this.onPressed,
     this.textColor,
+    this.textStyle,
     this.backGroundColor,
     this.buttonColor,
     this.customDecoration,

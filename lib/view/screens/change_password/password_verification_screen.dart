@@ -1,4 +1,4 @@
-import 'package:dacotech/widgets/custom_bottom_container/custom_bottom_container.dart';
+import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
@@ -28,7 +28,7 @@ class PasswordOtpVerificationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
       appBar: AppBar(
-        backgroundColor: Color(0xff0766AD),
+        backgroundColor: Color(0xff191f28),
         title: AppBarTitle(),
         leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
         actions: [
@@ -115,7 +115,7 @@ class PasswordOtpVerificationScreen extends StatelessWidget {
             ),
           ).paddingSymmetric(horizontal: 20),
           Spacer(),
-          CustomBottomContainer(),
+          CustomBottomContainerPostLogin(),
         ],
       ),
     );

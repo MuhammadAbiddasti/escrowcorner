@@ -1,6 +1,6 @@
 {
-    "name": "dacotech",
-    "short_name": "dacotech",
+    "name": "EscrowCorner",
+    "short_name": "EscrowCorner",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

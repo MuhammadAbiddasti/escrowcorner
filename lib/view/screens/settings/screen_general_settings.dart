@@ -1,4 +1,4 @@
-import 'package:dacotech/widgets/custom_bottom_container/custom_bottom_container.dart';
+import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -7,6 +7,8 @@ import '../../../widgets/custom_button/damaspay_button.dart';
 import '../../theme/damaspay_theme/Damaspay_theme.dart';
 import 'setting_controller.dart';
 import '../user_profile/user_profile_controller.dart';
+import '../../../widgets/common_header/common_header.dart';
+import '../../controller/language_controller.dart';
 
 class ScreenGeneralSettings extends StatefulWidget {
   @override
@@ -16,44 +18,48 @@ class ScreenGeneralSettings extends StatefulWidget {
 class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
   final SettingController chargesController = Get.put(SettingController());
 
-  final UserProfileController userController = Get.put(UserProfileController());
+  final UserProfileController userController = Get.find<UserProfileController>();
 
   @override
   void setState(VoidCallback fn) {
     userController.fetchUserDetails();
     super.setState(fn);
   }
-
-  void onInit() {
-    userController.fetchUserDetails();
-
-  }
+  //final KycController kycController = Get.put(KycController());
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   controller.fetchUserDetails(); // Fetch user details on screen load
+  // }
 
   @override
   Widget build(BuildContext context) {
+    final languageController = Get.find<LanguageController>();
     chargesController.fetchCharges(context);
+    chargesController.fetchSiteDetails(); // Fetch site details when page loads
     return Scaffold(backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: const Color(0xff0766AD),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('general_settings'),
+        managerId: userController.userId.value,
       ),
       body: RefreshIndicator(
         onRefresh: () async {
          await userController.fetchUserDetails();
+         await chargesController.fetchSiteDetails(); // Also refresh site details
         },
         child: SingleChildScrollView(
           child: Column(
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Damaspay Settings",style: TextStyle(
-                    fontSize: 17,fontWeight: FontWeight.w700,color: Colors.black87
-                  ),).paddingOnly(bottom: 20),
+                  Obx(() => Text(
+                    "${chargesController.siteName.value} ${languageController.getTranslation('settings')}",
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  )).paddingOnly(bottom: 20),
                   Container(
                     width: MediaQuery.of(context).size.width,
                     height: MediaQuery.of(context).size.height * .05,
@@ -62,21 +68,23 @@ class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
                       color: Colors.lightBlueAccent,
                     ),
                     child: Center(
-                        child: Text(
-                          "Authorised numbers for withdrawals",
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                              color: Colors.white),
-                        )),
-                  ).paddingOnly(bottom: 20),
-                  Text(
-                    'MTN MoMo Withdrawal Number (None)',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      child: Obx(() => Text(
+                        languageController.getTranslation('authorised_numbers_for_withdrawals'),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      )),
                     ),
-                  ),
+                  ).paddingOnly(bottom: 20),
+                  Obx(() => Text(
+                        "${languageController.getTranslation('mtn_momo_withdrawal_number')} (" + languageController.getTranslation('none') + ")",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )),
                   Row(
                     children: [
                       Container(
@@ -124,16 +132,16 @@ class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
                       )
                     ],
                   ).paddingOnly(top: 10),
-                  FFButtonWidget(
+                  Obx(() => FFButtonWidget(
                     onPressed: () async {
                       //await chargesController.saveMtnNumber();
-                      Get.snackbar('Message', 'Please Contact support to change the number',
+                      Get.snackbar(languageController.getTranslation('message'), languageController.getTranslation('please_contact_support_to_change_the_number'),
                         snackPosition: SnackPosition.BOTTOM,
                         backgroundColor: Colors.red,
                         colorText: Colors.white,
                       );
                       },
-                    text: 'Change Number',
+                    text: languageController.getTranslation('change_number'),
                     options: FFButtonOptions(
                       width: Get.width,
                       height: 45.0,
@@ -154,14 +162,14 @@ class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
                       ),
                       borderRadius: BorderRadius.circular(5.0),
                     ),
-                  ).paddingOnly(top: 20,bottom: 20),
-                  Text(
-                    'Orange Money Withdrawal Number (None)',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  ).paddingOnly(top: 20,bottom: 20)),
+                  Obx(() => Text(
+                        "${languageController.getTranslation('orange_money_withdrawal_number')} (" + languageController.getTranslation('none') + ")",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )),
                   Row(
                     children: [
                       Container(
@@ -192,7 +200,7 @@ class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
                             controller: userController.orangeNumber,
                             keyboardType: TextInputType.phone,
                             decoration: InputDecoration(
-                              contentPadding: EdgeInsets.only(top: 5,left: 5),
+                              contentPadding: EdgeInsets.only(top: 5, left: 5),
                               border: OutlineInputBorder(
                                 //borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide(color: Colors.grey),
@@ -207,16 +215,16 @@ class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
                       ),
                     ],
                   ).paddingOnly(top: 10),
-                  FFButtonWidget(
+                  Obx(() => FFButtonWidget(
                     onPressed: () async {
                       //await chargesController.saveOrangeNumber();
-                      Get.snackbar('Message', 'Please Contact support to change the number',
+                      Get.snackbar(languageController.getTranslation('message'), languageController.getTranslation('please_contact_support_to_change_the_number'),
                         snackPosition: SnackPosition.BOTTOM,
                         backgroundColor: Colors.red,
                         colorText: Colors.white,
                       );
                     },
-                    text: 'Change Number',
+                    text: languageController.getTranslation('change_number'),
                     options: FFButtonOptions(
                       width: Get.width,
                       height: 45.0,
@@ -233,11 +241,10 @@ class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
                       elevation: 2.0,
                       borderSide: BorderSide(
                         color: Colors.transparent,
-                        width: 1.0,
-                      ),
+                        width: 1.0),
                       borderRadius: BorderRadius.circular(5.0),
                     ),
-                  ).paddingOnly(top: 20,bottom: 20),
+                  ).paddingOnly(top: 20,bottom: 20)),
                   Divider().paddingOnly(bottom: 10),
                   Container(
                     width: MediaQuery.of(context).size.width,
@@ -247,51 +254,21 @@ class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
                       color: Colors.lightBlueAccent,
                     ),
                     child: Center(
-                        child: Text(
-                          "Email Alerts",
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                              color: Colors.white),
-                        )),
+                      child: Obx(() => Text(
+                        languageController.getTranslation('email_alerts'),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      )),
+                    ),
                   ).paddingOnly(bottom: 20),
-                  // Text(
-                  //   'IP addresses allowed to access API. Maximum 5 (Separate each one with a comma)',
-                  //   style: TextStyle(
-                  //     fontSize: 16,
-                  //     fontWeight: FontWeight.bold,
-                  //   ),
-                  // ),
-                  // Container(
-                  //   height: 49,
-                  //   child: TextField(
-                  //     controller: chargesController.allowedIpsController,
-                  //     keyboardType: TextInputType.text,
-                  //     decoration: InputDecoration(
-                  //         contentPadding: EdgeInsets.only(top: 5,left: 5),
-                  //         border: OutlineInputBorder(
-                  //           borderRadius: BorderRadius.circular(8),
-                  //           borderSide: BorderSide(color: Colors.grey),
-                  //         ),
-                  //         focusedBorder: OutlineInputBorder(
-                  //           borderRadius: BorderRadius.circular(8),
-                  //           borderSide: BorderSide(color: Colors.grey),
-                  //         ),
-                  //         hintText: 'IP addresses allowed to access API',
-                  //         hintStyle: TextStyle(color: Colors.grey)
-                  //     ),
-                  //   ),
-                  // ),
-                  // SizedBox(height: 10,),
-                  // CustomButton(text: "Save",
-                  //   onPressed: () async {
-                  //     await chargesController.saveAllowedIps();
-                  //   },),
                   Obx(() {
                     return Column(
                       children: [
                         CheckboxListTile(
-                          title: Text('All deposits'),
+                          title: Text(languageController.getTranslation('all_deposits')),
                           value: chargesController.notifyDeposits.value,
                           onChanged: (bool? newValue) {
                             chargesController.notifyDeposits.value = newValue ?? false;
@@ -300,7 +277,7 @@ class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
                           activeColor: Colors.blue,
                         ),
                         CheckboxListTile(
-                          title: Text('All withdrawals'),
+                          title: Text(languageController.getTranslation('all_withdrawals')),
                           value: chargesController.notifyWithdrawals.value,
                           onChanged: (bool? newValue) {
                             chargesController.notifyWithdrawals.value = newValue ?? false;
@@ -311,12 +288,12 @@ class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
                       ],
                     );
                   }),
-                  FFButtonWidget(
+                  Obx(() => FFButtonWidget(
                     onPressed: () async {
                       await chargesController.saveEmailAlerts();
                       chargesController.fetchCharges(context); // Refresh data after saving
                     },
-                    text: 'Save',
+                    text: languageController.getTranslation('save'),
                     options: FFButtonOptions(
                       width: Get.width,
                       height: 45.0,
@@ -337,231 +314,11 @@ class _ScreenGeneralSettingsState extends State<ScreenGeneralSettings> {
                       ),
                       borderRadius: BorderRadius.circular(5.0),
                     ),
-                  ).paddingOnly(top: 20,bottom: 20),
+                  ).paddingOnly(top: 20,bottom: 20)),
                   Divider(),
-                  Text("Who pays the deposit charge?",style: TextStyle(
-                      fontSize: 20,fontWeight: FontWeight.bold
-                  ),),
-                  Obx(() {
-                    return Column(
-                      children: [
-                        RadioListTile<String>(
-                          value: 'Merchant',
-                          groupValue: chargesController.depselectedRole.value,
-                          onChanged: (value) {
-                            chargesController.depselectedRole.value = value!;
-                          },
-                          title: RichText(
-                            text: TextSpan(
-                              text: 'Merchant',
-                              style: TextStyle(color: Colors.black),
-                              children: [
-                                TextSpan(
-                                  text: ' (Recommended)',
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ],
-                            ),
-                          ),
-                          activeColor: Colors.blue,
-                        ),
-                        RadioListTile<String>(
-                          value: 'Customer',
-                          groupValue: chargesController.depselectedRole.value,
-                          onChanged: (value) {
-                            chargesController.depselectedRole.value = value!;
-                          },
-                          title: Text('Customer'),
-                          activeColor: Colors.blue,
-                        ),
-                      ],
-                    );
-                  }),
-                  SizedBox(height: 10,),
-                  Text("Who pays the withdrawal  charge?",style: TextStyle(
-                      fontSize: 20,fontWeight: FontWeight.bold
-                  ),),
-                  Obx(() {
-                    return Column(
-                      children: [
-                        RadioListTile<String>(
-                          value: 'Merchant',
-                          groupValue: chargesController.witselectedRole.value,
-                          onChanged: (value) {
-                            chargesController.witselectedRole.value = value!;
-                          },
-                          title: RichText(
-                            text: TextSpan(
-                              text: 'Merchant',
-                              style: TextStyle(color: Colors.black),
-                              children: [
-                                TextSpan(
-                                  text: ' (Recommended)',
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ],
-                            ),
-                          ),
-                          activeColor: Colors.blue,
-                        ),
-                        RadioListTile<String>(
-                          value: 'Customer',
-                          groupValue: chargesController.witselectedRole.value,
-                          onChanged: (value) {
-                            chargesController.witselectedRole.value = value!;
-                          },
-                          title: Text('Customer'),
-                          activeColor: Colors.blue,
-                        ),
-                      ],
-                    );
-                  }),
-                  FFButtonWidget(
-                    onPressed: () async {
-                      await chargesController.savePayCharges();
-                      chargesController.fetchCharges(context); // Refresh data after saving
-                    },
-                    text: 'Save',
-                    options: FFButtonOptions(
-                      width: Get.width,
-                      height: 45.0,
-                      padding: EdgeInsetsDirectional.fromSTEB(
-                          0.0, 0.0, 0.0, 0.0),
-                      iconPadding: EdgeInsetsDirectional.fromSTEB(
-                          0.0, 0.0, 0.0, 0.0),
-                      color: DamaspayTheme.of(context).primary,
-                      textStyle:
-                      DamaspayTheme.of(context).titleSmall.override(
-                        fontFamily: 'Poppins',
-                        color: Colors.white,
-                      ),
-                      elevation: 2.0,
-                      borderSide: BorderSide(
-                        color: Colors.transparent,
-                        width: 1.0,
-                      ),
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                  ).paddingOnly(top: 10,bottom: 20),
-                  Divider().paddingOnly(top: 10,bottom: 10),
-                  Text("Allow withdrawals through API?",style: TextStyle(
-                      fontSize: 20,fontWeight: FontWeight.bold
-                  ),),
-                  Obx(() {
-                    return Column(
-                      children: [
-                        RadioListTile<String>(
-                          value: 'Yes',
-                          groupValue: chargesController.allowApiWithdrawal.value ?? '', // Handle null case
-                          onChanged: (value) {
-                            chargesController.allowApiWithdrawal.value = value!;
-                          },
-                          title: Text("Yes"),
-                          activeColor: Colors.blue,
-                        ),
-                        RadioListTile<String>(
-                          value: 'No',
-                          groupValue: chargesController.allowApiWithdrawal.value ?? '', // Handle null case
-                          onChanged: (value) {
-                            chargesController.allowApiWithdrawal.value = value!;
-                          },
-                          title: Text("No"),
-                          activeColor: Colors.blue,
-                        ),
-                        SizedBox(height: 10),
-                        FFButtonWidget(
-                          onPressed: chargesController.allowApiWithdrawal.value != null
-                              ? () async {
-                            await chargesController.setApiWithdrawal();
-                            await chargesController.fetchCharges(context);
-                          }
-                              : null, // Disable button if value is null
-                          text: 'Save',
-                          options: FFButtonOptions(
-                            width: Get.width,
-                            height: 45.0,
-                            color: chargesController.allowApiWithdrawal.value != null
-                                ? DamaspayTheme.of(context).primary
-                                : Colors.grey,
-                            textStyle: DamaspayTheme.of(context).titleSmall.override(
-                              fontFamily: 'Poppins',
-                              color: Colors.white,
-                            ),
-                            elevation: 2.0,
-                            borderRadius: BorderRadius.circular(5.0),
-                          ),
-                        ).paddingOnly(top: 10, bottom: 20),
-
-                      ],
-                    );
-                  })
-
-                  // Text(
-                  //   'MTN low balance threshold',
-                  //   style: TextStyle(
-                  //     fontSize: 16,
-                  //     fontWeight: FontWeight.bold,
-                  //   ),
-                  // ),
-                  // SizedBox(height: 10,),
-                  // Container(
-                  //   height: 49,
-                  //   child: TextField(
-                  //     controller: chargesController.mtnLowBalanceController,
-                  //     keyboardType: TextInputType.number,
-                  //     decoration: InputDecoration(
-                  //       contentPadding: EdgeInsets.only(top: 5,left: 5),
-                  //       border: OutlineInputBorder(
-                  //         borderRadius: BorderRadius.circular(8),
-                  //         borderSide: BorderSide(color: Colors.grey),
-                  //       ),
-                  //       focusedBorder: OutlineInputBorder(
-                  //         borderRadius: BorderRadius.circular(8),
-                  //         borderSide: BorderSide(color: Colors.grey),
-                  //       ),
-                  //     ),
-                  //   ),
-                  // ),
-                  // SizedBox(height: 10,),
-                  // CustomButton(text: "Save",
-                  //   onPressed: () async {
-                  //     await chargesController.saveMtnLowBalance();
-                  //   },),
-                  // SizedBox(height: 10,),
-                  // Text(
-                  //   'Orange  low balance threshold',
-                  //   style: TextStyle(
-                  //     fontSize: 16,
-                  //     fontWeight: FontWeight.bold,
-                  //   ),
-                  // ),
-                  // SizedBox(height: 10,),
-                  // Container(
-                  //   height: 49,
-                  //   child: TextField(
-                  //     controller: chargesController.orangeLowBalanceController,
-                  //     keyboardType: TextInputType.number,
-                  //     decoration: InputDecoration(
-                  //       contentPadding: EdgeInsets.only(top: 5,left: 5),
-                  //       border: OutlineInputBorder(
-                  //         borderRadius: BorderRadius.circular(8),
-                  //         borderSide: BorderSide(color: Colors.grey),
-                  //       ),
-                  //       focusedBorder: OutlineInputBorder(
-                  //         borderRadius: BorderRadius.circular(8),
-                  //         borderSide: BorderSide(color: Colors.grey),
-                  //       ),
-                  //     ),
-                  //   ),
-                  // ),
-                  // SizedBox(height: 10,),
-                  // CustomButton(text: "Save",
-                  //   onPressed: () async {
-                  //     await chargesController.saveOrangeLowBalance();
-                  //   },),
                 ],
               ).paddingSymmetric(horizontal: 15,vertical: 10),
-              CustomBottomContainer()
+              CustomBottomContainerPostLogin()
             ],
           ),
         ),

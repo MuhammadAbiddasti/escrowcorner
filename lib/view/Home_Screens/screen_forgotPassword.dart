@@ -1,32 +1,39 @@
-import 'package:dacotech/view/controller/forgot_password_controller.dart';
-import 'package:dacotech/view/screens/login/screen_login.dart';
-import 'package:dacotech/view/screens/register/screen_signup.dart';
+import 'package:escrowcorner/view/controller/forgot_password_controller.dart';
+import 'package:escrowcorner/view/screens/login/screen_login.dart';
+import 'package:escrowcorner/view/screens/register/screen_signup.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../widgets/custom_appbar/custom_appbar.dart';
-import '../../widgets/custom_button/custom_button.dart';
+
 import '../../widgets/custom_button/damaspay_button.dart';
 import '../../widgets/custom_textField/custom_field.dart';
 import '../controller/logo_controller.dart';
 import '../theme/damaspay_theme/Damaspay_theme.dart';
 import 'custom_leading_appbar.dart';
+import '../controller/language_controller.dart';
+import '../../widgets/language_selector/language_selector_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ScreenForgotPassword extends StatelessWidget {
   final LogoController logoController = Get.put(LogoController());
   final ForgotPasswordController forgotPasswordController =Get.put(ForgotPasswordController());
+  final LanguageController languageController = Get.find<LanguageController>();
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(backgroundColor: Color(0xffE6F0F7),
-        appBar: AppBar(backgroundColor: Color(0xff0766AD),
+        appBar: AppBar(backgroundColor: Color(0xff0f9373),
           title: AppBarTitle(),
           leading: CustomLeadingAppbar(),
           actions: [
-            IconButton(onPressed: (){}, icon: Icon(Icons.language,color: Colors.green,size: 30,)),
-            IconButton(onPressed: (){
-              Get.to(ScreenLogin());
-            }, icon: Icon(Icons.account_circle,color: Color(0xffFEA116),
-              size: 30,))
+            QuickLanguageSwitcher(),
+            IconButton(onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              final token = prefs.getString('auth_token');
+              if (token == null || token.isEmpty) {
+                Get.offAll(() => ScreenLogin());
+              }
+            }, icon: Icon(Icons.account_circle,color: Color(0xffFEA116), size: 30,))
           ],
         ),
         body: SingleChildScrollView(
@@ -53,7 +60,7 @@ class ScreenForgotPassword extends StatelessWidget {
               ),
               Align(
                 alignment: Alignment.topCenter,
-                child: Text("Reset Password",style: TextStyle(
+                child: Text(languageController.getTranslation('reset_password'),style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: Color(0xff666565),
                     fontSize: 28,
@@ -62,14 +69,14 @@ class ScreenForgotPassword extends StatelessWidget {
               ),
               SizedBox(height: 10,),
               CustomField(
-                label: "Email Address",
+                label: languageController.getTranslation('email_address'),
                 controller: forgotPasswordController.emailController,
               ),
               FFButtonWidget(
                 onPressed: () async {
                   await forgotPasswordController.resetPassword(forgotPasswordController.emailController.text);
                 },
-                text: 'RESET PASSWORD',
+                text: languageController.getTranslation('reset_password'),
                 options: FFButtonOptions(
                   width: Get.width,
                   height: 45.0,
@@ -94,7 +101,7 @@ class ScreenForgotPassword extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    "Don't have an account?",style: TextStyle(
+                    languageController.getTranslation('dont_have_an_account_yet'),style: TextStyle(
                       fontSize: 14,fontWeight: FontWeight.w400,
                       color: Color(0xff666565)
                   ),
@@ -112,7 +119,7 @@ class ScreenForgotPassword extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          "Sign Up",style: TextStyle(
+                          languageController.getTranslation('sign_up'),style: TextStyle(
                             fontSize: 14,fontWeight: FontWeight.w400,
                             color: Color(0xff666565)
                 
@@ -126,7 +133,7 @@ class ScreenForgotPassword extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    "Have an account?",style: TextStyle(
+                    languageController.getTranslation('have_account'),style: TextStyle(
                       fontSize: 14,fontWeight: FontWeight.w400,
                       color: Color(0xff666565)
                   ),
@@ -144,7 +151,7 @@ class ScreenForgotPassword extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          "Sign In",style: TextStyle(
+                          languageController.getTranslation('sign_in'),style: TextStyle(
                             fontSize: 14,fontWeight: FontWeight.w400,
                             color: Color(0xff666565)
                 

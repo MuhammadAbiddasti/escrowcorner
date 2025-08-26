@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:dacotech/view/screens/withdraw/withdrawal_controller.dart';
+import 'package:escrowcorner/view/screens/withdraw/withdrawal_controller.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import '../../../widgets/custom_token/constant_token.dart';
@@ -123,7 +123,7 @@ class TransactionsController extends GetxController {
       return;
     }
 
-    final url = Uri.parse('$baseUrl/api/payment_method');
+    final url = Uri.parse('$baseUrl/api/getPaymentMethods');
 
     final response = await http.get(
       url,
@@ -134,11 +134,28 @@ class TransactionsController extends GetxController {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-      final List<dynamic> data = jsonResponse['data'];
       print("Payment :${response.body}");
-      final List<OperatorMethod> fetchedMethods =
-      data.map((item) => OperatorMethod.fromJson(item)).toList();
-      selectedOperator.assignAll(fetchedMethods);
+      
+      // Handle the correct response structure: data.payment_method
+      List<dynamic> paymentMethodsList = [];
+      if (jsonResponse['data'] != null && jsonResponse['data']['payment_method'] != null) {
+        paymentMethodsList = jsonResponse['data']['payment_method'] as List;
+      }
+      
+      if (paymentMethodsList.isNotEmpty) {
+        final List<OperatorMethod> fetchedMethods =
+        paymentMethodsList.map((item) => OperatorMethod.fromJson(item)).toList();
+        selectedOperator.assignAll(fetchedMethods);
+        
+        // Automatically select the first payment method if none is selected
+        if (selectedOperator.isEmpty == false && selectedOperator.isNotEmpty) {
+          // Note: selectedOperator is a list, so we don't need to set a single selected value
+          // The first item will be available for selection
+        }
+      } else {
+        print('No payment methods found in response');
+        selectedOperator.clear();
+      }
     } else {
       throw Exception('Failed to load payment methods');
     }

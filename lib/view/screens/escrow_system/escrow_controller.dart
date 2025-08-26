@@ -1,12 +1,14 @@
 import 'dart:io';
 
-import 'package:dacotech/view/screens/escrow_system/send_escrow/screen_escrow_list.dart';
-import 'package:dacotech/widgets/custom_token/constant_token.dart';
-import 'package:dacotech/widgets/custom_api_url/constant_url.dart';
+import 'package:escrowcorner/view/screens/escrow_system/send_escrow/screen_escrow_list.dart';
+import 'package:escrowcorner/view/screens/escrow_system/models/escrow_models.dart';
+import 'package:escrowcorner/widgets/custom_token/constant_token.dart';
+import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../controller/language_controller.dart';
 
 class UserEscrowsController extends GetxController {
   var isLoading = false.obs;
@@ -19,6 +21,8 @@ class UserEscrowsController extends GetxController {
   Rx<EscrowCategory?> selectedCategory = Rx<EscrowCategory?>(null);
   RxList<EscrowCurrency> currencies = <EscrowCurrency>[].obs; // List to hold fetched currencies
   Rx<int?> selectedCurrencyId = Rx<int?>(null);
+  RxList<EscrowPaymentMethod> paymentMethods = <EscrowPaymentMethod>[].obs; // List to hold fetched payment methods
+  Rx<int?> selectedPaymentMethodId = Rx<int?>(null);
   bool get receivedHasPreviousPage => receivedCurrentPage.value > 1;
   bool get receivedHasNextPage => receivedCurrentPage.value < receivedTotalPages.value;
 
@@ -149,9 +153,15 @@ class UserEscrowsController extends GetxController {
   Future<void> escrowRefund(String eid) async {
     final String? token = await getToken(); // Ensure getToken() fetches your auth token
     final Uri url = Uri.parse("$baseUrl/api/escrowRefund?eid=$eid");
+    final languageController = Get.find<LanguageController>();
 
     if (token == null) {
-      Get.snackbar('Error', 'Token not found');
+      Get.snackbar(
+        languageController.getTranslation('error'),
+        languageController.getTranslation('token_not_found'),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return;
     }
 
@@ -168,32 +178,47 @@ class UserEscrowsController extends GetxController {
       // print("Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        Get.snackbar('Success', 'Escrow refund processed successfully',
+        Get.snackbar(
+          languageController.getTranslation('success'),
+          languageController.getTranslation('escrow_refund_processed_successfully'),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
-          colorText: Colors.white,);
+          colorText: Colors.white,
+        );
         // Handle the response data as needed
       } else {
         final data = json.decode(response.body);
-        String message = data['message'] ?? 'Failed to process escrow release';
-        Get.snackbar('Message', message,
+        String message = data['message'] ?? languageController.getTranslation('failed_to_process_escrow_release');
+        Get.snackbar(
+          languageController.getTranslation('message'),
+          message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white,);
+          colorText: Colors.white,
+        );
       }
     } catch (e) {
-      Get.snackbar('Error', 'An error occurred: ${e.toString()}',
+      Get.snackbar(
+        languageController.getTranslation('error'),
+        languageController.getTranslation('an_error_occurred'),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
-        colorText: Colors.white,);
+        colorText: Colors.white,
+      );
     }
   }
   Future<void> escrowCancel(String eid) async {
     final String? token = await getToken(); // Ensure getToken() fetches your auth token
     final Uri url = Uri.parse("$baseUrl/api/cancelRequest?eid=$eid");
+    final languageController = Get.find<LanguageController>();
 
     if (token == null) {
-      Get.snackbar('Error', 'Token not found');
+      Get.snackbar(
+        languageController.getTranslation('error'),
+        languageController.getTranslation('token_not_found'),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return;
     }
 
@@ -210,28 +235,37 @@ class UserEscrowsController extends GetxController {
       // print("Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        Get.snackbar('Success', 'Escrow cancel processed successfully',
+        Get.snackbar(
+          languageController.getTranslation('success'),
+          languageController.getTranslation('escrow_cancel_processed_successfully'),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
-          colorText: Colors.white,);
+          colorText: Colors.white,
+        );
         // Handle the response data as needed
       } else {
         final data = json.decode(response.body);
-        String message = data['message'] ?? 'Failed to process escrow cancel';
-        Get.snackbar('Message', message,
+        String message = data['message'] ?? languageController.getTranslation('failed_to_process_escrow_cancel');
+        Get.snackbar(
+          languageController.getTranslation('message'),
+          message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
-          colorText: Colors.white,);
+          colorText: Colors.white,
+        );
       }
     } catch (e) {
-      Get.snackbar('Error', 'An error occurred: ${e.toString()}',
+      Get.snackbar(
+        languageController.getTranslation('error'),
+        languageController.getTranslation('an_error_occurred'),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
-        colorText: Colors.white,);
+        colorText: Colors.white,
+      );
     }
   }
 
-  Future<void> storeEscrow({
+  Future<Map<String, dynamic>?> storeEscrow({
     required String title,
     required double amount,
     required String email,
@@ -239,13 +273,21 @@ class UserEscrowsController extends GetxController {
     required String currency,
     required String description,
     required bool escrowTermConditions, // New parameter
-    File? attachment, // Optional file parameter
+    List<File>? attachments, // Optional multiple files parameter
+    int? paymentMethodId, // Payment method ID parameter
+    String? productName, // Product name parameter
   }) async {
+    final languageController = Get.find<LanguageController>();
+    
     try {
       String? token = await getToken();
       if (token == null) {
         print("Error: Token is null. Cannot proceed with the request.");
-        return;
+        return {
+          'success': false,
+          'message': languageController.getTranslation('token_not_found'),
+          'data': null
+        };
       }
       print("Retrieved Token: $token");
 
@@ -264,11 +306,26 @@ class UserEscrowsController extends GetxController {
         ..fields['currency'] = currency
         ..fields['description'] = description
         ..fields['escrow_term_conditions'] = escrowTermConditions.toString();
+      
+      // Add payment method ID if selected
+      if (paymentMethodId != null) {
+        request.fields['method_id'] = paymentMethodId.toString();
+        print("Method ID added: $paymentMethodId");
+      }
+      
+      // Add product name if provided
+      if (productName != null && productName.isNotEmpty) {
+        request.fields['product_name'] = productName;
+        print("Product name added: $productName");
+      }
 
-      // Add file if available
-      if (attachment != null) {
-        request.files.add(await http.MultipartFile.fromPath('attachment', attachment.path));
-        print("File attached: ${attachment.path}");
+      // Add files if available
+      if (attachments != null && attachments.isNotEmpty) {
+        for (int i = 0; i < attachments.length; i++) {
+          request.files.add(await http.MultipartFile.fromPath('attachments[]', attachments[i].path));
+          print("File attached: ${attachments[i].path}");
+        }
+        print("Total files attached: ${attachments.length}");
       }
 
       // Send the request
@@ -279,44 +336,35 @@ class UserEscrowsController extends GetxController {
       print("Response Body: $responseBody");
 
       if (response.statusCode == 200) {
-        // Success
-        Get.snackbar(
-          "Success",
-          "Escrow stored successfully!",
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        await Future.delayed(Duration(seconds: 1));
-        Get.off(() => ScreenEscrowList());
-        clearField();
+        // Success - return the API response data
         print("Escrow stored successfully: ${responseBody['message']}");
+        return {
+          'success': true,
+          'message': responseBody['message'] ?? languageController.getTranslation('escrow_stored_successfully'),
+          'data': responseBody
+        };
       } else {
-        // Error handling
-        String errorMessage = responseBody['message'] ?? "An error occurred";
+        // Error - return error response data
+        String errorMessage = responseBody['message'] ?? languageController.getTranslation('an_error_occurred');
         if (responseBody['message'] is String) {
           errorMessage = responseBody['message'];
         } else if (responseBody['message'] is Map && responseBody['message']['email'] != null) {
           errorMessage = responseBody['message']['email'][0];
         }
-        Get.snackbar(
-          "Error",
-          errorMessage,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
         print("Failed to store request escrow: $errorMessage");
+        return {
+          'success': false,
+          'message': errorMessage,
+          'data': responseBody
+        };
       }
     } catch (e) {
       print("An error occurred: $e");
-      Get.snackbar(
-        "Error",
-        "An unexpected error occurred. Please try again.",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      return {
+        'success': false,
+        'message': languageController.getTranslation('an_unexpected_error_occurred_please_try_again'),
+        'data': null
+      };
     }
   }
 
@@ -388,39 +436,75 @@ class UserEscrowsController extends GetxController {
     }
   }
 
+  Future<void> fetchPaymentMethods() async {
+    try {
+      isLoading.value = true;
+      final token = await getToken();
+      if (token == null) {
+        print('Token is null. Cannot fetch payment methods.');
+        isLoading.value = false;
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/getPaymentMethods'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Payment Methods API Response Status Code: ${response.statusCode}');
+      print('Payment Methods API Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        
+        // Handle the correct response structure: data.payment_method
+        List<dynamic> paymentMethodsList = [];
+        if (jsonResponse['data'] != null && jsonResponse['data']['payment_method'] != null) {
+          paymentMethodsList = jsonResponse['data']['payment_method'] as List;
+        }
+        
+        print('Found payment methods in data: ${paymentMethodsList.length} items');
+        
+        if (paymentMethodsList.isNotEmpty) {
+          final List<EscrowPaymentMethod> fetchedMethods =
+              paymentMethodsList.map((item) => EscrowPaymentMethod.fromJson(item)).toList();
+          paymentMethods.value = fetchedMethods;
+          print('Payment methods fetched successfully: ${paymentMethods.length} items.');
+          
+          // Automatically select the first payment method if none is selected
+          if (selectedPaymentMethodId.value == null && fetchedMethods.isNotEmpty) {
+            selectedPaymentMethodId.value = fetchedMethods.first.id;
+          }
+          
+          // Debug: Print each payment method
+          for (var method in paymentMethods) {
+            print('Payment Method: ID=${method.id}, Name=${method.paymentMethodName}, Created=${method.createdAt}');
+          }
+        } else {
+          print('No payment methods found in response');
+          paymentMethods.clear();
+          selectedPaymentMethodId.value = null;
+        }
+      } else {
+        print('Failed to fetch payment methods. Status Code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error occurred while fetching payment methods: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   void clearField() {
     selectedCategory.value==null;
     selectedCurrencyId.value==null;
+    selectedPaymentMethodId.value==null;
 }
 
 }
 
-
-class EscrowCategory {
-  final int id;
-  final String title;
-  final String status;
-
-  EscrowCategory({required this.id, required this.title, required this.status});
-
-  factory EscrowCategory.fromJson(Map<String, dynamic> json) {
-    return EscrowCategory(
-      id: json['id'],
-      title: json['title'],
-      status: json['status'],
-    );
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-          other is EscrowCategory &&
-              runtimeType == other.runtimeType &&
-              id == other.id;
-
-  @override
-  int get hashCode => id.hashCode;
-}
 
 class EscrowCurrency {
   final int id;
@@ -449,6 +533,42 @@ class EscrowCurrency {
       thumb: json['thumb'], // Can be null
     );
   }
+}
+
+class EscrowPaymentMethod {
+  final int id;
+  final String? name;
+  final String? paymentMethodName;
+  final String? createdAt;
+  final String? updatedAt;
+
+  EscrowPaymentMethod({
+    required this.id,
+    this.name,
+    this.paymentMethodName,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory EscrowPaymentMethod.fromJson(Map<String, dynamic> json) {
+    return EscrowPaymentMethod(
+      id: json['id'],
+      name: json['payment_method_name'] ?? json['name'] ?? '',
+      paymentMethodName: json['payment_method_name'] ?? json['name'] ?? '',
+      createdAt: json['created_at'] ?? '',
+      updatedAt: json['updated_at'] ?? '',
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is EscrowPaymentMethod &&
+              runtimeType == other.runtimeType &&
+              id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 
