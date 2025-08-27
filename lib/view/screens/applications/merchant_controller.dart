@@ -1,7 +1,7 @@
 
 import 'package:escrowcorner/view/screens/applications/screen_merchant.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
@@ -9,6 +9,8 @@ import 'dart:convert';
 import 'dart:io';
 import '../../../widgets/custom_token/constant_token.dart';
 import '../../../widgets/custom_api_url/constant_url.dart';
+import '../../../utils/rate_limiter.dart';
+import '../../controller/language_controller.dart';
 
 class MerchantController extends GetxController {
   RxList<Merchant> merchants = <Merchant>[].obs;
@@ -106,6 +108,20 @@ class MerchantController extends GetxController {
   }
 
   Future<void> fetchPaymentMethods() async {
+    // Rate limiting check
+    if (!RateLimiter.canMakeRequest(key: 'fetchPaymentMethods')) {
+      print('Rate limit exceeded for fetchPaymentMethods');
+      Get.snackbar(
+        'Rate Limit Exceeded',
+        'Too many requests. Please wait a moment before trying again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+      );
+      return;
+    }
+    
     String? token = await getToken();
     if (token == null) {
       print('Error: Token is null');
@@ -156,30 +172,39 @@ class MerchantController extends GetxController {
   Future<void> createMerchant(BuildContext context) async {
     print('createMerchant method called');
     
+    // Get language controller for translations
+    final LanguageController languageController = Get.find<LanguageController>();
+    
     // Validate required fields
     if (merchantName.value.isEmpty) {
-              Get.snackbar('Error', 'Sub account name is required',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM);
+              Get.snackbar(
+                languageController.getTranslation('error'), 
+                languageController.getTranslation('please_enter_sub_account_name'),
+                backgroundColor: Colors.red,
+                colorText: Colors.white,
+                snackPosition: SnackPosition.BOTTOM);
       return;
     }
     
 
     
     if (merchantDescription.value.isEmpty) {
-              Get.snackbar('Error', 'Sub account description is required',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM);
+              Get.snackbar(
+                languageController.getTranslation('error'), 
+                languageController.getTranslation('sub_account_description_required'),
+                backgroundColor: Colors.red,
+                colorText: Colors.white,
+                snackPosition: SnackPosition.BOTTOM);
       return;
     }
     
     if (avatar.value == null) {
-              Get.snackbar('Error', 'Sub account logo is required',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM);
+              Get.snackbar(
+                languageController.getTranslation('error'), 
+                languageController.getTranslation('sub_account_logo_is_requird'),
+                backgroundColor: Colors.red,
+                colorText: Colors.white,
+                snackPosition: SnackPosition.BOTTOM);
       return;
     }
   
@@ -207,27 +232,34 @@ class MerchantController extends GetxController {
         var response = await request.send();
         var responseData = await response.stream.bytesToString();
         
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          var jsonResponse = jsonDecode(responseData);
-          if (jsonResponse['success'] == true) {
-            Get.snackbar('Success', jsonResponse['message'],
-                backgroundColor: Colors.green,
-                colorText: Colors.white,
-                snackPosition: SnackPosition.BOTTOM);
-            clearFormFields();
-            Get.off(ScreenMerchant());
-            await fetchMerchants();
-            break; // Break the retry loop if successful
-          } else {
-            // Handle case where success is false but status code is 200/201
-            String errorMessage = jsonResponse['message'] ?? 'Failed to create Sub Account';
-            print('Success false, error message: $errorMessage');
-            Get.snackbar('Error', errorMessage,
-                backgroundColor: Colors.red,
-                colorText: Colors.white,
-                snackPosition: SnackPosition.BOTTOM);
-            break; // Don't retry for this type of error
-          }
+                 if (response.statusCode == 200 || response.statusCode == 201) {
+           var jsonResponse = jsonDecode(responseData);
+           if (jsonResponse['success'] == true) {
+             Get.snackbar(
+                 languageController.getTranslation('success'), 
+                 jsonResponse['message'] ?? languageController.getTranslation('sub_added_successfully'),
+                 backgroundColor: Colors.green,
+                 colorText: Colors.white,
+                 snackPosition: SnackPosition.BOTTOM);
+             // Only reset form and navigate on successful creation
+             clearFormFields();
+             Get.off(ScreenMerchant());
+             await fetchMerchants();
+             break; // Break the retry loop if successful
+           } else {
+             // Handle case where success is false but status code is 200/201
+             String errorMessage = jsonResponse['message'] ?? languageController.getTranslation('an_error_occurred');
+             print('Success false, error message: $errorMessage');
+             Get.snackbar(
+                 languageController.getTranslation('error'), 
+                 errorMessage,
+                 backgroundColor: Colors.red,
+                 colorText: Colors.white,
+                 snackPosition: SnackPosition.BOTTOM);
+             // Don't reset form or navigate when success is false
+             // User's entered data remains in the form fields
+             break; // Don't retry for this type of error
+           }
         } else if (response.statusCode == 429) {
           retryCount++;
           if (retryCount >= maxRetries) {
@@ -238,9 +270,11 @@ class MerchantController extends GetxController {
           // Handle other error status codes (like 400)
           try {
             var errorResponse = jsonDecode(responseData);
-            String errorMessage = errorResponse['message'] ?? 'Failed to create Sub Account';
+            String errorMessage = errorResponse['message'] ?? languageController.getTranslation('an_error_occurred');
             print('Error message from backend: $errorMessage');
-            Get.snackbar('Error', errorMessage,
+            Get.snackbar(
+                languageController.getTranslation('error'), 
+                errorMessage,
                 backgroundColor: Colors.red,
                 colorText: Colors.white,
                 snackPosition: SnackPosition.BOTTOM);
@@ -248,7 +282,9 @@ class MerchantController extends GetxController {
           } catch (jsonError) {
             // If JSON parsing fails, use generic error message
             print('JSON parsing error: $jsonError');
-            Get.snackbar('Error', 'Failed to create Sub Account. Status: ${response.statusCode}',
+            Get.snackbar(
+                languageController.getTranslation('error'), 
+                '${languageController.getTranslation('an_error_occurred')}. Status: ${response.statusCode}',
                 backgroundColor: Colors.red,
                 colorText: Colors.white,
                 snackPosition: SnackPosition.BOTTOM);
@@ -257,7 +293,9 @@ class MerchantController extends GetxController {
         }
       } catch (e) {
         if (retryCount >= maxRetries) {
-          Get.snackbar('Error', e.toString(),
+          Get.snackbar(
+              languageController.getTranslation('error'), 
+              e.toString(),
               backgroundColor: Colors.red,
               colorText: Colors.white,
               snackPosition: SnackPosition.BOTTOM);
@@ -374,6 +412,20 @@ class MerchantController extends GetxController {
 
 // Method for Fetch Merchants History
   Future<void> fetchMerchants() async {
+    // Rate limiting check
+    if (!RateLimiter.canMakeRequest(key: 'fetchMerchants')) {
+      print('Rate limit exceeded for fetchMerchants');
+      Get.snackbar(
+        'Rate Limit Exceeded',
+        'Too many requests. Please wait a moment before trying again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+      );
+      return;
+    }
+    
     try {
       isLoading(true);
 
@@ -698,6 +750,20 @@ class MerchantController extends GetxController {
 
   // Method to fetch merchant transactions
   Future<void> fetchMerchantTransactions(String merchantId, {String filter = 'today', bool loadMore = false}) async {
+    // Rate limiting check
+    if (!RateLimiter.canMakeRequest(key: 'fetchMerchantTransactions')) {
+      print('Rate limit exceeded for fetchMerchantTransactions');
+      Get.snackbar(
+        'Rate Limit Exceeded',
+        'Too many requests. Please wait a moment before trying again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+      );
+      return;
+    }
+    
     print('=== STARTING MERCHANT TRANSACTION FETCH ===');
     print('Merchant ID: $merchantId');
     print('Filter: $filter');

@@ -1,19 +1,28 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../widgets/custom_appbar/custom_appbar.dart';
+import '../../../widgets/common_header/common_header.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
-import '../../../widgets/custom_button/damaspay_button.dart';
+
 import '../../theme/damaspay_theme/Damaspay_theme.dart';
 import '../user_profile/user_profile_controller.dart';
+import '../../controller/language_controller.dart';
 import 'merchant_controller.dart';
 
-class ScreenAddMerchant extends StatelessWidget {
+class ScreenAddMerchant extends StatefulWidget {
+  @override
+  _ScreenAddMerchantState createState() => _ScreenAddMerchantState();
+}
+
+class _ScreenAddMerchantState extends State<ScreenAddMerchant> {
   final MerchantController controller = Get.put(MerchantController());
-  final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
+  
   //final TextEditingController currencyController = TextEditingController();
   final TextEditingController merchantNameController = TextEditingController();
-
+  
+  // Loading state for submit button
+  bool _isSubmitting = false;
 
   final TextEditingController merchantSuccessLinkController =
       TextEditingController();
@@ -25,33 +34,49 @@ class ScreenAddMerchant extends StatelessWidget {
       TextEditingController();
 
   @override
-  Widget build(BuildContext context) {
-    // Initialize controllers with current values
-    merchantNameController.text = controller.merchantName.value;
+  void initState() {
+    super.initState();
+    // Refresh/reset the screen every time it's loaded
+    // Use addPostFrameCallback to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshScreen();
+    });
+  }
 
-    merchantDescriptionController.text = controller.merchantDescription.value;
+  void _refreshScreen() {
+    // Reset all form controllers
+    merchantNameController.clear();
+    merchantDescriptionController.clear();
     
+    // Reset controller values using GetX reactive variables
+    controller.merchantName.value = '';
+    controller.merchantDescription.value = '';
+    controller.avatar.value = null;
+    controller.avatarUrl.value = '';
+    
+    // Reset submit state
+    setState(() {
+      _isSubmitting = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff191f28),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('add_merchant'),
+        managerId: userProfileController.userId.value,
       ),
-      body: Stack(
-        children: <Widget>[
-          SingleChildScrollView(
-            child: Center(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  //CustomBtcContainer(),
-                  Container(
+      body: SingleChildScrollView(
+        padding: EdgeInsets.only(bottom: 20), // Add bottom padding to prevent footer overlap
+        child: Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              //CustomBtcContainer(),
+              Container(
                 //height: MediaQuery.of(context).size.height * 0.5,
                 width: MediaQuery.of(context).size.width * 0.9,
                 decoration: BoxDecoration(
@@ -62,52 +87,63 @@ class ScreenAddMerchant extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "New Sub Account",
+                      languageController.getTranslation('new_sub_account'),
                       style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          fontSize: 14,
                           color: Color(0xff18CE0F),
                           fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10),
+                    ).paddingOnly(top: 2),
                     Text(
-                      "Sub Account Logo",
+                      languageController.getTranslation('sub_account_logo'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Color(0xff484848),
                           fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
+                    ).paddingOnly(top: 2, bottom: 2),
                     Divider(
                       color: Color(0xffDDDDDD),
                     ),
                     Center(
                       child: Container(
-                        //height: MediaQuery.of(context).size.height * 0.26,
+                        height: MediaQuery.of(context).size.width * 0.56, // Fixed height equal to width for perfect circle
                         width: MediaQuery.of(context).size.width * 0.56,
-                        decoration: BoxDecoration(shape: BoxShape.circle),
-                        child: Obx(() {
-                          if (controller.avatar.value != null) {
-                            return Image.file(
-                              controller.avatar.value!,
-                              fit: BoxFit.cover,
-                            );
-                          } else if (controller.avatarUrl.value.isNotEmpty) {
-                            return Image.network(
-                              controller.avatarUrl.value,
-                              fit: BoxFit.cover,
-                            );
-                          } else {
-                            return Image.asset(
-                              "assets/images/profile.png",
-                              fit: BoxFit.cover,
-                            );
-                          }
-                        }),
-                      ).paddingOnly(top: 10),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey[200], // Background color for the circle
+                        ),
+                        child: ClipOval(
+                          child: Obx(() {
+                            if (controller.avatar.value != null) {
+                              return Image.file(
+                                controller.avatar.value!,
+                                fit: BoxFit.cover,
+                                width: MediaQuery.of(context).size.width * 0.56,
+                                height: MediaQuery.of(context).size.width * 0.56,
+                              );
+                            } else if (controller.avatarUrl.value.isNotEmpty) {
+                              return Image.network(
+                                controller.avatarUrl.value,
+                                fit: BoxFit.cover,
+                                width: MediaQuery.of(context).size.width * 0.56,
+                                height: MediaQuery.of(context).size.width * 0.56,
+                              );
+                            } else {
+                              return Image.asset(
+                                "assets/images/profile.png",
+                                fit: BoxFit.cover,
+                                width: MediaQuery.of(context).size.width * 0.56,
+                                height: MediaQuery.of(context).size.width * 0.56,
+                              );
+                            }
+                          }),
+                        ),
+                      ).paddingOnly(top: 2),
                     ),
                     Divider(
                       color: Color(0xffDDDDDD),
-                    ).paddingOnly(top: 20),
+                    ).paddingOnly(top: 4),
                     Row(
                       children: [
                         GestureDetector(
@@ -123,7 +159,7 @@ class ScreenAddMerchant extends StatelessWidget {
                             ),
                             child: Center(
                               child: Text(
-                                "Choose a File",
+                                languageController.getTranslation('choose_file'),
                                 style: TextStyle(
                                     fontWeight: FontWeight.w400, fontSize: 12),
                               ),
@@ -133,14 +169,14 @@ class ScreenAddMerchant extends StatelessWidget {
                         TextButton(
                             onPressed: () {},
                             child: Text(
-                              "No file choosen",
+                              languageController.getTranslation('no_file_chosen'),
                               style: TextStyle(color: Color(0xff666565)),
                             ))
                       ],
-                    ).paddingOnly(bottom: 20)
+                    ).paddingOnly(bottom: 4)
                   ],
                 ).paddingSymmetric(horizontal: 15),
-              ).paddingOnly(top: 20),
+              ).paddingOnly(top: 6),
               Container(
                 //height: 469,
                 //height: MediaQuery.of(context).size.height * 0.95,
@@ -153,20 +189,20 @@ class ScreenAddMerchant extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Sub Account Name",
+                      languageController.getTranslation('sub_account_name'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Color(0xff484848),
                           fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
+                    ).paddingOnly(top: 6, bottom: 6),
                     TextFormField(
                       controller: merchantNameController,
                       onChanged: (value) {
                         controller.merchantName.value = value;
                       },
                       decoration: InputDecoration(
-                        contentPadding: EdgeInsets.only(left: 5),
+                        contentPadding: EdgeInsets.only(left: 5, top: 12, bottom: 12),
                         hintStyle: TextStyle(color: Color(0xffA9A9A9)),
                         border: OutlineInputBorder(
                             borderSide: BorderSide(color: Color(0xff666565))),
@@ -179,137 +215,24 @@ class ScreenAddMerchant extends StatelessWidget {
                         ),
                       ),
                     ),
-                  //   Text(
-                  //     "Merchant Currency",
-                  //     style: TextStyle(
-                  //         fontWeight: FontWeight.w400,
-                  //         fontSize: 14,
-                  //         color: Color(0xff484848),
-                  //         fontFamily: 'Nunito'),
-                  //   ).paddingOnly(top: 10, bottom: 10),
-                  // Obx(() {
-                  //   if (controller.currencies.isEmpty) {
-                  //     return Center(child: CircularProgressIndicator());
-                  //   } else {
-                  //     return TextFormField(
-                  //       controller: TextEditingController(text: controller.selectedCurrency.value?.name ??""),                            //initialValue: controller.selectedMethod.value?.name ?? '',
-                  //       readOnly: true,
-                  //       decoration: InputDecoration(
-                  //         contentPadding: EdgeInsets.only(left: 5),
-                  //         hintText: controller.selectedCurrency.value?.name ?? "Select Method",
-                  //         hintStyle: TextStyle(color: Color(0xff666565)),
-                  //         border: OutlineInputBorder(
-                  //           borderSide: BorderSide(color: Color(0xff666565)),
-                  //         ),
-                  //         enabledBorder: OutlineInputBorder(
-                  //           borderSide: BorderSide(color: Color(0xff666565)),
-                  //         ),
-                  //         focusedBorder: OutlineInputBorder(
-                  //           borderSide: BorderSide(color: Color(0xff666565)),
-                  //         ),
-                  //         suffixIcon: PopupMenuButton<MCurrency>(
-                  //           icon: Icon(Icons.expand_more),
-                  //           onSelected: (MCurrency results) {
-                  //             controller.selectedCurrency.value= results;
-                  //           },
-                  //           itemBuilder: (BuildContext context) {
-                  //             return controller.currencies.map((MCurrency method) {
-                  //               return PopupMenuItem<MCurrency>(
-                  //                 value: method,
-                  //                 child: Text(method.name),
-                  //               );
-                  //             }).toList();
-                  //           },
-                  //         ),
-                  //
-                  //       ),
-                  //     );
-                  //   }
-                  // }),
-
-
-                    // Text(
-                    //   "Success URL:",
-                    //   style: TextStyle(
-                    //       fontWeight: FontWeight.w400,
-                    //       fontSize: 14,
-                    //       color: Color(0xff484848),
-                    //       fontFamily: 'Nunito'),
-                    // ).paddingOnly(top: 10, bottom: 10),
-                    // Container(
-                    //   height: 42,
-                    //   child: TextFormField(
-                    //     keyboardType: TextInputType.url,
-                    //     controller: TextEditingController(text: controller.merchantSuccessLink.value),
-                    //     onChanged: (value) {
-                    //       controller.merchantSuccessLink.value = value;
-                    //     },
-                    //     //onChanged: (value) => controller.merchantSuccessLink(value),
-                    //     decoration: InputDecoration(
-                    //       contentPadding: EdgeInsets.only(left: 5),
-                    //       hintStyle: TextStyle(color: Color(0xffA9A9A9)),
-                    //       border: OutlineInputBorder(
-                    //           borderSide: BorderSide(color: Color(0xff666565))),
-                    //       enabledBorder: OutlineInputBorder(
-                    //           borderSide: BorderSide(color: Color(0xff666565))),
-                    //       focusedBorder: OutlineInputBorder(
-                    //         borderSide: BorderSide(
-                    //           color: Color(0xff666565),
-                    //         ),
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-                    // Text(
-                    //   "Fail URL",
-                    //   style: TextStyle(
-                    //       fontWeight: FontWeight.w400,
-                    //       fontSize: 14,
-                    //       color: Color(0xff484848),
-                    //       fontFamily: 'Nunito'),
-                    // ).paddingOnly(top: 10, bottom: 10),
-                    // Container(
-                    //   height: 42,
-                    //   child: TextFormField(
-                    //     keyboardType: TextInputType.url,
-                    //     //onChanged: (value) => controller.merchantFailLink(value),
-                    //     controller: TextEditingController(text: controller.merchantFailLink.value),
-                    //     onChanged: (value) {
-                    //       controller.merchantFailLink.value = value;
-                    //     },
-                    //     decoration: InputDecoration(
-                    //       contentPadding: EdgeInsets.only(left: 5),
-                    //       hintStyle: TextStyle(color: Color(0xffA9A9A9)),
-                    //       border: OutlineInputBorder(
-                    //           borderSide: BorderSide(color: Color(0xff666565))),
-                    //       enabledBorder: OutlineInputBorder(
-                    //           borderSide: BorderSide(color: Color(0xff666565))),
-                    //       focusedBorder: OutlineInputBorder(
-                    //         borderSide: BorderSide(
-                    //           color: Color(0xff666565),
-                    //         ),
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
                     Text(
-                      "Sub Account Description",
+                      languageController.getTranslation('sub_account_description'),
                       style: TextStyle(
                           fontWeight: FontWeight.w400,
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Color(0xff484848),
                           fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10),
+                    ).paddingOnly(top: 6, bottom: 6),
                     TextFormField(
                       controller: merchantDescriptionController,
                       onChanged: (value) {
                         controller.merchantDescription.value = value;
                       },
                       //onChanged: (value) => controller.merchantDescription(value),
-                      maxLines: 4,
+                      maxLines: 3,
                       decoration: InputDecoration(
-                        hintText: "Write description...",
-                        contentPadding: EdgeInsets.only(top: 4, left: 5),
+                        hintText: languageController.getTranslation('write_description'),
+                        contentPadding: EdgeInsets.only(top: 8, left: 5, bottom: 8),
                         hintStyle: TextStyle(color: Color(0xffA9A9A9)),
                         border: OutlineInputBorder(
                             borderSide: BorderSide(color: Color(0xff666565))),
@@ -322,61 +245,136 @@ class ScreenAddMerchant extends StatelessWidget {
                         ),
                       ),
                     ),
-                    FFButtonWidget(
-                      onPressed: () async {
-                        print('Save button pressed');
-                        print('Form values:');
-                        print('Name: ${merchantNameController.text}');
-
-                        print('Description: ${merchantDescriptionController.text}');
-                        print('Avatar: ${controller.avatar.value?.path}');
-                        
-                        // Update controller values from form controllers
-                        controller.merchantName.value = merchantNameController.text;
-
-                        controller.merchantDescription.value = merchantDescriptionController.text;
-                        
-                        // Adding a delay of 3 seconds before the API call
-                        await Future.delayed(Duration(seconds: 3));
-                        print('Delay completed, calling createMerchant...');
-                        await controller.createMerchant(context);
-                        print('createMerchant call completed');
-                      },
-                      text: 'Save',
-                      options: FFButtonOptions(
-                        width: Get.width,
-                        height: 45.0,
-                        padding: EdgeInsetsDirectional.fromSTEB(
-                            0.0, 0.0, 0.0, 0.0),
-                        iconPadding: EdgeInsetsDirectional.fromSTEB(
-                            0.0, 0.0, 0.0, 0.0),
-                        color: DamaspayTheme.of(context).primary,
-                        textStyle:
-                        DamaspayTheme.of(context).titleSmall.override(
-                          fontFamily: 'Poppins',
-                          color: Colors.white,
+                    Container(
+                      width: Get.width,
+                      height: 45.0,
+                      child: ElevatedButton(
+                        onPressed: _isSubmitting ? null : () async {
+                          // Prevent multiple submissions
+                          if (_isSubmitting) return;
+                          
+                          // Validate form fields
+                          if (merchantNameController.text.trim().isEmpty) {
+                            Get.snackbar(
+                              languageController.getTranslation('error'),
+                              languageController.getTranslation('please_enter_sub_account_name'),
+                              backgroundColor: Colors.red,
+                              colorText: Colors.white,
+                            );
+                            return;
+                          }
+                          
+                                                     if (controller.avatar.value == null && controller.avatarUrl.value.isEmpty) {
+                             Get.snackbar(
+                               languageController.getTranslation('error'),
+                               languageController.getTranslation('sub_account_logo_is_requird'),
+                               backgroundColor: Colors.red,
+                               colorText: Colors.white,
+                             );
+                             return;
+                           }
+                           
+                           if (merchantDescriptionController.text.trim().isEmpty) {
+                             Get.snackbar(
+                               languageController.getTranslation('error'),
+                               languageController.getTranslation('sub_account_description_required'),
+                               backgroundColor: Colors.red,
+                               colorText: Colors.white,
+                             );
+                             return;
+                           }
+                          
+                          setState(() {
+                            _isSubmitting = true;
+                          });
+                          
+                          print('Save button pressed');
+                          print('Form values:');
+                          print('Name: ${merchantNameController.text}');
+                          print('Description: ${merchantDescriptionController.text}');
+                          print('Avatar: ${controller.avatar.value?.path}');
+                          
+                          // Update controller values from form controllers
+                          controller.merchantName.value = merchantNameController.text;
+                          controller.merchantDescription.value = merchantDescriptionController.text;
+                          
+                                                     try {
+                             // Adding a delay of 3 seconds before the API call
+                             await Future.delayed(Duration(seconds: 3));
+                             print('Delay completed, calling createMerchant...');
+                             
+                             // Call the API - the controller will handle the response and show appropriate messages
+                             await controller.createMerchant(context);
+                             print('createMerchant call completed');
+                             
+                             // Note: The controller now handles success/error messages and navigation
+                             // We don't reset the form here anymore - let the controller handle it
+                             // The form will only be reset on successful creation (success: true)
+                           } catch (e) {
+                             print('Error creating merchant: $e');
+                             Get.snackbar(
+                               languageController.getTranslation('error'),
+                               languageController.getTranslation('an_error_occurred'),
+                               backgroundColor: Colors.red,
+                               colorText: Colors.white,
+                             );
+                           } finally {
+                             // Reset loading state
+                             setState(() {
+                               _isSubmitting = false;
+                             });
+                           }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: DamaspayTheme.of(context).primary,
+                          foregroundColor: Colors.white,
+                          elevation: 2.0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5.0),
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
-                        elevation: 2.0,
-                        borderSide: BorderSide(
-                          color: Colors.transparent,
-                          width: 1.0,
-                        ),
-                        borderRadius: BorderRadius.circular(5.0),
+                        child: _isSubmitting
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  languageController.getTranslation('processing') + "...",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              languageController.getTranslation('save'),
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
                       ),
-                    ).paddingOnly(top: 30,bottom: 20),
+                    ).paddingOnly(top: 15, bottom: 12),
                   ],
                 ).paddingSymmetric(horizontal: 15),
-              ).paddingOnly(top: 20, bottom: 20),
-                ],
-              ),
-            ),
+              ).paddingOnly(top: 12, bottom: 12),
+            ],
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: CustomBottomContainerPostLogin(),
-          ),
-        ],
+        ),
       ),
+      bottomNavigationBar: CustomBottomContainerPostLogin(),
     );
   }
 }

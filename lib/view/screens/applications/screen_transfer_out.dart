@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../widgets/custom_appbar/custom_appbar.dart';
+import '../../../widgets/common_header/common_header.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
 import '../../../widgets/custom_button/custom_button.dart';
-import '../../../widgets/custom_textField/custom_field.dart';
+
 import '../user_profile/user_profile_controller.dart';
+import '../../controller/language_controller.dart';
 import 'merchant_controller.dart';
 import 'screen_merchant.dart';
 
@@ -21,6 +22,7 @@ class ScreenTransferOut extends StatefulWidget {
 class _ScreenTransferOutState extends State<ScreenTransferOut> {
   final MerchantController controller = Get.put(MerchantController());
   final UserProfileController userProfileController = Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
   
   final TextEditingController amountController = TextEditingController();
   var selectedPaymentMethod = Rxn<PaymentMethod>();
@@ -29,21 +31,23 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
   @override
   void initState() {
     super.initState();
-    controller.fetchPaymentMethods();
+    controller.fetchPaymentMethods().then((_) {
+      // Auto-select the first payment method if available
+      if (controller.paymentMethods.isNotEmpty) {
+        setState(() {
+          selectedPaymentMethod.value = controller.paymentMethods.first;
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff191f28),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('transfer_out'),
+        managerId: userProfileController.userId.value,
       ),
       body: Column(
         children: [
@@ -72,7 +76,7 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Transfer Out",
+                            languageController.getTranslation('transfer_out'),
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18,
@@ -82,9 +86,9 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
                           ),
                           SizedBox(height: 10),
                           Text(
-                            "Sub Account: ${widget.merchantName}",
+                            "${languageController.getTranslation('sub_account_name')}: ${widget.merchantName}",
                             style: TextStyle(
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.bold,
                               fontSize: 14,
                               color: Colors.black87,
                             ),
@@ -93,7 +97,7 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
                           
                           // Payment Method Dropdown
                           Text(
-                            "Payment Method",
+                            languageController.getTranslation('payment_method'),
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: 14,
@@ -157,7 +161,7 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
                           
                           // Amount Field
                           Text(
-                            "Amount",
+                            languageController.getTranslation('amount'),
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: 14,
@@ -171,7 +175,7 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
                             keyboardType: TextInputType.number,
                             decoration: InputDecoration(
                               contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-                              hintText: "Enter amount",
+                              hintText: languageController.getTranslation('enter_amount'),
                               hintStyle: TextStyle(color: Color(0xffA9A9A9)),
                               border: OutlineInputBorder(
                                 borderSide: BorderSide(color: Color(0xff666565)),
@@ -190,9 +194,14 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
                           // Submit Button
                           Obx(() {
                             return CustomButton(
-                              text: isLoading.value ? "Processing..." : "Submit",
+                              text: isLoading.value ? languageController.getTranslation('processing') + "..." : languageController.getTranslation('submit'),
                               onPressed: isLoading.value ? () {} : () {
-                                _handleTransferOut();
+                                // Prevent double-click by checking loading state
+                                if (!isLoading.value) {
+                                  // Close the mobile keypad
+                                  FocusScope.of(context).unfocus();
+                                  _handleTransferOut();
+                                }
                               },
                             );
                           }),
@@ -211,12 +220,20 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
     );
   }
 
-  void _handleTransferOut() async {
+  Future<void> _handleTransferOut() async {
+    // Prevent multiple simultaneous calls
+    if (isLoading.value) {
+      return;
+    }
+    
+    // Close the mobile keypad
+    FocusScope.of(context).unfocus();
+    
     // Validate fields
     if (selectedPaymentMethod.value == null) {
       Get.snackbar(
-        'Error',
-        'Please select a payment method',
+        languageController.getTranslation('error'),
+        languageController.getTranslation('please_select_payment_method'),
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -226,8 +243,8 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
 
     if (amountController.text.isEmpty) {
       Get.snackbar(
-        'Error',
-        'Please enter an amount',
+        languageController.getTranslation('error'),
+        languageController.getTranslation('please_enter_amount'),
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -238,8 +255,8 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
     double? amount = double.tryParse(amountController.text);
     if (amount == null || amount <= 0) {
       Get.snackbar(
-        'Error',
-        'Please enter a valid amount',
+        languageController.getTranslation('error'),
+        languageController.getTranslation('please_enter_valid_amount'),
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -263,7 +280,7 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
         
         // Show success message from API
         Get.snackbar(
-          'Success',
+          languageController.getTranslation('success'),
           result['message'],
           backgroundColor: Colors.green,
           colorText: Colors.white,
@@ -283,7 +300,7 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
         
         // Show error message from API
         Get.snackbar(
-          'Error',
+          languageController.getTranslation('error'),
           result['message'],
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -296,8 +313,8 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
     } catch (e) {
       isLoading.value = false;
       Get.snackbar(
-        'Error',
-        'An error occurred while submitting the request',
+        languageController.getTranslation('error'),
+        languageController.getTranslation('an_error_occurred'),
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,

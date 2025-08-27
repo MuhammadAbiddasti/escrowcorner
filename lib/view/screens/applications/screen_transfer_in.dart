@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../widgets/custom_appbar/custom_appbar.dart';
+import '../../../widgets/common_header/common_header.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
 import '../../../widgets/custom_button/custom_button.dart';
-import '../../../widgets/custom_textField/custom_field.dart';
+import '../../../utils/rate_limiter.dart';
+
 import '../user_profile/user_profile_controller.dart';
+import '../../controller/language_controller.dart';
 import 'merchant_controller.dart';
 import 'screen_merchant.dart';
 
@@ -21,6 +23,7 @@ class ScreenTransferIn extends StatefulWidget {
 class _ScreenTransferInState extends State<ScreenTransferIn> {
   final MerchantController controller = Get.put(MerchantController());
   final UserProfileController userProfileController = Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
   
   final TextEditingController amountController = TextEditingController();
   var selectedPaymentMethod = Rxn<PaymentMethod>();
@@ -29,21 +32,23 @@ class _ScreenTransferInState extends State<ScreenTransferIn> {
   @override
   void initState() {
     super.initState();
-    controller.fetchPaymentMethods();
+    controller.fetchPaymentMethods().then((_) {
+      // Auto-select the first payment method if available
+      if (controller.paymentMethods.isNotEmpty) {
+        setState(() {
+          selectedPaymentMethod.value = controller.paymentMethods.first;
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff191f28),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('transfer_in'),
+        managerId: userProfileController.userId.value,
       ),
       body: Column(
         children: [
@@ -71,36 +76,36 @@ class _ScreenTransferInState extends State<ScreenTransferIn> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "Transfer In",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 18,
-                              color: Color(0xff18CE0F),
-                              fontFamily: 'Nunito',
-                            ),
-                          ),
+                                                     Text(
+                             languageController.getTranslation('transfer_in'),
+                             style: TextStyle(
+                               fontWeight: FontWeight.w700,
+                               fontSize: 18,
+                               color: Color(0xff18CE0F),
+                               fontFamily: 'Nunito',
+                             ),
+                           ),
                           SizedBox(height: 10),
-                          Text(
-                            "Sub Account: ${widget.merchantName}",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                              color: Colors.black87,
-                            ),
-                          ),
+                                                     Text(
+                             "${languageController.getTranslation('sub_account_name')}: ${widget.merchantName}",
+                             style: TextStyle(
+                               fontWeight: FontWeight.bold,
+                               fontSize: 14,
+                               color: Colors.black87,
+                             ),
+                           ),
                           Divider(color: Color(0xffDDDDDD), height: 30),
                           
                           // Payment Method Dropdown
-                          Text(
-                            "Payment Method",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                              color: Color(0xff484848),
-                              fontFamily: 'Nunito',
-                            ),
-                          ),
+                                                     Text(
+                             languageController.getTranslation('payment_method'),
+                             style: TextStyle(
+                               fontWeight: FontWeight.w500,
+                               fontSize: 14,
+                               color: Color(0xff484848),
+                               fontFamily: 'Nunito',
+                             ),
+                           ),
                           SizedBox(height: 8),
                           Obx(() {
                             if (controller.isLoading.value) {
@@ -156,22 +161,22 @@ class _ScreenTransferInState extends State<ScreenTransferIn> {
                           SizedBox(height: 20),
                           
                           // Amount Field
-                          Text(
-                            "Amount",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                              color: Color(0xff484848),
-                              fontFamily: 'Nunito',
-                            ),
-                          ),
+                                                     Text(
+                             languageController.getTranslation('amount'),
+                             style: TextStyle(
+                               fontWeight: FontWeight.w500,
+                               fontSize: 14,
+                               color: Color(0xff484848),
+                               fontFamily: 'Nunito',
+                             ),
+                           ),
                           SizedBox(height: 8),
                           TextFormField(
                             controller: amountController,
                             keyboardType: TextInputType.number,
                             decoration: InputDecoration(
                               contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-                              hintText: "Enter amount",
+                              hintText: languageController.getTranslation('enter_amount'),
                               hintStyle: TextStyle(color: Color(0xffA9A9A9)),
                               border: OutlineInputBorder(
                                 borderSide: BorderSide(color: Color(0xff666565)),
@@ -188,14 +193,21 @@ class _ScreenTransferInState extends State<ScreenTransferIn> {
                           SizedBox(height: 30),
                           
                           // Submit Button
-                          Obx(() {
-                            return CustomButton(
-                              text: isLoading.value ? "Processing..." : "Submit",
-                              onPressed: isLoading.value ? () {} : () {
-                                _handleTransferIn();
-                              },
-                            );
-                          }),
+                                                     Obx(() {
+                             return CustomButton(
+                               text: isLoading.value ? languageController.getTranslation('processing') + "..." : languageController.getTranslation('submit'),
+                               onPressed: isLoading.value ? () {} : () {
+                                 // Use debouncing to prevent rapid clicks
+                                 RateLimiter.debounceVoid(
+                                   key: 'submit_transfer_in',
+                                   function: () async {
+                                     await _handleTransferIn();
+                                   },
+                                   delay: Duration(milliseconds: 500),
+                                 );
+                               },
+                             );
+                           }),
                         ],
                       ),
                     ),
@@ -211,41 +223,41 @@ class _ScreenTransferInState extends State<ScreenTransferIn> {
     );
   }
 
-  void _handleTransferIn() async {
+  Future<void> _handleTransferIn() async {
     // Validate fields
-    if (selectedPaymentMethod.value == null) {
-      Get.snackbar(
-        'Error',
-        'Please select a payment method',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
+         if (selectedPaymentMethod.value == null) {
+       Get.snackbar(
+         languageController.getTranslation('error'),
+         languageController.getTranslation('please_select_payment_method'),
+         backgroundColor: Colors.red,
+         colorText: Colors.white,
+         snackPosition: SnackPosition.BOTTOM,
+       );
+       return;
+     }
 
-    if (amountController.text.isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Please enter an amount',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
+         if (amountController.text.isEmpty) {
+       Get.snackbar(
+         languageController.getTranslation('error'),
+         languageController.getTranslation('please_enter_amount'),
+         backgroundColor: Colors.red,
+         colorText: Colors.white,
+         snackPosition: SnackPosition.BOTTOM,
+       );
+       return;
+     }
 
     double? amount = double.tryParse(amountController.text);
-    if (amount == null || amount <= 0) {
-      Get.snackbar(
-        'Error',
-        'Please enter a valid amount',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
+         if (amount == null || amount <= 0) {
+       Get.snackbar(
+         languageController.getTranslation('error'),
+         languageController.getTranslation('please_enter_valid_amount'),
+         backgroundColor: Colors.red,
+         colorText: Colors.white,
+         snackPosition: SnackPosition.BOTTOM,
+       );
+       return;
+     }
 
     // Show processing state
     isLoading.value = true;
@@ -262,14 +274,14 @@ class _ScreenTransferInState extends State<ScreenTransferIn> {
         isLoading.value = false;
         
         // Show success message from API
-        Get.snackbar(
-          'Success',
-          result['message'],
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: Duration(seconds: 3),
-        );
+                 Get.snackbar(
+           languageController.getTranslation('success'),
+           result['message'],
+           backgroundColor: Colors.green,
+           colorText: Colors.white,
+           snackPosition: SnackPosition.BOTTOM,
+           duration: Duration(seconds: 3),
+         );
         
         // Clear form
         amountController.clear();
@@ -282,26 +294,26 @@ class _ScreenTransferInState extends State<ScreenTransferIn> {
         isLoading.value = false;
         
         // Show error message from API
-        Get.snackbar(
-          'Error',
-          result['message'],
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: Duration(seconds: 4),
-        );
+                 Get.snackbar(
+           languageController.getTranslation('error'),
+           result['message'],
+           backgroundColor: Colors.red,
+           colorText: Colors.white,
+           snackPosition: SnackPosition.BOTTOM,
+           duration: Duration(seconds: 4),
+         );
         
         // Don't navigate back, let user see the error and try again
       }
     } catch (e) {
       isLoading.value = false;
-      Get.snackbar(
-        'Error',
-        'An error occurred while submitting the request',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+             Get.snackbar(
+         languageController.getTranslation('error'),
+         languageController.getTranslation('an_error_occurred'),
+         backgroundColor: Colors.red,
+         colorText: Colors.white,
+         snackPosition: SnackPosition.BOTTOM,
+       );
     }
   }
 }

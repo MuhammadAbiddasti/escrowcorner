@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../../widgets/custom_appbar/custom_appbar.dart';
+import '../../../widgets/common_header/common_header.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
 import '../user_profile/user_profile_controller.dart';
+import '../../controller/language_controller.dart';
 import 'merchant_controller.dart';
 
 class ScreenMerchantTransactionDetails extends StatefulWidget {
@@ -23,6 +24,10 @@ class ScreenMerchantTransactionDetails extends StatefulWidget {
 class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransactionDetails> {
   late MerchantController controller;
   final UserProfileController userProfileController = Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
+  
+  // Create GlobalKey for the filter dropdown
+  final GlobalKey filterDropdownKey = GlobalKey();
   
   @override
   void initState() {
@@ -78,22 +83,9 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff191f28),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value),
-        actions: [
-          // Debug refresh button
-          IconButton(
-            icon: Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              print('Manual refresh triggered');
-              controller.fetchMerchantTransactions(widget.merchantId, filter: selectedFilter);
-            },
-          ),
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
+      appBar: CommonHeader(
+        title: '${widget.merchantName} - ${languageController.getTranslation('detail')}',
+        managerId: userProfileController.userId.value,
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -103,214 +95,169 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
           controller: _scrollController,
           child: Column(
             children: [
-                             // Header Card
-               Container(
-                 width: MediaQuery.of(context).size.width * 0.95,
-                 margin: EdgeInsets.only(top: 20, bottom: 16, left: 10, right: 0),
-                 decoration: BoxDecoration(
-                   gradient: LinearGradient(
-                     colors: [Color(0xff0766AD), Color(0xff0A8AFF)],
-                     begin: Alignment.topLeft,
-                     end: Alignment.bottomRight,
-                   ),
-                   borderRadius: BorderRadius.circular(15),
-                   boxShadow: [
-                     BoxShadow(
-                       color: Colors.black.withOpacity(0.1),
-                       blurRadius: 10,
-                       offset: Offset(0, 5),
-                     ),
-                   ],
-                 ),
-                 child: Padding(
-                   padding: EdgeInsets.all(20),
-                   child: Column(
-                     children: [
-                       // Application Logo
-                       Obx(() {
-                         final merchant = controller.merchants.firstWhereOrNull(
-                           (m) => m.id == widget.merchantId
-                         );
-                         
-                         return Container(
-                           width: 60,
-                           height: 60,
-                           decoration: BoxDecoration(
-                             color: Colors.white,
-                             borderRadius: BorderRadius.circular(12),
-                             boxShadow: [
-                               BoxShadow(
-                                 color: Colors.black.withOpacity(0.1),
-                                 blurRadius: 5,
-                                 offset: Offset(0, 2),
-                               ),
-                             ],
-                           ),
-                           child: ClipRRect(
-                             borderRadius: BorderRadius.circular(12),
-                             child: merchant?.logo != null && merchant!.logo.isNotEmpty
-                                 ? Image.network(
-                                     merchant.logo,
-                                     fit: BoxFit.cover,
-                                     errorBuilder: (context, error, stackTrace) {
-                                       return Icon(
-                                         Icons.account_balance_wallet,
-                                         color: Color(0xff0766AD),
-                                         size: 30,
-                                       );
-                                     },
-                                     loadingBuilder: (context, child, loadingProgress) {
-                                       if (loadingProgress == null) return child;
-                                       return Center(
-                                         child: CircularProgressIndicator(
-                                           value: loadingProgress.expectedTotalBytes != null
-                                               ? loadingProgress.cumulativeBytesLoaded / 
-                                                 loadingProgress.expectedTotalBytes!
-                                               : null,
-                                           valueColor: AlwaysStoppedAnimation<Color>(Color(0xff0766AD)),
-                                         ),
-                                       );
-                                     },
-                                   )
-                                 : Icon(
-                                     Icons.account_balance_wallet,
-                                     color: Color(0xff0766AD),
-                                     size: 30,
-                                   ),
-                           ),
-                         );
-                       }),
-                       SizedBox(height: 15),
-                       Text(
-                         widget.merchantName,
-                         style: TextStyle(
-                           color: Colors.white,
-                           fontSize: 20,
-                           fontWeight: FontWeight.bold,
-                         ),
-                         textAlign: TextAlign.center,
-                       ),
-                       SizedBox(height: 5),
-                       Text(
-                         'Transaction History',
-                         style: TextStyle(
-                           color: Colors.white.withOpacity(0.9),
-                           fontSize: 14,
-                         ),
-                       ),
-                     ],
-                   ),
-                 ),
-               ),
-               
-               // Filter Dropdown
-               Container(
-                 width: MediaQuery.of(context).size.width * 0.95,
-                 margin: EdgeInsets.only(bottom: 16, left: 10, right: 0),
-                 decoration: BoxDecoration(
-                   color: Colors.white,
-                   borderRadius: BorderRadius.circular(10),
-                   boxShadow: [
-                     BoxShadow(
-                       color: Colors.black.withOpacity(0.05),
-                       blurRadius: 5,
-                       offset: Offset(0, 2),
-                     ),
-                   ],
-                 ),
-                 child: Padding(
-                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                   child: Row(
-                     children: [
-                       Icon(
-                         Icons.filter_list,
-                         color: Color(0xff0766AD),
-                         size: 20,
-                       ),
-                       SizedBox(width: 8),
-                       Text(
-                         'Filter:',
-                         style: TextStyle(
-                           fontSize: 14,
-                           fontWeight: FontWeight.w600,
-                           color: Colors.grey[700],
-                         ),
-                       ),
-                       SizedBox(width: 12),
-                       Expanded(
-                         child: DropdownButtonHideUnderline(
-                           child: DropdownButton<String>(
-                             value: selectedFilter,
-                             isExpanded: true,
-                             icon: Icon(Icons.keyboard_arrow_down, color: Color(0xff0766AD)),
-                             style: TextStyle(
-                               fontSize: 14,
-                               color: Colors.black87,
-                               fontWeight: FontWeight.w500,
-                             ),
-                             items: [
-                               DropdownMenuItem(
-                                 value: 'today',
-                                 child: Text('Today'),
-                               ),
-                               DropdownMenuItem(
-                                 value: 'weekly',
-                                 child: Text('Weekly'),
-                               ),
-                               DropdownMenuItem(
-                                 value: 'monthly',
-                                 child: Text('Monthly'),
-                               ),
-                               DropdownMenuItem(
-                                 value: 'yearly',
-                                 child: Text('Yearly'),
-                               ),
-                             ],
-                             onChanged: (String? newValue) {
-                               if (newValue != null) {
-                                 setState(() {
-                                   selectedFilter = newValue;
-                                 });
-                                 // Reset pagination and fetch new data
-                                 controller.currentPage.value = 1;
-                                 controller.hasMoreData.value = true;
-                                 controller.fetchMerchantTransactions(
-                                   widget.merchantId, 
-                                   filter: newValue
-                                 );
-                               }
-                             },
-                           ),
-                         ),
-                       ),
-                     ],
-                   ),
-                 ),
-               ),
+              // Header Card
+              Container(
+                width: MediaQuery.of(context).size.width * 0.95,
+                margin: EdgeInsets.only(top: 20, bottom: 16, left: 10, right: 0),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xff0766AD), Color(0xff0A8AFF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // Application Logo
+                      Obx(() {
+                        final merchant = controller.merchants.firstWhereOrNull(
+                          (m) => m.id == widget.merchantId
+                        );
+                        
+                        return Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 5,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: merchant?.logo != null && merchant!.logo.isNotEmpty
+                                ? Image.network(
+                                    merchant.logo,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(
+                                        Icons.account_balance_wallet,
+                                        color: Color(0xff0766AD),
+                                        size: 30,
+                                      );
+                                    },
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded / 
+                                                loadingProgress.expectedTotalBytes!
+                                              : null,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff0766AD)),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Icon(
+                                    Icons.account_balance_wallet,
+                                    color: Color(0xff0766AD),
+                                    size: 30,
+                                  ),
+                          ),
+                        );
+                      }),
+                      SizedBox(height: 15),
+                      Text(
+                        widget.merchantName,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        languageController.getTranslation('transaction_history'),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               
-                             // Transactions List
-               Obx(() {
-                 print('UI Update - Loading: ${controller.isLoading.value}, Transactions Count: ${controller.merchantTransactions.length}');
-                 print('Controller initialized: ${controller != null}');
-                 print('Merchant ID: ${widget.merchantId}');
-                 
-                 if (controller.isLoading.value) {
-                   print('Showing loading shimmer');
-                   return _buildLoadingShimmer();
-                 } else if (controller.merchantTransactions.isEmpty) {
-                   print('Showing empty state - no transactions found');
-                   return _buildEmptyState();
-                 } else {
-                   return _buildTransactionsList();
-                 }
-               }),
+                              // Filter Dropdown
+                Container(
+                  key: filterDropdownKey,
+                  width: MediaQuery.of(context).size.width * 0.95,
+                  margin: EdgeInsets.only(bottom: 16, left: 10, right: 0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 5,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: buildFilterDropdownField(
+                      context,
+                      languageController.getTranslation('filter'),
+                      selectedFilter,
+                      ['today', 'weekly', 'monthly', 'yearly'],
+                      (value) {
+                        setState(() {
+                          selectedFilter = value;
+                        });
+                        // Reset pagination and fetch new data
+                        controller.currentPage.value = 1;
+                        controller.hasMoreData.value = true;
+                        controller.fetchMerchantTransactions(
+                          widget.merchantId, 
+                          filter: value
+                        );
+                      },
+                      filterDropdownKey,
+                    ),
+                  ),
+                ),
+              
+              // Transactions List
+              Obx(() {
+                print('UI Update - Loading: ${controller.isLoading.value}, Transactions Count: ${controller.merchantTransactions.length}');
+                print('Controller initialized: ${controller != null}');
+                print('Merchant ID: ${widget.merchantId}');
+                
+                if (controller.isLoading.value) {
+                  print('Showing loading shimmer');
+                  return _buildLoadingShimmer();
+                } else if (controller.merchantTransactions.isEmpty) {
+                  print('Showing empty state - no transactions found');
+                  return _buildEmptyState();
+                } else {
+                  return _buildTransactionsList();
+                }
+              }),
               
               SizedBox(height: 20),
             ],
           ),
         ),
       ),
-              bottomNavigationBar: CustomBottomContainerPostLogin(),
+      bottomNavigationBar: CustomBottomContainerPostLogin(),
     );
   }
 
@@ -329,7 +276,7 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -367,7 +314,7 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -382,7 +329,7 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
           ),
           SizedBox(height: 16),
           Text(
-            'No Transactions Found',
+            languageController.getTranslation('no_transactions_found'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -391,7 +338,7 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
           ),
           SizedBox(height: 8),
           Text(
-                          'There are no transactions for this sub account yet.',
+            languageController.getTranslation('no_transactions_for_sub_account'),
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[500],
@@ -420,7 +367,7 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -435,18 +382,18 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    transaction.activityTitle,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+                                 Expanded(
+                   child: Text(
+                     _getActivityTitleDisplayText(transaction.activityTitle),
+                     style: TextStyle(
+                       fontSize: 16,
+                       fontWeight: FontWeight.bold,
+                       color: Colors.black87,
+                     ),
+                     maxLines: 2,
+                     overflow: TextOverflow.ellipsis,
+                   ),
+                 ),
                 _buildStatusChip(transaction.status),
               ],
             ),
@@ -454,10 +401,10 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
             SizedBox(height: 16),
             
             // Transaction Details Grid
-            _buildDetailRow('Transaction ID', transaction.transactionId),
-            _buildDetailRow('Date & Time', _formatDateTime(transaction.dateTime)),
-            _buildDetailRow('Method', transaction.method),
-            _buildDetailRow('Description', transaction.description),
+            _buildDetailRow(languageController.getTranslation('transaction_id'), transaction.transactionId),
+            _buildDetailRow(languageController.getTranslation('date_time'), _formatDateTime(transaction.dateTime)),
+            _buildDetailRow(languageController.getTranslation('method'), transaction.method),
+            _buildDetailRow(languageController.getTranslation('description'), transaction.description),
             
             SizedBox(height: 16),
             
@@ -467,16 +414,16 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
               decoration: BoxDecoration(
                 color: Color(0xffF8F9FA),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
               ),
               child: Column(
                 children: [
-                  _buildAmountRow('Gross Amount', transaction.gross, Colors.black87),
-                  _buildAmountRow('Fee', transaction.fee, Colors.red),
-                  Divider(height: 20, color: Colors.grey.withOpacity(0.3)),
-                  _buildAmountRow('Net Amount', transaction.net, Color(0xff0766AD), isBold: true),
-                  Divider(height: 20, color: Colors.grey.withOpacity(0.3)),
-                  _buildAmountRow('Balance', transaction.balance, Colors.green, isBold: true),
+                  _buildAmountRow(languageController.getTranslation('gross_amount'), transaction.gross, Colors.black87),
+                  _buildAmountRow(languageController.getTranslation('fee'), transaction.fee, Colors.red),
+                  Divider(height: 20, color: Colors.grey.withValues(alpha: 0.3)),
+                  _buildAmountRow(languageController.getTranslation('net_amount'), transaction.net, Color(0xff0766AD), isBold: true),
+                  Divider(height: 20, color: Colors.grey.withValues(alpha: 0.3)),
+                  _buildAmountRow(languageController.getTranslation('balance'), transaction.balance, Colors.green, isBold: true),
                 ],
               ),
             ),
@@ -575,7 +522,7 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        status,
+        _getStatusDisplayText(status),
         style: TextStyle(
           color: textColor,
           fontSize: 12,
@@ -592,5 +539,129 @@ class _ScreenMerchantTransactionDetailsState extends State<ScreenMerchantTransac
     } catch (e) {
       return dateTime;
     }
+  }
+
+  String _getFilterDisplayText(String filterValue) {
+    switch (filterValue) {
+      case 'today':
+        return languageController.getTranslation('today');
+      case 'weekly':
+        return languageController.getTranslation('this_week');
+      case 'monthly':
+        return languageController.getTranslation('this_month');
+      case 'yearly':
+        return languageController.getTranslation('this_year');
+      default:
+        return languageController.getTranslation('today');
+    }
+  }
+
+  String _getStatusDisplayText(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return languageController.getTranslation('completed');
+      case 'success':
+        return languageController.getTranslation('success');
+      case 'pending':
+        return languageController.getTranslation('pending');
+      case 'failed':
+        return languageController.getTranslation('failed');
+      case 'rejected':
+        return languageController.getTranslation('rejected');
+      default:
+        return status; // Return original status if no translation found
+    }
+  }
+
+  String _getActivityTitleDisplayText(String activityTitle) {
+    // Check if the activity title matches any known patterns and translate them
+    if (activityTitle.toLowerCase().contains('transfer in')) {
+      return languageController.getTranslation('transfer_in');
+    } else if (activityTitle.toLowerCase().contains('transfer out')) {
+      return languageController.getTranslation('transfer_out');
+    }
+    // Return original title if no translation pattern matches
+    return activityTitle;
+  }
+
+  Widget buildFilterDropdownField(
+    BuildContext context,
+    String label,
+    String selectedValue,
+    List<String> options,
+    void Function(String) onSelected,
+    GlobalKey dropdownKey,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+            color: Color(0xff484848),
+            fontFamily: 'Nunito',
+          ),
+        ),
+        SizedBox(height: 8),
+        Container(
+          height: 35,
+          child: TextFormField(
+            onTap: () {
+              final RenderBox? button = dropdownKey.currentContext?.findRenderObject() as RenderBox?;
+              if (button != null) {
+                final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+                final RelativeRect position = RelativeRect.fromRect(
+                  Rect.fromPoints(
+                    button.localToGlobal(Offset.zero, ancestor: overlay),
+                    button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+                  ),
+                  Offset.zero & overlay.size,
+                );
+                
+                                 showMenu<String>(
+                   context: context,
+                   position: position,
+                   items: options.map((String option) {
+                     return PopupMenuItem<String>(
+                       value: option,
+                       child: Text(
+                         _getFilterDisplayText(option),
+                         style: TextStyle(fontSize: 12),
+                       ),
+                     );
+                   }).toList(),
+                 ).then((selectedOption) {
+                  if (selectedOption != null) {
+                    onSelected(selectedOption);
+                  }
+                });
+              }
+            },
+            readOnly: true,
+            style: TextStyle(fontSize: 12),
+            controller: TextEditingController(text: _getFilterDisplayText(selectedValue)),
+            decoration: InputDecoration(
+              suffixIcon: Icon(Icons.arrow_drop_down, size: 18),
+              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              hintStyle: TextStyle(color: Color(0xffA9A9A9), fontSize: 11),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Color(0xffDDDDDD)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Color(0xffDDDDDD)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Color(0xff18CE0F)),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 } 
