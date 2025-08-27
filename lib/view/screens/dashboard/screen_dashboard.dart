@@ -5,8 +5,7 @@ import 'package:escrowcorner/view/screens/deposit/screen_deposit.dart';
 import 'package:escrowcorner/view/screens/withdraw/screen_withdrawal.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:escrowcorner/widgets/custom_api_url/constant_url.dart';
-import 'package:escrowcorner/view/screens/managers/screen_managers.dart';
-import 'package:escrowcorner/widgets/custom_appbar/custom_appbar.dart';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -21,7 +20,7 @@ import '../managers/manager_permission_controller.dart';
 import 'dashboard_controller.dart' as dash;
 import '../../controller/get_controller.dart';
 import '../../controller/logo_controller.dart';
-import '../../../widgets/language_selector/language_selector_widget.dart';
+
 import '../user_profile/user_profile_controller.dart';
 import '../../controller/language_controller.dart';
 import '../../../widgets/common_header/common_header.dart';
@@ -106,10 +105,9 @@ class _ScreenDashboardState extends State<ScreenDashboard> {
             },
             child: SingleChildScrollView(
               child: Obx(() {
-                final isManager = userProfileController.isManager.value == '1';
-                final isNotManager = userProfileController.isManager.value == '0';
-                final kycStatus = userProfileController.kyc.value == '3';
-                final allowedModules = permissionController.modulePermissions;
+                                 final isManager = userProfileController.isManager.value == '1';
+                 final isNotManager = userProfileController.isManager.value == '0';
+                 final allowedModules = permissionController.modulePermissions;
                 return Column(
                   children: [
                     if (isManager &&
@@ -119,7 +117,7 @@ class _ScreenDashboardState extends State<ScreenDashboard> {
                         children: [
                           Obx(() {
                             return controller.isWalletCreated.value
-                                ? NewContainer(controller)
+                                ? NewContainer(controller, _refreshDashboardData)
                                 : Column(
                                     children: [
                                       Container(
@@ -186,8 +184,7 @@ class _ScreenDashboardState extends State<ScreenDashboard> {
                                                 width: MediaQuery.of(context).size.width * 0.55,
                                                 text: languageController.getTranslation('create_a_wallet'),
                                                 onPressed: () {
-                                                  walletController.fetchWalletCurrencies();
-                                                  controller.createWallet();
+                                                  _showCurrencySelectionDialog(context);
                                                 }),
                                           ],
                                         ),
@@ -301,7 +298,7 @@ class _ScreenDashboardState extends State<ScreenDashboard> {
                         children: [
                           Obx(() {
                             return controller.isWalletCreated.value
-                                ? NewContainer(controller)
+                                ? NewContainer(controller, _refreshDashboardData)
                                 : Column(
                                     children: [
                                       Container(
@@ -368,8 +365,7 @@ class _ScreenDashboardState extends State<ScreenDashboard> {
                                                 width: MediaQuery.of(context).size.width * 0.55,
                                                 text: languageController.getTranslation('create_a_wallet'),
                                                 onPressed: () {
-                                                  walletController.fetchWalletCurrencies();
-                                                  controller.createWallet();
+                                                  _showCurrencySelectionDialog(context);
                                                 }),
                                           ],
                                         ),
@@ -1636,13 +1632,331 @@ class _ScreenDashboardState extends State<ScreenDashboard> {
         ),
       ),
     );
-  }
+     }
+   
+   Future<void> _refreshDashboardData() async {
+     try {
+       print('Starting dashboard refresh...');
+       
+       // Refresh user profile data
+       await userProfileController.fetchUserDetails();
+       print('User profile refreshed');
+       
+       // Refresh wallet balance
+       await walletController.fetchWalletBalance(userProfileController.walletId.value);
+       print('Wallet balance refreshed');
+       
+       // Refresh dashboard data
+       await homeController.fetchFilteredData("today");
+       await completeController.fetchCompleteTransaction("today");
+       await homeController.fetchPendingMoneyRequests('today');
+       await homeController.fetchPendingData('today');
+       await homeController.fetchBalanceData("today");
+       await homeController.fetchDashboardSettings();
+       print('Dashboard data refreshed');
+       
+       // Refresh escrow data
+       await sendEscrowController.fetchSendEscrows();
+       await receivedEscrowController.fetchReceiverEscrows();
+       await requestEscrowController.fetchRequestEscrows();
+       print('Escrow data refreshed');
+       
+       // Refresh manager permissions if applicable
+       if (userProfileController.isManager.value == '1') {
+         await permissionController.fetchManagerPermissions(userProfileController.userId.value);
+         print('Manager permissions refreshed');
+       }
+       
+       print('Dashboard refresh completed successfully');
+       
+     } catch (e) {
+       print('Error refreshing dashboard data: $e');
+       // Show error message if refresh fails
+       Get.snackbar(
+         languageController.getTranslation('error'),
+         'Failed to refresh dashboard data',
+         snackPosition: SnackPosition.BOTTOM,
+         backgroundColor: Colors.red,
+         colorText: Colors.white,
+         duration: Duration(seconds: 3),
+       );
+     }
+   }
+   
+       void _showCurrencySelectionDialog(BuildContext context) {
+     // Show popup immediately with loading state
+     showDialog(
+       context: context,
+       barrierDismissible: false,
+       builder: (BuildContext context) {
+         return Dialog(
+           shape: RoundedRectangleBorder(
+             borderRadius: BorderRadius.circular(20),
+           ),
+           child: Container(
+             height: MediaQuery.of(context).size.height * 0.6,
+             width: MediaQuery.of(context).size.width * 0.9,
+             decoration: BoxDecoration(
+               color: Colors.white,
+               borderRadius: BorderRadius.circular(20),
+             ),
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 // Header
+                 Container(
+                   padding: EdgeInsets.all(20),
+                   decoration: BoxDecoration(
+                     color: Color(0xffCDE0EF),
+                     borderRadius: BorderRadius.only(
+                       topLeft: Radius.circular(20),
+                       topRight: Radius.circular(20),
+                     ),
+                   ),
+                   child: Row(
+                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     children: [
+                       Expanded(
+                         child: Text(
+                           languageController.getTranslation('select_the_wallet_currency'),
+                           style: TextStyle(
+                             color: Color(0xff484848),
+                             fontWeight: FontWeight.w700,
+                             fontSize: 20,
+                           ),
+                         ),
+                       ),
+                       IconButton(
+                         onPressed: () => Navigator.of(context).pop(),
+                         icon: Icon(Icons.close, size: 30, color: Color(0xff484848)),
+                       ),
+                     ],
+                   ),
+                 ),
+                 // Currency List - Always show loading first, then data
+                 Expanded(
+                   child: FutureBuilder(
+                     future: walletController.fetchWalletCurrencies(),
+                     builder: (context, snapshot) {
+                       if (snapshot.connectionState == ConnectionState.waiting) {
+                         return Center(
+                           child: Column(
+                             mainAxisAlignment: MainAxisAlignment.center,
+                             children: [
+                               CircularProgressIndicator(
+                                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xff18CE0F)),
+                               ),
+                               SizedBox(height: 16),
+                               Text(
+                                 languageController.getTranslation('loading_currencies'),
+                                 style: TextStyle(
+                                   color: Color(0xff666565),
+                                   fontSize: 16,
+                                 ),
+                               ),
+                             ],
+                           ),
+                         );
+                       } else if (snapshot.hasError) {
+                         return Center(
+                           child: Column(
+                             mainAxisAlignment: MainAxisAlignment.center,
+                             children: [
+                               Icon(
+                                 Icons.error_outline,
+                                 size: 48,
+                                 color: Colors.red,
+                               ),
+                               SizedBox(height: 16),
+                               Text(
+                                 languageController.getTranslation('error_loading_currencies'),
+                                 style: TextStyle(
+                                   color: Colors.red,
+                                   fontSize: 16,
+                                 ),
+                               ),
+                               SizedBox(height: 16),
+                               ElevatedButton(
+                                 onPressed: () {
+                                   Navigator.of(context).pop();
+                                   _showCurrencySelectionDialog(context);
+                                 },
+                                 child: Text(languageController.getTranslation('retry')),
+                               ),
+                             ],
+                           ),
+                         );
+                       } else {
+                         // Data loaded successfully
+                         return Obx(() {
+                           if (walletController.walletCurrencies.isEmpty) {
+                             return Center(
+                               child: Column(
+                                 mainAxisAlignment: MainAxisAlignment.center,
+                                 children: [
+                                   Icon(
+                                     Icons.account_balance_wallet_outlined,
+                                     size: 48,
+                                     color: Color(0xff666565),
+                                   ),
+                                   SizedBox(height: 16),
+                                   Text(
+                                     languageController.getTranslation('no_currencies_available'),
+                                     style: TextStyle(
+                                       color: Color(0xff666565),
+                                       fontSize: 16,
+                                     ),
+                                   ),
+                                 ],
+                               ),
+                             );
+                           } else {
+                             return ListView.builder(
+                               padding: EdgeInsets.all(15),
+                               itemCount: walletController.walletCurrencies.length,
+                               itemBuilder: (context, index) {
+                                 final currency = walletController.walletCurrencies[index];
+                                 return Container(
+                                   margin: EdgeInsets.only(bottom: 10),
+                                   decoration: BoxDecoration(
+                                     color: Colors.white,
+                                     borderRadius: BorderRadius.circular(15),
+                                     border: Border.all(color: Color(0xffCDE0EF), width: 1),
+                                     boxShadow: [
+                                       BoxShadow(
+                                         color: Colors.grey.withOpacity(0.1),
+                                         spreadRadius: 1,
+                                         blurRadius: 3,
+                                         offset: Offset(0, 2),
+                                       ),
+                                     ],
+                                   ),
+                                   child: ListTile(
+                                     leading: Container(
+                                       padding: EdgeInsets.all(8),
+                                       decoration: BoxDecoration(
+                                         color: Color(0xffCDE0EF),
+                                         borderRadius: BorderRadius.circular(10),
+                                       ),
+                                       child: Icon(
+                                         Icons.account_balance_wallet,
+                                         size: 30,
+                                         color: Color(0xff484848),
+                                       ),
+                                     ),
+                                     title: Text(
+                                       currency.name,
+                                       style: TextStyle(
+                                         color: Color(0xff484848),
+                                         fontWeight: FontWeight.w700,
+                                         fontSize: 16,
+                                       ),
+                                     ),
+                                     subtitle: Text(
+                                       "${currency.symbol} 0.00",
+                                       style: TextStyle(
+                                         color: Color(0xff666565),
+                                         fontWeight: FontWeight.w400,
+                                         fontSize: 14,
+                                       ),
+                                     ),
+                                                                           onTap: () async {
+                                        try {
+                                          // Show loading indicator
+                                          Get.dialog(
+                                            Center(
+                                              child: CircularProgressIndicator(
+                                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff18CE0F)),
+                                              ),
+                                            ),
+                                            barrierDismissible: false,
+                                          );
+                                          
+                                          int accountIdentifierMechanismId = 1; // Default value
+                                          final response = await walletController.createWallet(
+                                            currency.id,
+                                            accountIdentifierMechanismId,
+                                          );
+                                          
+                                          // Close loading dialog
+                                          Get.back();
+                                          
+                                          // Check if wallet creation was successful
+                                          if (response != null && response['success'] == true) {
+                                            print('Wallet created successfully, updating state and refreshing dashboard...');
+                                            
+                                            // Update wallet created state
+                                            controller.isWalletCreated.value = true;
+                                            print('Wallet state updated to: ${controller.isWalletCreated.value}');
+                                            
+                                            // Close currency selection popup
+                                            Navigator.of(context).pop();
+                                            print('Currency selection popup closed');
+                                            
+                                            // Refresh dashboard data
+                                            await _refreshDashboardData();
+                                            print('Dashboard refresh completed');
+                                            
+                                            // Show success message
+                                            Get.snackbar(
+                                              languageController.getTranslation('success'),
+                                              response['message'] ?? languageController.getTranslation('wallet_created_successfully'),
+                                              snackPosition: SnackPosition.BOTTOM,
+                                              backgroundColor: Colors.green,
+                                              colorText: Colors.white,
+                                              duration: Duration(seconds: 3),
+                                            );
+                                          } else {
+                                            // Show error message from API
+                                            final errorMessage = response?['message'] ?? languageController.getTranslation('failed_to_create_wallet');
+                                            Get.snackbar(
+                                              languageController.getTranslation('error'),
+                                              errorMessage,
+                                              snackPosition: SnackPosition.BOTTOM,
+                                              backgroundColor: Colors.red,
+                                              colorText: Colors.white,
+                                              duration: Duration(seconds: 3),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          // Close loading dialog
+                                          Get.back();
+                                          
+                                          // Show error message
+                                          Get.snackbar(
+                                            languageController.getTranslation('error'),
+                                            'Failed to create wallet: ${e.toString()}',
+                                            snackPosition: SnackPosition.BOTTOM,
+                                            backgroundColor: Colors.red,
+                                            colorText: Colors.white,
+                                            duration: Duration(seconds: 3),
+                                          );
+                                        }
+                                      },
+                                   ),
+                                 );
+                               },
+                             );
+                           }
+                         });
+                       }
+                     },
+                   ),
+                 ),
+               ],
+             ),
+           ),
+         );
+       },
+     );
+   }
 }
 
 class NewContainer extends StatelessWidget {
   final MenubuttonController controller;
+  final Future<void> Function() onRefresh;
 
-  NewContainer(this.controller);
+  NewContainer(this.controller, this.onRefresh);
 
   final WalletController walletController = Get.put(WalletController());
   final LanguageController languageController = Get.find<LanguageController>();
@@ -1718,12 +2032,78 @@ class NewContainer extends StatelessWidget {
                             fontSize: 14,
                           ),
                         ),
-                        onTap: () async {
-                          walletController.setWalletCurrency(currency);
-                          int accountIdentifierMechanismId = 1; // Example ID
-                          await walletController.createWallet(
-                              currency.id, accountIdentifierMechanismId);
-                        },
+                                                                                                   onTap: () async {
+                            try {
+                              // Show loading indicator
+                              Get.dialog(
+                                Center(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff18CE0F)),
+                                  ),
+                                ),
+                                barrierDismissible: false,
+                              );
+                              
+                              walletController.setWalletCurrency(currency);
+                              int accountIdentifierMechanismId = 1; // Example ID
+                              final response = await walletController.createWallet(
+                                  currency.id, accountIdentifierMechanismId);
+                              
+                              // Close loading dialog
+                              Get.back();
+                              
+                              // Check if wallet creation was successful
+                              if (response != null && response['success'] == true) {
+                                print('Wallet created successfully in NewContainer, updating state and refreshing dashboard...');
+                                
+                                // Update wallet created state
+                                controller.isWalletCreated.value = true;
+                                print('Wallet state updated to: ${controller.isWalletCreated.value}');
+                                
+                                // Refresh dashboard data
+                                await onRefresh();
+                                print('Dashboard refresh completed in NewContainer');
+                                
+                                // Go back to main dashboard view
+                                controller.goBack();
+                                print('Going back to main dashboard view');
+                                
+                                // Show success message
+                                Get.snackbar(
+                                  languageController.getTranslation('success'),
+                                  response['message'] ?? languageController.getTranslation('wallet_created_successfully'),
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.green,
+                                  colorText: Colors.white,
+                                  duration: Duration(seconds: 3),
+                                );
+                              } else {
+                                // Show error message from API
+                                final errorMessage = response?['message'] ?? languageController.getTranslation('failed_to_create_wallet');
+                                Get.snackbar(
+                                  languageController.getTranslation('error'),
+                                  errorMessage,
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                  duration: Duration(seconds: 3),
+                                );
+                              }
+                            } catch (e) {
+                              // Close loading dialog
+                              Get.back();
+                              
+                              // Show error message
+                              Get.snackbar(
+                                languageController.getTranslation('error'),
+                                'Failed to create wallet: ${e.toString()}',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                                duration: Duration(seconds: 3),
+                              );
+                            }
+                          },
                       ),
                     ).paddingOnly(top: 10);
                   },

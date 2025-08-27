@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../../widgets/custom_appbar/custom_appbar.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
 import '../../../widgets/custom_button/damaspay_button.dart';
+import '../../../widgets/common_header/common_header.dart';
+import '../../controller/language_controller.dart';
 import 'ticket_controller.dart';
 import '../user_profile/user_profile_controller.dart';
 import 'dart:convert';
@@ -20,6 +21,7 @@ class ScreenTicketDetails extends StatefulWidget {
 class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
   final TicketController ticketController = Get.put(TicketController(), permanent: true);
   final UserProfileController userController = Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   void initState() {
@@ -34,14 +36,9 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff191f28),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userController.userId.value),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('ticket_details'),
+        managerId: userController.userId.value,
       ),
       body: Column(
         children: [
@@ -74,7 +71,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Ticket Details",
+                                    languageController.getTranslation('ticket_details'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -86,7 +83,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                   Row(
                                     children: [
                                       Text(
-                                        "Ticket:",
+                                                                                 "${languageController.getTranslation('ticket_id')}:",
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,
@@ -120,7 +117,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        "Status",
+                                        languageController.getTranslation('status'),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,
@@ -146,7 +143,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                               ),
                                               child: Center(
                                                 child: Text(
-                                                  '${details['status'] ?? 'N/A'}',
+                                                  _getTranslatedStatus(details['status'] ?? 'N/A'),
                                                   style: TextStyle(
                                                     fontSize: 15,
                                                     fontWeight: FontWeight.w400,
@@ -163,7 +160,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        "Category",
+                                        languageController.getTranslation('category'),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,
@@ -181,7 +178,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                               ),
                                             )
                                           : Text(
-                                              '${details['category']?['name'] ?? 'N/A'}',
+                                              _getTranslatedCategoryName(details['category']),
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w400,
@@ -196,7 +193,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        "Created",
+                                        languageController.getTranslation('created'),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,
@@ -284,19 +281,19 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                               child: Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: [
-                                                  Flexible(
-                                                    child: Text(
-                                                      "Name: $userName",
-                                                      style: TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight: FontWeight.w500,
-                                                        color: Colors.white,
+                                                                                                      Flexible(
+                                                      child: Text(
+                                                        "${languageController.getTranslation('name')}: $userName",
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.w500,
+                                                          color: Colors.white,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                        maxLines: 1,
+                                                        softWrap: false,
                                                       ),
-                                                      overflow: TextOverflow.ellipsis,
-                                                      maxLines: 1,
-                                                      softWrap: false,
                                                     ),
-                                                  ),
                                                   Text(
                                                     replyDate,
                                                     style: TextStyle(
@@ -365,7 +362,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                 ),
                               ),
                               child: Text(
-                                "Post Replies",
+                                                                 languageController.getTranslation('post_reply'),
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
@@ -388,7 +385,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Message",
+                                    languageController.getTranslation('message'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
@@ -399,7 +396,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                     controller: ticketController.messageController,
                                     maxLines: 3,
                                     decoration: InputDecoration(
-                                      hintText: "Write your message",
+                                      hintText: languageController.getTranslation('write_your_message'),
                                       hintStyle: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w400,
@@ -423,7 +420,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                   
                                   // Attachment Files Section
                                   Text(
-                                    "Attachment Files (Optional)",
+                                    "${languageController.getTranslation('attachment_files')} (${languageController.getTranslation('optional')})",
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
@@ -487,38 +484,44 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                     );
                                   }),
                                   
-                                  // Add Attachment Button
-                                  InkWell(
-                                    onTap: () {
-                                      ticketController.showPickerOptions(context);
-                                    },
-                                    child: Container(
-                                      width: double.infinity,
-                                      padding: EdgeInsets.symmetric(vertical: 12),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.grey[300]!),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.attach_file,
-                                            size: 16,
-                                            color: Colors.grey[600],
-                                          ),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            "Add Attachment Files",
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ).paddingOnly(bottom: 10),
+                                                                     // Add Attachment Button
+                                   Obx(() {
+                                     final isDisabled = ticketController.selectedFiles.length >= 2;
+                                     return InkWell(
+                                       onTap: isDisabled ? null : () {
+                                         ticketController.showPickerOptions(context);
+                                       },
+                                       child: Container(
+                                         width: double.infinity,
+                                         padding: EdgeInsets.symmetric(vertical: 12),
+                                         decoration: BoxDecoration(
+                                           border: Border.all(color: isDisabled ? Colors.grey[400]! : Colors.grey[300]!),
+                                           borderRadius: BorderRadius.circular(5),
+                                           color: isDisabled ? Colors.grey[100] : Colors.white,
+                                         ),
+                                         child: Row(
+                                           mainAxisAlignment: MainAxisAlignment.center,
+                                           children: [
+                                             Icon(
+                                               Icons.attach_file,
+                                               size: 16,
+                                               color: isDisabled ? Colors.grey[400] : Colors.grey[600],
+                                             ),
+                                             SizedBox(width: 8),
+                                             Text(
+                                               isDisabled 
+                                                 ? languageController.getTranslation('max_files_reached')
+                                                 : languageController.getTranslation('add_attachment_files'),
+                                               style: TextStyle(
+                                                 fontSize: 14,
+                                                 color: isDisabled ? Colors.grey[400] : Colors.grey[600],
+                                               ),
+                                             ),
+                                           ],
+                                         ),
+                                       ),
+                                     );
+                                   }).paddingOnly(bottom: 10),
                                   FFButtonWidget(
                                     onPressed: ticketController.isSubmittingReply.value 
                                       ? null 
@@ -526,7 +529,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
                                           await ticketController.postReply(context, widget.ticketId, ticketController.messageController.text);
                                           ticketController.messageController.clear();
                                         },
-                                    text: ticketController.isSubmittingReply.value ? "Submitting..." : "Submit",
+                                    text: ticketController.isSubmittingReply.value ? languageController.getTranslation('submitting') : languageController.getTranslation('submit'),
                                     options: FFButtonOptions(
                                       width: double.infinity,
                                       height: 40,
@@ -600,7 +603,7 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Attachments:",
+            "${languageController.getTranslation('attachments')}:",
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -653,21 +656,54 @@ class _ScreenTicketDetailsState extends State<ScreenTicketDetails> {
               ),
               SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  'Download Attachment Files',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.blue.shade700,
-                    fontWeight: FontWeight.w500,
+                                  child: Text(
+                    languageController.getTranslation('download_attachment_files'),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  String _getTranslatedCategoryName(dynamic category) {
+    if (category == null) return 'N/A';
+    
+    // Check if category is an object with name and fr fields
+    if (category is Map) {
+      if (languageController.selectedLanguage.value?.locale == 'fr' && category['fr'] != null) {
+        return category['fr'];
+      } else {
+        return category['name'] ?? 'N/A';
+      }
+    } else {
+      // Fallback for old structure
+      return category.toString();
+    }
+  }
+
+  String _getTranslatedStatus(String status) {
+    if (status == 'N/A') return 'N/A';
+    
+    switch (status.toLowerCase()) {
+      case 'open':
+        return languageController.getTranslation('open');
+      case 'closed':
+        return languageController.getTranslation('closed');
+      case 'pending':
+        return languageController.getTranslation('pending');
+      case 'in progress':
+        return languageController.getTranslation('in_progress');
+      default:
+        return languageController.getTranslation('unknown') ?? status;
+    }
   }
 }

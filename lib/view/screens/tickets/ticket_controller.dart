@@ -13,6 +13,7 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:open_file/open_file.dart';
+import '../../controller/language_controller.dart';
 
 class TicketController extends GetxController {
   var isLoading = false.obs; // For category loading
@@ -40,22 +41,25 @@ class TicketController extends GetxController {
   
   @override
   void onInit() {
-    fetchTickets();
-    fetchCategories();
+    fetchTickets(); // Categories are now fetched along with tickets
     super.onInit();
   }
 
   // Method for Open New Ticket
   Future<void> openNewTicket(BuildContext context) async {
     if (titleController.text.isEmpty ) {
-      Get.snackbar('Error', 'title is required.',
+      Get.snackbar(
+        Get.find<LanguageController>().getTranslation('error'), 
+        Get.find<LanguageController>().getTranslation('title_is_required'),
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
     if (selectedCategory.value == '' ) {
-      Get.snackbar('Error', 'select a valid category',
+      Get.snackbar(
+        Get.find<LanguageController>().getTranslation('error'), 
+        Get.find<LanguageController>().getTranslation('select_a_category'),
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM);
@@ -63,7 +67,9 @@ class TicketController extends GetxController {
     }
 
     if (messageController.text.isEmpty ) {
-      Get.snackbar('Error', 'Message is required.',
+      Get.snackbar(
+        Get.find<LanguageController>().getTranslation('error'), 
+        Get.find<LanguageController>().getTranslation('message_is_required'),
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM);
@@ -74,7 +80,9 @@ class TicketController extends GetxController {
       String? token = await getToken();
 
       if (token == null) {
-        Get.snackbar("Error", "Unable to authenticate. Please login again.",
+        Get.snackbar(
+          Get.find<LanguageController>().getTranslation('error'), 
+          Get.find<LanguageController>().getTranslation('unable_to_authenticate'),
             backgroundColor: Colors.red,
             colorText: Colors.white,
             snackPosition: SnackPosition.BOTTOM);
@@ -119,17 +127,23 @@ class TicketController extends GetxController {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         var responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          Get.snackbar("Success", "Ticket created successfully",
+                if (responseData['success'] == true) {
+          // Show the message from API response
+          String apiMessage = responseData['message'] ?? Get.find<LanguageController>().getTranslation('ticket_created_successfully');
+          Get.snackbar(
+            Get.find<LanguageController>().getTranslation('success'), 
+            apiMessage,
               backgroundColor: Colors.green,
               colorText: Colors.white,
               snackPosition: SnackPosition.BOTTOM);
-          Get.off(ScreenSupportTicket());
-          clearFields();
-          await fetchTickets();
+                      Get.off(ScreenSupportTicket());
+            clearAllData();
+            await fetchTickets();
         } else {
           print('Error creating ticket: ${responseData['message']}');
-          Get.snackbar("Error", "Error creating ticket: ${responseData['message']}",
+          Get.snackbar(
+            Get.find<LanguageController>().getTranslation('error'), 
+            "${Get.find<LanguageController>().getTranslation('error_creating_ticket')}: ${responseData['message']}",
               backgroundColor: Colors.red,
               colorText: Colors.white,
               snackPosition: SnackPosition.BOTTOM);
@@ -137,14 +151,18 @@ class TicketController extends GetxController {
       } else {
         print('Error creating ticket: ${response.statusCode}');
         print('Response Body: ${response.body}');
-        Get.snackbar("Error", "Error creating ticket: ${response.statusCode}",
+        Get.snackbar(
+          Get.find<LanguageController>().getTranslation('error'), 
+          "${Get.find<LanguageController>().getTranslation('error_creating_ticket')}: ${response.statusCode}",
             backgroundColor: Colors.red,
             colorText: Colors.white,
             snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       print('Exception occurred: $e');
-      Get.snackbar("Error", "An error occurred: $e",
+      Get.snackbar(
+        Get.find<LanguageController>().getTranslation('error'), 
+        "${Get.find<LanguageController>().getTranslation('an_error_occurred')}: $e",
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM);
@@ -161,18 +179,93 @@ class TicketController extends GetxController {
     selectedFiles.clear();
   }
 
+  // Method to clear all data and reset state when opening new ticket screen
+  void clearAllData() {
+    selectedCategory.value = '';
+    selectedCategoryId.value = null;
+    titleController.clear();
+    messageController.clear();
+    selectedFiles.clear();
+    isSubmitting.value = false;
+    isSubmittingReply.value = false;
+    error.value = '';
+    // Reset pagination
+    currentPage.value = 1;
+    totalPages.value = 1;
+    hasMoreData.value = true;
+    isLoadingMore.value = false;
+  }
+
   // Method to pick image files
   Future<void> _pickImageFile() async {
     try {
+      // Check if user already has 2 files
+      if (selectedFiles.length >= 2) {
+        Get.snackbar(
+          Get.find<LanguageController>().getTranslation('error'),
+          Get.find<LanguageController>().getTranslation('max_files_reached'),
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+      
       final List<XFile> files = await _picker.pickMultiImage();
       if (files.isNotEmpty) {
-        selectedFiles.addAll(files.map((file) => File(file.path)));
+        // Calculate how many more files can be added
+        int remainingSlots = 2 - selectedFiles.length;
+        
+        // List of allowed image extensions
+        List<String> allowedExtensions = ['jpg', 'jpeg', 'png', 'PNG'];
+        
+        // Filter files by allowed extensions
+        List<XFile> validFiles = [];
+        List<String> invalidFiles = [];
+        
+        for (int i = 0; i < files.length && validFiles.length < remainingSlots; i++) {
+          var file = files[i];
+          String extension = file.path.split('.').last.toLowerCase();
+          if (allowedExtensions.contains(extension)) {
+            validFiles.add(file);
+          } else {
+            invalidFiles.add(file.path.split('/').last);
+          }
+        }
+        
+        // Add valid files
+        for (var file in validFiles) {
+          selectedFiles.add(File(file.path));
+        }
+        
+        // Show error for invalid files
+        if (invalidFiles.isNotEmpty) {
+          Get.snackbar(
+            Get.find<LanguageController>().getTranslation('error'),
+            "${Get.find<LanguageController>().getTranslation('invalid_file_type')}: ${invalidFiles.join(', ')}",
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: Duration(seconds: 4),
+          );
+        }
+        
+                 // Show message if some files were skipped due to limit
+         if (files.length > remainingSlots && validFiles.length >= remainingSlots) {
+           Get.snackbar(
+             Get.find<LanguageController>().getTranslation('error'),
+             Get.find<LanguageController>().getTranslation('you_can_only_upload_a_maximum_of_2_files'),
+             backgroundColor: Colors.red,
+             colorText: Colors.white,
+             snackPosition: SnackPosition.BOTTOM,
+           );
+         }
       }
     } catch (e) {
       print('Error picking images: $e');
       Get.snackbar(
-        'Error',
-        'Failed to pick images: $e',
+        Get.find<LanguageController>().getTranslation('error'),
+        "${Get.find<LanguageController>().getTranslation('failed_to_pick_images')}: $e",
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -183,25 +276,83 @@ class TicketController extends GetxController {
   // Method to pick document files
   Future<void> _pickDocumentFile() async {
     try {
+      // Check if user already has 2 files
+      if (selectedFiles.length >= 2) {
+        Get.snackbar(
+          Get.find<LanguageController>().getTranslation('error'),
+          Get.find<LanguageController>().getTranslation('max_files_reached'),
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+      
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'txt'],
+        allowedExtensions: ['pdf', 'docx', 'jpg', 'jpeg', 'png', 'PNG'],
       );
 
       if (result != null && result.files.isNotEmpty) {
-        selectedFiles.addAll(
-          result.files
-              .where((file) => file.path != null)
-              .map((file) => File(file.path!))
-        );
+        // Calculate how many more files can be added
+        int remainingSlots = 2 - selectedFiles.length;
+        int filesToAdd = result.files.length > remainingSlots ? remainingSlots : result.files.length;
+        
+        // List of allowed file extensions
+        List<String> allowedExtensions = ['pdf', 'docx', 'jpg', 'jpeg', 'png', 'PNG'];
+        
+        // Filter files by allowed extensions
+        List<dynamic> validFiles = [];
+        List<String> invalidFiles = [];
+        
+        for (int i = 0; i < result.files.length && validFiles.length < remainingSlots; i++) {
+          var file = result.files[i];
+          if (file.path != null) {
+            String extension = file.extension?.toLowerCase() ?? '';
+            if (allowedExtensions.contains(extension)) {
+              validFiles.add(file);
+            } else {
+              invalidFiles.add(file.name);
+            }
+          }
+        }
+        
+        // Add valid files
+        for (var file in validFiles) {
+          selectedFiles.add(File(file.path!));
+        }
+        
+        // Show error for invalid files
+        if (invalidFiles.isNotEmpty) {
+          Get.snackbar(
+            Get.find<LanguageController>().getTranslation('error'),
+            "${Get.find<LanguageController>().getTranslation('invalid_file_type')}: ${invalidFiles.join(', ')}",
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: Duration(seconds: 4),
+          );
+        }
+        
+                 // Show message if some files were skipped due to limit
+         if (result.files.length > remainingSlots && validFiles.length >= remainingSlots) {
+           Get.snackbar(
+             Get.find<LanguageController>().getTranslation('error'),
+             Get.find<LanguageController>().getTranslation('you_can_only_upload_a_maximum_of_2_files'),
+             backgroundColor: Colors.red,
+             colorText: Colors.white,
+             snackPosition: SnackPosition.BOTTOM,
+           );
+         }
+        
         print("Picked files: ${selectedFiles.length} files");
       }
     } catch (e) {
       print('Error picking documents: $e');
       Get.snackbar(
-        'Error',
-        'Failed to pick documents: $e',
+        Get.find<LanguageController>().getTranslation('error'),
+        "${Get.find<LanguageController>().getTranslation('failed_to_pick_documents')}: $e",
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -209,7 +360,7 @@ class TicketController extends GetxController {
     }
   }
 
-  // Method to show picker options
+    // Method to show picker options
   void showPickerOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -220,21 +371,62 @@ class TicketController extends GetxController {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.image, color: Colors.blue),
-                title: Text("Select Image"),
-                onTap: () {
+                leading: Icon(
+                  Icons.image, 
+                  color: selectedFiles.length >= 2 ? Colors.grey : Colors.blue
+                ),
+                title: Text(
+                  Get.find<LanguageController>().getTranslation('select_image'),
+                  style: TextStyle(
+                    color: selectedFiles.length >= 2 ? Colors.grey : Colors.black,
+                  ),
+                ),
+                onTap: selectedFiles.length >= 2 ? null : () {
                   Navigator.pop(context);
                   _pickImageFile();
                 },
               ),
               ListTile(
-                leading: Icon(Icons.file_copy, color: Colors.green),
-                title: Text("Select File"),
-                onTap: () {
+                leading: Icon(
+                  Icons.file_copy, 
+                  color: selectedFiles.length >= 2 ? Colors.grey : Colors.green
+                ),
+                title: Text(
+                  Get.find<LanguageController>().getTranslation('select_file'),
+                  style: TextStyle(
+                    color: selectedFiles.length >= 2 ? Colors.grey : Colors.black,
+                  ),
+                ),
+                onTap: selectedFiles.length >= 2 ? null : () {
                   Navigator.pop(context);
                   _pickDocumentFile();
                 },
               ),
+                             if (selectedFiles.length >= 2)
+                 Padding(
+                   padding: const EdgeInsets.all(16.0),
+                   child: Text(
+                     Get.find<LanguageController>().getTranslation('max_files_reached'),
+                     style: TextStyle(
+                       color: Colors.red,
+                       fontSize: 12,
+                       fontStyle: FontStyle.italic,
+                     ),
+                     textAlign: TextAlign.center,
+                   ),
+                 ),
+               Padding(
+                 padding: const EdgeInsets.all(16.0),
+                 child: Text(
+                   "${Get.find<LanguageController>().getTranslation('allowed_file_types')}: PDF, DOCX, JPG, JPEG, PNG",
+                   style: TextStyle(
+                     color: Colors.grey[600],
+                     fontSize: 11,
+                     fontStyle: FontStyle.italic,
+                   ),
+                   textAlign: TextAlign.center,
+                 ),
+               ),
             ],
           ),
         );
@@ -276,12 +468,14 @@ class TicketController extends GetxController {
         List<Category> fetchedCategories =
         data.map((item) => Category.fromJson(item)).toList();
         categories.assignAll(fetchedCategories);
-        //print('Fetched Categories: $categories');
+        print('Fetched Categories: ${categories.length} categories');
       } else {
         throw Exception('Failed to load categories. Status code: ${response.statusCode}');
       }
     } catch (e) {
       print('Error fetching categories: $e');
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -296,7 +490,9 @@ class TicketController extends GetxController {
       
       String? token = await getToken();
       if (token == null) {
-        Get.snackbar('Error', 'Token is null',
+        Get.snackbar(
+          Get.find<LanguageController>().getTranslation('error'), 
+          Get.find<LanguageController>().getTranslation('token_is_null'),
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.red,
             colorText: Colors.white);
@@ -321,6 +517,13 @@ class TicketController extends GetxController {
         if (responseData.containsKey('data') && responseData['data'].containsKey('tickets')) {
           var fetchedTickets = responseData['data']['tickets'].map<Ticket>((ticket) => Ticket.fromJson(ticket)).toList();
           
+          // Extract categories from the API response if available
+          if (responseData['data'].containsKey('categories')) {
+            var fetchedCategories = responseData['data']['categories'].map<Category>((category) => Category.fromJson(category)).toList();
+            categories.assignAll(fetchedCategories);
+            print('Categories updated from tickets API: ${categories.length} categories');
+          }
+          
           // Update pagination info if available (now nested under data)
           if (responseData['data']['pagination'] != null) {
             currentPage.value = responseData['data']['pagination']['current_page'] ?? 1;
@@ -343,14 +546,18 @@ class TicketController extends GetxController {
         }
       } else {
         print('Error fetching tickets: ${response.statusCode}');
-        Get.snackbar('Error', 'Failed to fetch tickets',
+        Get.snackbar(
+          Get.find<LanguageController>().getTranslation('error'), 
+          Get.find<LanguageController>().getTranslation('failed_to_fetch_tickets'),
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.red,
             colorText: Colors.white);
       }
     } catch (e) {
       print('Exception occurred: $e');
-      Get.snackbar('Error', 'Failed to fetch tickets: $e',
+      Get.snackbar(
+        Get.find<LanguageController>().getTranslation('error'), 
+        "${Get.find<LanguageController>().getTranslation('failed_to_fetch_tickets')}: $e",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);
@@ -415,13 +622,18 @@ class TicketController extends GetxController {
 
     String? token = await getToken();
     if (token == null) {
-      Get.snackbar('Error', 'Token is null');
+      Get.snackbar(
+        Get.find<LanguageController>().getTranslation('error'), 
+        Get.find<LanguageController>().getTranslation('token_is_null')
+      );
       isSubmittingReply.value = false;
       return;
     }
     
     if (message.isEmpty) {
-      Get.snackbar('Error', 'Message is required.',
+      Get.snackbar(
+        Get.find<LanguageController>().getTranslation('error'), 
+        Get.find<LanguageController>().getTranslation('message_is_required'),
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM);
@@ -472,28 +684,31 @@ class TicketController extends GetxController {
       print("Response Body: ${response.body}");
       print("================================");
 
-      if (response.statusCode == 200) {
-        final reply = json.decode(response.body);
-        print("Post Reply Success");
-        Get.snackbar(
-          'Success',
-          'Reply posted successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        
-        // Clear the selected files after successful submission
-        selectedFiles.clear();
-        
-        // After posting, fetch the updated ticket details and replies
-        await fetchTicketDetail(ticketId);
-      } else {
+             if (response.statusCode == 200) {
+         final reply = json.decode(response.body);
+         print("Post Reply Success");
+         
+         // Show the message from API response
+         String apiMessage = reply['message'] ?? Get.find<LanguageController>().getTranslation('reply_posted_successfully');
+         Get.snackbar(
+           Get.find<LanguageController>().getTranslation('success'),
+           apiMessage,
+           backgroundColor: Colors.green,
+           colorText: Colors.white,
+           snackPosition: SnackPosition.BOTTOM,
+         );
+         
+         // Clear the selected files after successful submission
+         selectedFiles.clear();
+         
+         // After posting, fetch the updated ticket details and replies
+         await fetchTicketDetail(ticketId);
+       } else {
         print("Post Reply Failed: ${response.statusCode}");
         print("Response: ${response.body}");
         Get.snackbar(
-          'Error',
-          'Failed to post reply. Please try again.',
+          Get.find<LanguageController>().getTranslation('error'),
+          Get.find<LanguageController>().getTranslation('failed_to_post_reply'),
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
@@ -502,8 +717,8 @@ class TicketController extends GetxController {
     } catch (e) {
       print("Post Reply Error: $e");
       Get.snackbar(
-        'Error',
-        'An error occurred while posting reply.',
+        Get.find<LanguageController>().getTranslation('error'),
+        Get.find<LanguageController>().getTranslation('error_occurred_posting_reply'),
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -527,8 +742,8 @@ class TicketController extends GetxController {
 
       // Show download started message
       Get.snackbar(
-        'Download Started',
-        'Downloading: $fileName',
+        Get.find<LanguageController>().getTranslation('download_started'),
+        "${Get.find<LanguageController>().getTranslation('downloading')}: $fileName",
         backgroundColor: Colors.green,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -582,8 +797,8 @@ class TicketController extends GetxController {
       // Show success message
       String saveLocation = Platform.isAndroid ? 'Gallery' : 'Documents';
       Get.snackbar(
-        'Download Complete',
-        '$fileName saved to $saveLocation',
+        Get.find<LanguageController>().getTranslation('download_complete'),
+        '$fileName ${Get.find<LanguageController>().getTranslation('saved_to')} $saveLocation',
         backgroundColor: Colors.green,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -596,8 +811,8 @@ class TicketController extends GetxController {
       } catch (e) {
         print('Could not open file: $e');
         Get.snackbar(
-          'File Downloaded',
-          '$fileName saved to $saveLocation',
+          Get.find<LanguageController>().getTranslation('file_downloaded'),
+          '$fileName ${Get.find<LanguageController>().getTranslation('saved_to')} $saveLocation',
           backgroundColor: Colors.blue,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
@@ -608,8 +823,8 @@ class TicketController extends GetxController {
     } catch (e) {
       print('Download error: $e');
       Get.snackbar(
-        'Download Error',
-        'Failed to download $fileName: ${e.toString()}',
+        Get.find<LanguageController>().getTranslation('download_error'),
+        "${Get.find<LanguageController>().getTranslation('failed_to_download')} $fileName: ${e.toString()}",
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -623,7 +838,9 @@ class TicketController extends GetxController {
     try {
       String? token = await getToken();
       if (token == null) {
-        Get.snackbar('Error', 'Unable to authenticate. Please login again.',
+        Get.snackbar(
+          Get.find<LanguageController>().getTranslation('error'), 
+          Get.find<LanguageController>().getTranslation('unable_to_authenticate'),
             backgroundColor: Colors.red,
             colorText: Colors.white,
             snackPosition: SnackPosition.BOTTOM);
@@ -638,8 +855,8 @@ class TicketController extends GetxController {
       
     } catch (e) {
       Get.snackbar(
-        'Download Error',
-        'Failed to download $fileName: $e',
+        Get.find<LanguageController>().getTranslation('download_error'),
+        "${Get.find<LanguageController>().getTranslation('failed_to_download')} $fileName: $e",
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -649,14 +866,14 @@ class TicketController extends GetxController {
 
   @override
   void onClose() {
-    clearFields(); // Reset fields when controller is disposed
+    clearAllData(); // Reset all data when controller is disposed
     super.onClose();
   }
 
 }
 
 class Ticket {
-  final String category;
+  final dynamic category; // Changed to dynamic to handle both String and Map
   final String title;
   final String ticket_id;
   final String status;
@@ -678,22 +895,10 @@ class Ticket {
     print('Full JSON: $json');
     print('Category field: ${json['category']}');
     print('Category type: ${json['category']?.runtimeType}');
-    print('Category name direct: ${json['category']?['name']}');
     print('========================');
     
-    // Simple and direct category name extraction
-    String categoryName = 'Unknown';
-    
-    // Direct extraction from category object
-    if (json['category'] != null && json['category'] is Map) {
-      categoryName = json['category']['name'] ?? 'Unknown';
-      print('Extracted category name: $categoryName');
-    }
-    
-    print('Final category name: $categoryName');
-    
     return Ticket(
-      category: categoryName,
+      category: json['category'], // Store the entire category object
       title: json['title'] ?? '',
       ticket_id: json['ticket_id'] ?? '',
       status: json['status'] ?? '',
@@ -707,12 +912,14 @@ class Ticket {
 class Category {
   final int id;
   final String name;
+  final String? fr; // French translation field
   final String createdAt;
   final String updatedAt;
 
   Category({
     required this.id,
     required this.name,
+    this.fr, // Make fr optional since it might not always be present
     required this.createdAt,
     required this.updatedAt,
   });
@@ -721,6 +928,7 @@ class Category {
     return Category(
       id: json['id'],
       name: json['name'],
+      fr: json['fr'], // Parse the French field from API response
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
     );

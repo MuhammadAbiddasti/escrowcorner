@@ -8,9 +8,11 @@ import 'dart:convert';
 import '../../../widgets/custom_appbar/custom_appbar.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
 import '../../../widgets/custom_button/custom_button.dart';
+import '../../../widgets/common_header/common_header.dart';
 import '../../controller/logo_controller.dart';
 import '../managers/manager_permission_controller.dart';
 import '../user_profile/user_profile_controller.dart';
+import '../../controller/language_controller.dart';
 import 'ticket_controller.dart';
 
 class ScreenSupportTicket extends StatefulWidget {
@@ -23,6 +25,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
   final TicketController ticketsController = Get.put(TicketController());
   final UserProfileController userProfileController = Get.find<UserProfileController>();
   final ManagersPermissionController controller = Get.find<ManagersPermissionController>();
+  final LanguageController languageController = Get.find<LanguageController>();
   final ScrollController scrollController = ScrollController();
 
   @override
@@ -52,15 +55,9 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
     final allowedModules = controller.modulePermissions;
     return Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar:  AppBar(
-        backgroundColor: Color(0xff191f28),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('support_tickets'),
+        managerId: userProfileController.userId.value,
       ),
       body: Column(
         children: [
@@ -77,7 +74,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
               child: Column(
                 children: [
                   CustomButton(
-                    text: "ADD NEW",
+                    text: languageController.getTranslation('add_new'),
                     onPressed: () {
                       Get.to(ScreenNewTicket());
                     },
@@ -97,7 +94,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
               child: Column(
                 children: [
                   CustomButton(
-                    text: "ADD NEW",
+                    text: languageController.getTranslation('add_new'),
                     onPressed: () {
                       Get.to(ScreenNewTicket());
                     },
@@ -135,7 +132,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
                         ),
                         SizedBox(height: 16),
                         Text(
-                          'No Tickets Found',
+                          languageController.getTranslation('no_ticket_found'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -144,7 +141,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          'You have not created any support tickets yet',
+                          languageController.getTranslation('no_ticket_created_yet'),
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
@@ -178,7 +175,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
                                   padding: EdgeInsets.all(20),
                                   child: Center(
                                     child: Text(
-                                      'Scroll to load more tickets',
+                                      languageController.getTranslation('scroll_to_load_more_tickets'),
                                       style: TextStyle(
                                         color: Colors.grey,
                                         fontSize: 14,
@@ -191,7 +188,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
                                   padding: EdgeInsets.all(20),
                                   child: Center(
                                     child: Text(
-                                      'No more tickets to load',
+                                      languageController.getTranslation('no_more_tickets_to_load'),
                                       style: TextStyle(
                                         color: Colors.grey,
                                         fontSize: 14,
@@ -219,8 +216,21 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
   }
 
   Widget _buildTicketCard(dynamic ticket) {
-    // Use the category name directly from the ticket object
-    String categoryName = ticket.category;
+    // Handle the new category structure from API response
+    String categoryName = 'Unknown';
+    
+    // Check if category is an object with name and fr fields
+    if (ticket.category is Map) {
+      var category = ticket.category;
+      if (languageController.selectedLanguage.value?.locale == 'fr' && category['fr'] != null) {
+        categoryName = category['fr'];
+      } else {
+        categoryName = category['name'] ?? 'Unknown';
+      }
+    } else {
+      // Fallback for old structure
+      categoryName = ticket.category?.toString() ?? 'Unknown';
+    }
 
     return Container(
       margin: EdgeInsets.only(bottom: 15),
@@ -301,7 +311,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
                     ),
                   ),
                   child: Text(
-                    ticket.status.toUpperCase(),
+                    _getTranslatedStatus(ticket.status).toUpperCase(),
                     style: TextStyle(
                       color: _getStatusColor(ticket.status),
                       fontSize: 12,
@@ -314,9 +324,9 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
                 SizedBox(height: 16),
                 
                 // Ticket Details
-                _buildDetailRow('Category', categoryName, Icons.category),
+                _buildDetailRow(languageController.getTranslation('category'), categoryName, Icons.category),
                 SizedBox(height: 12),
-                _buildDetailRow('Last Updated', DateFormat('yyyy-MM-dd HH:mm a').format(DateTime.parse(ticket.lastUpdated)), Icons.access_time),
+                _buildDetailRow(languageController.getTranslation('last_updated'), DateFormat('yyyy-MM-dd HH:mm a').format(DateTime.parse(ticket.lastUpdated)), Icons.access_time),
                 
                 // Attachments Section - Dynamic from API data (download only, no visual display)
                 if (ticket.attachment != null && ticket.attachment!.isNotEmpty) ...[
@@ -347,7 +357,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
                         Icon(Icons.visibility, size: 18),
                         SizedBox(width: 8),
                         Text(
-                          'View Details',
+                          languageController.getTranslation('view_details'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -424,6 +434,21 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
         return Colors.purple;
       default:
         return Colors.grey;
+    }
+  }
+
+  String _getTranslatedStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'open':
+        return languageController.getTranslation('open');
+      case 'closed':
+        return languageController.getTranslation('closed');
+      case 'pending':
+        return languageController.getTranslation('pending');
+      case 'in progress':
+        return languageController.getTranslation('in_progress');
+      default:
+        return languageController.getTranslation('unknown') ?? status;
     }
   }
 
@@ -507,7 +532,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
             SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Download Attachment Files',
+                languageController.getTranslation('download_attachment_files'),
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.blue.shade700,
@@ -601,7 +626,7 @@ class _ScreenSupportTicketState extends State<ScreenSupportTicket> {
             ),
             SizedBox(width: 12),
             Text(
-              'Attachments (${attachments.length})',
+              '${languageController.getTranslation('attachments')} (${attachments.length})',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey.shade600,

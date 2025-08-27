@@ -291,10 +291,9 @@ final home.HomeController controller = Get.put(home.HomeController());
   }
   void setWalletCurrency(WalletCurrency walletCurrency) {
     wallletCurrency.value = walletCurrency;
-    fetchWalletCurrencies();
   }
 
-  Future<void> createWallet(int currencyId,
+  Future<Map<String, dynamic>?> createWallet(int currencyId,
       int accountIdentifierMechanismId) async {
     isLoading.value = true;
     String? token = await getToken();
@@ -304,7 +303,7 @@ final home.HomeController controller = Get.put(home.HomeController());
         backgroundColor: Colors.red,
         colorText: Colors.white,);
       isLoading.value = false;
-      return;
+      return null;
     }
 
     final url = Uri.parse(
@@ -320,27 +319,27 @@ final home.HomeController controller = Get.put(home.HomeController());
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          Get.snackbar('Success', 'Wallet created successfully',
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-            snackPosition: SnackPosition.BOTTOM,);
+          // Don't show snackbar here, let the caller handle it
+          print('Wallet created successfully');
         } else {
-          Get.snackbar('Message', '${data['message']}',
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-            snackPosition: SnackPosition.BOTTOM,);
+          print('Wallet creation failed: ${data['message']}');
         }
+        // Return the response data
+        return data;
       } else {
-        Get.snackbar('Error', 'Failed to create wallet',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,);
+        print('Failed to create wallet: ${response.statusCode}');
         print('Response body: ${response.body}');
-        print('Response body: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Failed to create wallet (Status: ${response.statusCode})'
+        };
       }
     } catch (e) {
-      //Get.snackbar('Error', 'An error occurred: $e');
       print("An error occurred: $e");
+      return {
+        'success': false,
+        'message': 'An error occurred: $e'
+      };
     } finally {
       isLoading.value = false;
     }

@@ -46,6 +46,7 @@ class UserProfileController extends GetxController {
   var googleSecretCode = ''.obs;
   var enableGoogle2fa = false.obs;  // Google 2FA status
   var enableEmail2fa = false.obs;   // Email 2FA status
+  var accountType = ''.obs;  // Account type field
 
   TextEditingController firstNameController = TextEditingController();
   TextEditingController lastNameController = TextEditingController();
@@ -127,6 +128,8 @@ class UserProfileController extends GetxController {
       enableGoogle2fa.value = userDetails['enable_google2fa'] == 1;
       enableEmail2fa.value = userDetails['enable_email2fa'] == 1;
       googleSecretCode.value = userDetails['google2fa_secret']?.toString() ?? '';
+      // Fetch Account Type
+      accountType.value = userDetails['account_type'] ?? '';
       // Update Text Controllers
       firstNameController.text = firstName.value;
       lastNameController.text = lastName.value;

@@ -88,98 +88,100 @@ class ScreenPersonInfo extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Obx(() {
-            final _ = languageController.selectedLanguage.value;
-            return Text(
-              languageController.getTranslation('personal_information'),
-              style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: Color(0xff18CE0F),
-                  fontFamily: 'Nunito'),
-            ).paddingOnly(top: 10);
-          }),
-          Obx(() {
-            final _ = languageController.selectedLanguage.value;
-            return Text(
-              languageController.getTranslation('profile_picture'),
-              style: TextStyle(
-                  fontWeight: FontWeight.w400,
-                  fontSize: 14,
-                  color: Color(0xff484848),
-                  fontFamily: 'Nunito'),
-            ).paddingOnly(top: 10);
-          }),
-          Container(
-            height: MediaQuery.of(context).size.height * 0.45,
-            width: MediaQuery.of(context).size.width * 0.8,
-            child: Obx(() {
-              // Check if the image file exists
-              if (userProfileController.avatar.value != null &&
-                  userProfileController.avatar.value!.path.isNotEmpty) {
-                return Image.file(
-                  userProfileController.avatar.value!,
-                  height: 300,
-                  width: 200,
-                  fit: BoxFit.fill,
-                );
-              } else if (userProfileController.avatarUrl.value.isNotEmpty) {
-                final avatarUrl = "$baseUrl/${userProfileController.avatarUrl.value}";
-                return Image.network(
-                  avatarUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Image.asset(
-                      "assets/images/userinfo.png",
-                      height: 200,
-                      width: 200,
-                      fit: BoxFit.cover,
-                    );
-                  },
-                );
-              } else {
-                return Image.asset(
-                  "assets/images/userinfo.png",
-                  height: 200,
-                  width: 200,
-                  fit: BoxFit.cover,
-                );
-              }
-            }),
-          ),
+                     Obx(() {
+             final _ = languageController.selectedLanguage.value;
+             return Text(
+               languageController.getTranslation('personal_information'),
+               style: TextStyle(
+                   fontWeight: FontWeight.w700,
+                   fontSize: 14,
+                   color: Color(0xff18CE0F),
+                   fontFamily: 'Nunito'),
+             ).paddingOnly(top: 8);
+           }),
+                     Obx(() {
+             final _ = languageController.selectedLanguage.value;
+             return Text(
+               languageController.getTranslation('profile_picture'),
+               style: TextStyle(
+                   fontWeight: FontWeight.w400,
+                   fontSize: 12,
+                   color: Color(0xff484848),
+                   fontFamily: 'Nunito'),
+             ).paddingOnly(top: 8);
+           }),
+                                           Container(
+              height: 200,
+              width: MediaQuery.of(context).size.width * 0.8,
+              child: Obx(() {
+                // Check if the image file exists
+                if (userProfileController.avatar.value != null &&
+                    userProfileController.avatar.value!.path.isNotEmpty) {
+                  return Image.file(
+                    userProfileController.avatar.value!,
+                    height: 200,
+                    width: 200,
+                    fit: BoxFit.contain,
+                  );
+                } else if (userProfileController.avatarUrl.value.isNotEmpty) {
+                  final avatarUrl = "$baseUrl/${userProfileController.avatarUrl.value}";
+                  return Image.network(
+                    avatarUrl,
+                    height: 200,
+                    width: 200,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.asset(
+                        "assets/images/userinfo.png",
+                        height: 200,
+                        width: 200,
+                        fit: BoxFit.contain,
+                      );
+                    },
+                  );
+                } else {
+                  return Image.asset(
+                    "assets/images/userinfo.png",
+                    height: 200,
+                    width: 200,
+                    fit: BoxFit.contain,
+                  );
+                }
+              }),
+            ),
 
-          Obx(() {
-            final _ = languageController.selectedLanguage.value;
-            return Text(
-              languageController.getTranslation('upload_profile_picture'),
-              style: TextStyle(
-                  fontWeight: FontWeight.w400,
-                  fontSize: 14,
-                  color: Color(0xff484848),
-                  fontFamily: 'Nunito'),
-            ).paddingOnly(top: 10);
-          }),
+                     Obx(() {
+             final _ = languageController.selectedLanguage.value;
+             return Text(
+               languageController.getTranslation('upload_profile_picture'),
+               style: TextStyle(
+                   fontWeight: FontWeight.w400,
+                   fontSize: 12,
+                   color: Color(0xff484848),
+                   fontFamily: 'Nunito'),
+             ).paddingOnly(top: 8);
+           }),
 
           Row(
             children: [
               GestureDetector(
                 onTap: () => userProfileController.pickImage(),
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.05,
-                  width: MediaQuery.of(context).size.width * 0.35,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(5),
-                    color: Color(0xffDDDDDD),
-                  ),
-                  child: Center(
-                    child: Obx(() {
-                      final _ = languageController.selectedLanguage.value;
-                      return Text(
-                        languageController.getTranslation('choose_file'),
-                        style: TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
-                      );
-                    }),
-                  ),
+                                 child: Container(
+                   height: 35,
+                   width: MediaQuery.of(context).size.width * 0.35,
+                   decoration: BoxDecoration(
+                     borderRadius: BorderRadius.circular(5),
+                     color: Color(0xffDDDDDD),
+                   ),
+                                     child: Center(
+                     child: Obx(() {
+                       final _ = languageController.selectedLanguage.value;
+                       return Text(
+                         languageController.getTranslation('choose_file'),
+                         style: TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
+                       );
+                     }),
+                   ),
                 ),
               ),
               SizedBox(width: 8), // Add some spacing between the elements
@@ -202,82 +204,123 @@ class ScreenPersonInfo extends StatelessWidget {
           buildTextField(languageController.getTranslation('last_name'), userProfileController.lastNameController,lastNameFocusNode, fieldKey: 'last_name'),
           buildTextField(languageController.getTranslation('user_name'), userProfileController.userNameController,userNameFocusNode, readOnly: true, fieldKey: 'user_name'),
           buildTextField(languageController.getTranslation('email'), userProfileController.emailController,emailFocusNode, readOnly: true, fieldKey: 'email'),
-          FFButtonWidget(
-            onPressed: () async {
-              // Adding a delay of 2 seconds before the API call
-              await Future.delayed(Duration(seconds: 2));
-             await userProfileController.updateUserDetails();
-            },
-            text: languageController.getTranslation('save'),
-            options: FFButtonOptions(
-              width: Get.width,
-              height: 45.0,
-              padding: EdgeInsetsDirectional.fromSTEB(
-                  0.0, 0.0, 0.0, 0.0),
-              iconPadding: EdgeInsetsDirectional.fromSTEB(
-                  0.0, 0.0, 0.0, 0.0),
-              color: DamaspayTheme.of(context).primary,
-              textStyle:
-              DamaspayTheme.of(context).titleSmall.override(
-                fontFamily: 'Poppins',
-                color: Colors.white,
-              ),
-              elevation: 2.0,
-              borderSide: BorderSide(
-                color: Colors.transparent,
-                width: 1.0,
-              ),
-              borderRadius: BorderRadius.circular(5.0),
-            ),
-          ).paddingOnly(top: 30,bottom: 20),
-        ],
-      ).paddingSymmetric(horizontal: 15),
-    ).paddingOnly(top: 20, bottom: 20);
+          buildAccountTypeField(languageController),
+                     FFButtonWidget(
+             onPressed: () async {
+               // Adding a delay of 2 seconds before the API call
+               await Future.delayed(Duration(seconds: 2));
+              await userProfileController.updateUserDetails();
+             },
+             text: languageController.getTranslation('save'),
+             options: FFButtonOptions(
+               width: Get.width,
+               height: 45.0,
+               padding: EdgeInsetsDirectional.fromSTEB(
+                   0.0, 0.0, 0.0, 0.0),
+               iconPadding: EdgeInsetsDirectional.fromSTEB(
+                   0.0, 0.0, 0.0, 0.0),
+               color: DamaspayTheme.of(context).primary,
+               textStyle:
+               DamaspayTheme.of(context).titleSmall.override(
+                 fontFamily: 'Poppins',
+                 color: Colors.white,
+               ),
+               elevation: 2.0,
+               borderSide: BorderSide(
+                 color: Colors.transparent,
+                 width: 1.0,
+               ),
+               borderRadius: BorderRadius.circular(5.0),
+             ),
+           ).paddingOnly(top: 20, bottom: 15),
+                 ],
+       ).paddingSymmetric(horizontal: 15),
+     ).paddingOnly(top: 15, bottom: 10);
   }
 
-  Widget buildTextField(String label, TextEditingController controller,FocusNode focusNode, {bool readOnly = false, String? fieldKey}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-              fontWeight: FontWeight.w400,
-              fontSize: 14,
-              color: Color(0xff484848),
-              fontFamily: 'Nunito'),
-        ).paddingOnly(top: 10, bottom: 10),
-        Container(
-          height: 42,
-          child: TextFormField(
-            focusNode: focusNode,
-            controller: controller,
-            onChanged: (value) {
-              if (fieldKey == 'first_name') {
-                userProfileController.firstName.value = value;
-              } else if (fieldKey == 'last_name') {
-                userProfileController.lastName.value = value;
-              }
-            },
-            readOnly: readOnly,
-            decoration: InputDecoration(
-              contentPadding: EdgeInsets.only(top: 4, left: 5),
-              hintStyle: TextStyle(color: Color(0xffA9A9A9)),
-              border: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xff666565))),
-              enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xff666565))),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: Color(0xff666565),
-                ),
-              ),
-              filled: readOnly,
-              fillColor: readOnly ? Colors.grey.withOpacity(.40) : null,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+     Widget buildAccountTypeField(LanguageController languageController) {
+     return Column(
+       crossAxisAlignment: CrossAxisAlignment.start,
+       children: [
+         Text(
+           languageController.getTranslation('account_type'),
+           style: TextStyle(
+               fontWeight: FontWeight.w400,
+               fontSize: 12,
+               color: Color(0xff484848),
+               fontFamily: 'Nunito'),
+         ).paddingOnly(top: 8, bottom: 6),
+         Container(
+           height: 35,
+           child: Obx(() {
+             return TextFormField(
+               readOnly: true,
+               initialValue: userProfileController.accountType.value,
+               decoration: InputDecoration(
+                 contentPadding: EdgeInsets.only(top: 2, left: 5),
+                 hintStyle: TextStyle(color: Color(0xffA9A9A9)),
+                 border: OutlineInputBorder(
+                     borderSide: BorderSide(color: Color(0xff666565))),
+                 enabledBorder: OutlineInputBorder(
+                     borderSide: BorderSide(color: Color(0xff666565))),
+                 focusedBorder: OutlineInputBorder(
+                   borderSide: BorderSide(
+                     color: Color(0xff666565),
+                   ),
+                 ),
+                 filled: true,
+                 fillColor: Colors.grey.withOpacity(.40),
+               ),
+             );
+           }),
+         ),
+       ],
+     );
+   }
+
+     Widget buildTextField(String label, TextEditingController controller,FocusNode focusNode, {bool readOnly = false, String? fieldKey}) {
+     return Column(
+       crossAxisAlignment: CrossAxisAlignment.start,
+       children: [
+         Text(
+           label,
+           style: TextStyle(
+               fontWeight: FontWeight.w400,
+               fontSize: 12,
+               color: Color(0xff484848),
+               fontFamily: 'Nunito'),
+         ).paddingOnly(top: 8, bottom: 6),
+         Container(
+           height: 35,
+           child: TextFormField(
+             focusNode: focusNode,
+             controller: controller,
+             onChanged: (value) {
+               if (fieldKey == 'first_name') {
+                 userProfileController.firstName.value = value;
+               } else if (fieldKey == 'last_name') {
+                 userProfileController.lastName.value = value;
+               }
+             },
+             readOnly: readOnly,
+                            decoration: InputDecoration(
+                 contentPadding: EdgeInsets.only(top: 2, left: 5),
+                 hintStyle: TextStyle(color: Color(0xffA9A9A9)),
+                 border: OutlineInputBorder(
+                     borderSide: BorderSide(color: Color(0xff666565))),
+                 enabledBorder: OutlineInputBorder(
+                     borderSide: BorderSide(color: Color(0xff666565))),
+                 focusedBorder: OutlineInputBorder(
+                   borderSide: BorderSide(
+                     color: Color(0xff666565),
+                   ),
+                 ),
+                 filled: readOnly,
+                 fillColor: readOnly ? Colors.grey.withOpacity(.40) : null,
+               ),
+           ),
+         ),
+       ],
+     );
+   }
 }

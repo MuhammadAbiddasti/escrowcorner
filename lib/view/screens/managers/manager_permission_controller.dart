@@ -106,9 +106,9 @@ class ManagersPermissionController extends GetxController {
           'Escrow History',
           'Support Ticket',
           'Transactions',
+          'My Sub Accounts',
           'Managers',
-          'Settings',
-          'My Sub Accounts'
+          'Settings'
         ];
 
         // Reorder allowedModules based on the custom order

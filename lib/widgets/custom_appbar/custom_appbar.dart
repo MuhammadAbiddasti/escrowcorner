@@ -729,6 +729,15 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
                   },
                 ),
               );
+            case 'My Sub Accounts':
+              return PopupMenuItem<String>(
+                value: 'my_sub_accounts',
+                child: _buildMenuItem(
+                  icon: Icons.link,
+                  label: languageController.getTranslation('my_sub_accounts'),
+                  onTap: () => Get.off(() => ScreenMerchant()),
+                ),
+              );
             case 'Managers':
               return PopupMenuItem<String>(
                 value: 'manager',
@@ -745,15 +754,6 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
                   icon: Icons.settings_outlined,
                   label: languageController.getTranslation('settings'),
                   onTap: () => Get.off(() => ScreenSettingsPortion()),
-                ),
-              );
-            case 'My Sub Accounts':
-              return PopupMenuItem<String>(
-                value: 'my_sub_accounts',
-                child: _buildMenuItem(
-                  icon: Icons.link,
-                  label: languageController.getTranslation('my_sub_accounts'),
-                  onTap: () => Get.off(() => ScreenMerchant()),
                 ),
               );
               case 'Customers Support':
@@ -1165,12 +1165,12 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
           children: [
             Row(
               children: [
-                Icon(Icons.supervisor_account_outlined, color: Colors.white),
+                Icon(Icons.link, color: Colors.white),
                 TextButton(
-                  child:
-                      Text(languageController.getTranslation('managers'), style: TextStyle(color: Colors.white)),
+                  child: Text(languageController.getTranslation('my_sub_accounts'),
+                      style: TextStyle(color: Colors.white)),
                   onPressed: () {
-                    Get.off(() => ScreenManagers());
+                    Get.off(() => ScreenMerchant());
                   },
                 ),
               ],
@@ -1188,12 +1188,12 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
           children: [
             Row(
               children: [
-                Icon(Icons.settings_outlined, color: Colors.white),
+                Icon(Icons.supervisor_account_outlined, color: Colors.white),
                 TextButton(
                   child:
-                      Text(languageController.getTranslation('settings'), style: TextStyle(color: Colors.white)),
+                      Text(languageController.getTranslation('managers'), style: TextStyle(color: Colors.white)),
                   onPressed: () {
-                    Get.off(() => ScreenSettingsPortion());
+                    Get.off(() => ScreenManagers());
                   },
                 ),
               ],
@@ -1211,12 +1211,12 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
           children: [
             Row(
               children: [
-                Icon(Icons.link, color: Colors.white),
+                Icon(Icons.settings_outlined, color: Colors.white),
                 TextButton(
-                  child: Text(languageController.getTranslation('my_sub_accounts'),
-                      style: TextStyle(color: Colors.white)),
+                  child:
+                      Text(languageController.getTranslation('settings'), style: TextStyle(color: Colors.white)),
                   onPressed: () {
-                    Get.off(() => ScreenMerchant());
+                    Get.off(() => ScreenSettingsPortion());
                   },
                 ),
               ],
