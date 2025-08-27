@@ -3,31 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import '../../../widgets/custom_appbar/custom_appbar.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
+import '../../../widgets/common_header/common_header.dart';
 import '../../controller/get_controller.dart';
 import '../../controller/logo_controller.dart';
+import '../../controller/language_controller.dart';
 import '../user_profile/user_profile_controller.dart';
 
 class ScreenMyWithDraw extends StatelessWidget {
   final LogoController logoController = Get.put(LogoController());
   final WithdrawalsController withdrawalsController = Get.put(WithdrawalsController());
   final InfoController infoController = Get.put(InfoController());
-  final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Obx(() => Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff191f28),
-        title:AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('my_withdrawals'),
+        managerId: userProfileController.userId.value,
       ),
       body: Stack(
         children:[
@@ -51,7 +47,7 @@ class ScreenMyWithDraw extends StatelessWidget {
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "My Withdrawals",
+                          languageController.getTranslation('my_withdrawals'),
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
@@ -81,15 +77,14 @@ class ScreenMyWithDraw extends StatelessWidget {
                                   child: SingleChildScrollView(
                                     child: DataTable(
                                       columns: [
-                                        DataColumn(label: Text('Sr No.')),
-                                        DataColumn(label: Text('Date Time')),
-                                        DataColumn(label: Text('Transaction ID')),
-                                        DataColumn(label: Text('Method')),
-                                        DataColumn(label: Text('Currency')),
-                                        DataColumn(label: Text('Gross')),
-                                        DataColumn(label: Text('Fee')),
-                                        DataColumn(label: Text('Net')),
-                                        DataColumn(label: Text('Status')),
+                                        DataColumn(label: Text(languageController.getTranslation('serial_no'))),
+                                        DataColumn(label: Text(languageController.getTranslation('date_time'))),
+                                        DataColumn(label: Text(languageController.getTranslation('transaction_id'))),
+                                        DataColumn(label: Text(languageController.getTranslation('method'))),
+                                        DataColumn(label: Text(languageController.getTranslation('gross'))),
+                                        DataColumn(label: Text(languageController.getTranslation('fee'))),
+                                        DataColumn(label: Text(languageController.getTranslation('net'))),
+                                        DataColumn(label: Text(languageController.getTranslation('status'))),
                                       ],
                                       rows: withdrawalsController.mywithdrawals
                                           .map((withdrawal) {
@@ -106,10 +101,9 @@ class ScreenMyWithDraw extends StatelessWidget {
                                             DataCell(
                                                 Text(withdrawal.transactionId)),
                                             DataCell(Text(withdrawal.method)),
-                                            DataCell(Text(withdrawal.currency)),
-                                            DataCell(Text(withdrawal.gross)),
-                                            DataCell(Text(withdrawal.fee)),
-                                            DataCell(Text(withdrawal.net)),
+                                            DataCell(Text('${withdrawal.gross} ${withdrawal.currency}')),
+                                            DataCell(Text('${withdrawal.fee} ${withdrawal.currency}')),
+                                            DataCell(Text('${withdrawal.net} ${withdrawal.currency}')),
                                             DataCell(
                                               Container(
                                                 height: 28,
@@ -120,7 +114,7 @@ class ScreenMyWithDraw extends StatelessWidget {
                                                 child: OutlinedButton(
                                                   onPressed: () {},
                                                   child: Text(
-                                                    withdrawal.status.name,
+                                                    languageController.getTranslation(withdrawal.status.name.toLowerCase()),
                                                     style: TextStyle(
                                                       fontSize: 8,
                                                       color: withdrawal.status
@@ -182,10 +176,10 @@ class ScreenMyWithDraw extends StatelessWidget {
               alignment: Alignment.bottomCenter,
               child: CustomBottomContainerPostLogin()
           )
-        ]
-      ),
-    );
-  }
+                 ]
+       ),
+     ));
+   }
 
   Widget buildInfoContainer(InfoController infoController) {
     return Container(
@@ -208,33 +202,32 @@ class ScreenMyWithDraw extends StatelessWidget {
               SizedBox(
                 width: 10,
               ),
-              Text(
-                "Info",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: "Nunito"),
-              ),
+                             Text(
+                 languageController.getTranslation('info'),
+                 style: TextStyle(
+                     color: Colors.white,
+                     fontSize: 14,
+                     fontWeight: FontWeight.w700,
+                     fontFamily: "Nunito"),
+               ),
             ],
           ),
-          Text(
-            "Your account is Fresh and New !",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                fontFamily: "Nunito"),
-          ),
-          Text(
-            "Start by requesting money from friends or by selling"
-                " online and collecting payments in your wallet.",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                fontFamily: "Nunito"),
-          ),
+                     Text(
+             languageController.getTranslation('your_account_is_fresh_and_new'),
+             style: TextStyle(
+                 color: Colors.white,
+                 fontSize: 14,
+                 fontWeight: FontWeight.w800,
+                 fontFamily: "Nunito"),
+           ),
+                     Text(
+             languageController.getTranslation('start_by_requesting_money_from_friends_or_by_selling_online_and_collecting_payments_in_your_wallet'),
+             style: TextStyle(
+                 color: Colors.white,
+                 fontSize: 12,
+                 fontWeight: FontWeight.w400,
+                 fontFamily: "Nunito"),
+           ),
         ],
       ).paddingSymmetric(horizontal: 10),
     ).paddingSymmetric(horizontal: 15, vertical: 10);

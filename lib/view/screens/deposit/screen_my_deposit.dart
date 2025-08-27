@@ -3,32 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import '../../../widgets/custom_appbar/custom_appbar.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
-import '../../../widgets/custom_ballance_container/custom_btc_container.dart';
+import '../../../widgets/common_header/common_header.dart';
 import '../../controller/get_controller.dart';
 import '../../controller/logo_controller.dart';
+import '../../controller/language_controller.dart';
 import '../user_profile/user_profile_controller.dart';
 
 class ScreenMyDeposit extends StatelessWidget {
   final LogoController logoController = Get.put(LogoController());
   final MyDepositsController myDepositsController = Get.put(MyDepositsController());
   final InfoController infoController = Get.put(InfoController());
-  final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Obx(() => Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff191f28),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('my_deposits'),
+        managerId: userProfileController.userId.value,
       ),
       body: Stack(
         children:[
@@ -52,7 +47,7 @@ class ScreenMyDeposit extends StatelessWidget {
                     child: Column(crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          "My Deposits",
+                          languageController.getTranslation('my_deposits'),
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
@@ -82,15 +77,14 @@ class ScreenMyDeposit extends StatelessWidget {
                                   child: SingleChildScrollView(
                                     child: DataTable(
                                       columns: [
-                                        DataColumn(label: Text('Sr No.')),
-                                        DataColumn(label: Text('Date Time')),
-                                        DataColumn(label: Text('Transaction ID')),
-                                        DataColumn(label: Text('Method')),
-                                        DataColumn(label: Text('Currency')),
-                                        DataColumn(label: Text('Gross')),
-                                        DataColumn(label: Text('Fee')),
-                                        DataColumn(label: Text('Net')),
-                                        DataColumn(label: Text('Status')),
+                                        DataColumn(label: Text(languageController.getTranslation('serial_no'))),
+                                        DataColumn(label: Text(languageController.getTranslation('date_time'))),
+                                        DataColumn(label: Text(languageController.getTranslation('transaction_id'))),
+                                        DataColumn(label: Text(languageController.getTranslation('method'))),
+                                        DataColumn(label: Text(languageController.getTranslation('gross'))),
+                                        DataColumn(label: Text(languageController.getTranslation('fee'))),
+                                        DataColumn(label: Text(languageController.getTranslation('net'))),
+                                        DataColumn(label: Text(languageController.getTranslation('status'))),
                                       ],
                                       rows: myDepositsController.mydeposits
                                           .map((mydeposits) {
@@ -106,10 +100,9 @@ class ScreenMyDeposit extends StatelessWidget {
                                             DataCell(
                                                 Text(mydeposits.transactionId)),
                                             DataCell(Text(mydeposits.method)),
-                                            DataCell(Text(mydeposits.currency)),
-                                            DataCell(Text(mydeposits.gross)),
-                                            DataCell(Text(mydeposits.fee)),
-                                            DataCell(Text(mydeposits.net)),
+                                            DataCell(Text('${mydeposits.gross} ${mydeposits.currency}')),
+                                            DataCell(Text('${mydeposits.fee} ${mydeposits.currency}')),
+                                            DataCell(Text('${mydeposits.net} ${mydeposits.currency}')),
                                             DataCell(
                                               Container(
                                                 height: 28,
@@ -119,24 +112,24 @@ class ScreenMyDeposit extends StatelessWidget {
                                                     .width * 0.25,
                                                 child: OutlinedButton(
                                                   onPressed: () {},
-                                                  child: Text(
-                                                    mydeposits.status.name,
-                                                    style: TextStyle(
-                                                      fontSize: 8,
-                                                      color: mydeposits.status
-                                                          .name.toLowerCase() ==
-                                                          'completed'
-                                                          ? Color(
-                                                          0xff18CE0F) // Green color for completed status
-                                                          : mydeposits.status.name
-                                                          .toLowerCase() ==
-                                                          'pending'
-                                                          ? Color(
-                                                          0xff1E90FF) // Blue color for pending status
-                                                          : Color(
-                                                          0xff18CE0F), // Default color (or use a different default color)
-                                                    ),
-                                                  ),
+                                                                                                     child: Text(
+                                                     languageController.getTranslation(mydeposits.status.name.toLowerCase()),
+                                                     style: TextStyle(
+                                                       fontSize: 8,
+                                                       color: mydeposits.status
+                                                           .name.toLowerCase() ==
+                                                           'completed'
+                                                           ? Color(
+                                                           0xff18CE0F) // Green color for completed status
+                                                           : mydeposits.status.name
+                                                           .toLowerCase() ==
+                                                           'pending'
+                                                           ? Color(
+                                                           0xff1E90FF) // Blue color for pending status
+                                                           : Color(
+                                                           0xff18CE0F), // Default color (or use a different default color)
+                                                     ),
+                                                   ),
                                                   style: OutlinedButton.styleFrom(
                                                     side: BorderSide(
                                                       color: mydeposits.status
@@ -182,10 +175,10 @@ class ScreenMyDeposit extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             child: CustomBottomContainerPostLogin()
           )
-        ]
-      ),
-    );
-  }
+                 ]
+       ),
+     ));
+   }
 
   Widget buildInfoContainer(InfoController infoController) {
     return Container(
@@ -208,33 +201,32 @@ class ScreenMyDeposit extends StatelessWidget {
               SizedBox(
                 width: 10,
               ),
-              Text(
-                "Info",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: "Nunito"),
-              ),
+                             Text(
+                 languageController.getTranslation('info'),
+                 style: TextStyle(
+                     color: Colors.white,
+                     fontSize: 14,
+                     fontWeight: FontWeight.w700,
+                     fontFamily: "Nunito"),
+               ),
             ],
           ),
-          Text(
-            "Your account is Fresh and New !",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                fontFamily: "Nunito"),
-          ),
-          Text(
-            "Start by requesting money from friends or by selling"
-                " online and collecting payments in your wallet.",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                fontFamily: "Nunito"),
-          ),
+                     Text(
+             languageController.getTranslation('your_account_is_fresh_and_new'),
+             style: TextStyle(
+                 color: Colors.white,
+                 fontSize: 14,
+                 fontWeight: FontWeight.w800,
+                 fontFamily: "Nunito"),
+           ),
+                     Text(
+             languageController.getTranslation('start_by_requesting_money_from_friends_or_by_selling_online_and_collecting_payments_in_your_wallet'),
+             style: TextStyle(
+                 color: Colors.white,
+                 fontSize: 12,
+                 fontWeight: FontWeight.w400,
+                 fontFamily: "Nunito"),
+           ),
         ],
       ).paddingSymmetric(horizontal: 10),
     ).paddingSymmetric(horizontal: 15, vertical: 10);

@@ -435,8 +435,6 @@ class _ScreenDashboardState extends State<ScreenDashboard> {
                             ),
                           ),
                           buildDynamicBalanceContainers(),
-                          buildDepositButton(),
-                          buildWithdrawButton(),
                           buildPendingMoneyRequestsList(
                               homeController.pendingMoneyRequests),
                           buildWellDoneContainer(),

@@ -26,6 +26,7 @@ import '../../view/screens/withdraw/screen_my_withdraw.dart';
 import '../../view/screens/Transactions/screen_all_transactions.dart';
 import '../../view/screens/tickets/screen_support_tickets.dart';
 import '../../view/screens/user_profile/screen_person_info.dart';
+import '../../view/Home_Screens/screen_home.dart';
 import '../../widgets/custom_api_url/constant_url.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -602,6 +603,15 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
     return allowedModules
         .map((module) {
           switch (module) {
+            case 'Home':
+              return PopupMenuItem<String>(
+                value: 'home',
+                child: _buildMenuItem(
+                  icon: Icons.home,
+                  label: languageController.getTranslation('home'),
+                  onTap: () => Get.off(() => ScreenHome()),
+                ),
+              );
             case 'Dashboard':
               return PopupMenuItem<String>(
                 value: 'dashboard',
@@ -763,6 +773,15 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
         .whereType<PopupMenuEntry<String>>()
         .toList()
       ..addAll([
+        // Home menu item - always available for logged-in users
+        PopupMenuItem<String>(
+          value: 'home',
+          child: _buildMenuItem(
+            icon: Icons.home,
+            label: languageController.getTranslation('home'),
+            onTap: () => Get.off(() => ScreenHome()),
+          ),
+        ),
         PopupMenuItem<String>(
           value: 'escrow_system',
           child: StatefulBuilder(
@@ -851,6 +870,32 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
 
   List<PopupMenuEntry<String>> _buildNonManagerMenuItems() {
     return [
+      // Home menu item - always available for logged-in users
+      PopupMenuItem<String>(
+        value: 'home',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.home, color: Colors.white),
+                TextButton(
+                  child: Text(
+                    languageController.getTranslation('home'),
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () {
+                    Get.off(() => ScreenHome());
+                  },
+                ),
+              ],
+            ),
+            Divider(
+              color: Color(0xffCDE0EF),
+            )
+          ],
+        ),
+      ),
       PopupMenuItem<String>(
         value: 'option1',
         child: Column(
