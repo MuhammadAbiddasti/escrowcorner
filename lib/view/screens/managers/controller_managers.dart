@@ -15,7 +15,12 @@ class ManagersController extends GetxController {
   var selectedManagerId = ''.obs;
   var isEditing = false.obs;
   var managerId = ''.obs;
-
+  
+  // Applications related variables
+  RxList<Application> applicationsList = <Application>[].obs;
+  var isApplicationsLoading = false.obs;
+  var applicationsErrorMessage = ''.obs;
+  RxList<int> selectedApplicationIds = <int>[].obs;
 
 
   @override
@@ -91,20 +96,29 @@ class ManagersController extends GetxController {
       if (token == null) {
         throw Exception('Token is null');
       }
+      
+      // Prepare the request body
+      Map<String, dynamic> requestBody = {
+        'email': email,
+        'first_name': firstName,
+        'last_name': lastName,
+        'password': password,
+        'confirm_password': ConfPassword,
+        'phone': phone,
+      };
+      
+      // Add selected application IDs if any are selected
+      if (selectedApplicationIds.isNotEmpty) {
+        requestBody['application_ids'] = selectedApplicationIds.toList();
+      }
+      
       var response = await http.post(
         Uri.parse('$baseUrl/api/create_manager'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'email': email,
-          'first_name': firstName,
-          'last_name': lastName,
-          'password': password,
-          'confirm_password': ConfPassword,
-          'phone': phone,
-        }),
+        body: jsonEncode(requestBody),
       );
       print('Response body: ${response.body}');
 
@@ -126,6 +140,8 @@ class ManagersController extends GetxController {
           );
           Get.off(ScreenManagers());
           fetchManagers();
+          // Clear selected applications after successful creation
+          clearSelectedApplications();
         } else {
           Get.snackbar(
             languageController.getTranslation('error'),
@@ -187,6 +203,12 @@ class ManagersController extends GetxController {
         final jsonResponse = jsonDecode(response.body);
         if (jsonResponse['success'] == true) {
           var managerData = Manager.fromJson(jsonResponse['data']);
+          
+          // Handle assigned applications if present in response
+          if (jsonResponse.containsKey('assign_application') && jsonResponse['assign_application'] != null) {
+            handleAssignedApplications(jsonResponse['assign_application']);
+          }
+          
           print('Manager Data: $managerData');
           Get.to(() => ScreenUpdateManger(manager: managerData));
         } else {
@@ -201,6 +223,23 @@ class ManagersController extends GetxController {
       isLoading(false);
     }
   }
+  // Method to handle assigned applications from API response
+  void handleAssignedApplications(Map<String, dynamic> assignApplicationData) {
+    selectedApplicationIds.clear();
+    
+    if (assignApplicationData.isNotEmpty) {
+      // Extract application IDs from the assign_application data
+      assignApplicationData.forEach((key, value) {
+        if (value is Map<String, dynamic> && value.containsKey('application_id')) {
+          int applicationId = int.tryParse(value['application_id'].toString()) ?? 0;
+          if (applicationId > 0) {
+            selectedApplicationIds.add(applicationId);
+          }
+        }
+      });
+    }
+  }
+
   // Method to Edit Managers
   Future<void> editManager({
     required String id,
@@ -246,6 +285,12 @@ class ManagersController extends GetxController {
           if (password.isNotEmpty) {
             payload['password'] = password;
           }
+          
+          // Add selected application IDs if any are selected
+          if (selectedApplicationIds.isNotEmpty) {
+            payload['application_ids'] = selectedApplicationIds.toList();
+          }
+          
           return payload;
         }()),
       );
@@ -254,6 +299,11 @@ class ManagersController extends GetxController {
         final jsonResponse = jsonDecode(response.body);
         final languageController = Get.find<LanguageController>();
         if (jsonResponse['success'] == true) {
+          // Handle assigned applications if present in response
+          if (jsonResponse.containsKey('assign_application') && jsonResponse['assign_application'] != null) {
+            handleAssignedApplications(jsonResponse['assign_application']);
+          }
+          
           final apiMessage = (jsonResponse['message']?.toString())
               ?? (jsonResponse['data']?.toString())
               ?? '';
@@ -266,6 +316,8 @@ class ManagersController extends GetxController {
             colorText: Colors.white,
           );
           fetchManagers();
+          // Clear selected applications after successful update
+          clearSelectedApplications();
         } else {
           final apiMessage = (jsonResponse['message']?.toString()) ?? 'Failed to update manager details';
           Get.snackbar(
@@ -379,6 +431,65 @@ class ManagersController extends GetxController {
         isLoading(false);
       }
     }
+
+  // Method to fetch applications
+  Future<void> getApplications() async {
+    try {
+      isApplicationsLoading(true);
+      applicationsErrorMessage('');
+      String? token = await getToken();
+      if (token == null) {
+        throw Exception('Token is null');
+      }
+
+      var response = await http.get(
+        Uri.parse('$baseUrl/api/getApplications'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
+          final data = jsonResponse['data'] as List;
+          applicationsList.value = data
+              .map((appJson) => Application.fromJson(appJson))
+              .toList();
+        } else {
+          applicationsList.clear();
+        }
+      } else {
+        applicationsErrorMessage('Failed to fetch applications');
+      }
+    } catch (e) {
+      applicationsErrorMessage('An error occurred: $e');
+      print("Error fetching applications: $e");
+    } finally {
+      isApplicationsLoading(false);
+    }
+  }
+
+  // Method to toggle application selection
+  void toggleApplicationSelection(int applicationId) {
+    if (selectedApplicationIds.contains(applicationId)) {
+      selectedApplicationIds.remove(applicationId);
+    } else {
+      selectedApplicationIds.add(applicationId);
+    }
+  }
+
+  // Method to clear selected applications
+  void clearSelectedApplications() {
+    selectedApplicationIds.clear();
+  }
+
+  // Method to clear selections when navigating between screens
+  void clearSelectionsForNavigation() {
+    selectedApplicationIds.clear();
+  }
+
+  // Method to handle assigned applications from API response
 }
 
 // Model class for Manager
@@ -412,6 +523,86 @@ class Manager {
   @override
   String toString() {
     return 'Manager(id: $id, firstName: $firstName, lastName: $lastName, email: $email, phoneNumber: $phoneNumber, createdAt: $createdAt)';
+  }
+}
+
+// Model class for Application
+class Application {
+  final int id;
+  final int userId;
+  final String merchantKey;
+  final String? siteUrl;
+  final String? successLink;
+  final String? failLink;
+  final String logo;
+  final String name;
+  final String? webhookUrl;
+  final String description;
+  final String? jsonData;
+  final String? currencyId;
+  final String? thumb;
+  final String publicKey;
+  final String secretKey;
+  final String? ipnUrl;
+  final String balance;
+  final String mtnBalance;
+  final String orangeBalance;
+  final String createdAt;
+  final String updatedAt;
+
+  Application({
+    required this.id,
+    required this.userId,
+    required this.merchantKey,
+    this.siteUrl,
+    this.successLink,
+    this.failLink,
+    required this.logo,
+    required this.name,
+    this.webhookUrl,
+    required this.description,
+    this.jsonData,
+    this.currencyId,
+    this.thumb,
+    required this.publicKey,
+    required this.secretKey,
+    this.ipnUrl,
+    required this.balance,
+    required this.mtnBalance,
+    required this.orangeBalance,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory Application.fromJson(Map<String, dynamic> json) {
+    return Application(
+      id: json['id'],
+      userId: json['user_id'],
+      merchantKey: json['merchant_key'] ?? '',
+      siteUrl: json['site_url'],
+      successLink: json['success_link'],
+      failLink: json['fail_link'],
+      logo: json['logo'] ?? '',
+      name: json['name'] ?? '',
+      webhookUrl: json['webhook_url'],
+      description: json['description'] ?? '',
+      jsonData: json['json_data'],
+      currencyId: json['currency_id'],
+      thumb: json['thumb'],
+      publicKey: json['public_key'] ?? '',
+      secretKey: json['secret_key'] ?? '',
+      ipnUrl: json['ipn_url'],
+      balance: json['balance'] ?? '0.00',
+      mtnBalance: json['mtn_balance'] ?? '0.00',
+      orangeBalance: json['orange_balance'] ?? '0.00',
+      createdAt: json['created_at'] ?? '',
+      updatedAt: json['updated_at'] ?? '',
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Application(id: $id, name: $name, description: $description)';
   }
 }
 

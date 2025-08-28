@@ -43,6 +43,16 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
       _lastNameController.text = widget.manager!.lastName;
       _phoneController.text = widget.manager!.phoneNumber;
     }
+    
+    // Fetch applications when the screen loads
+    managersController.getApplications();
+  }
+
+  @override
+  void dispose() {
+    // Clear selected applications when leaving the screen
+    managersController.clearSelectionsForNavigation();
+    super.dispose();
   }
 
   @override
@@ -56,192 +66,262 @@ class _ScreenUpdateMangerState extends State<ScreenUpdateManger> {
             children: [
               //CustomBtcContainer().paddingOnly(top: 20),
               Container(
-                height: MediaQuery.of(context).size.height * .80,
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height * 0.5,
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
                 width: MediaQuery.of(context).size.width * 0.9,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   color: Color(0xffFFFFFF),
                 ),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Obx(() => Text(
-                      languageController.getTranslation('email'),
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10)),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xff666565), // Border color
+                child: SingleChildScrollView(
+                  physics: BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Obx(() => Text(
+                        languageController.getTranslation('email'),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            color: Color(0xff484848),
+                            fontFamily: 'Nunito'),
+                      ).paddingOnly(top: 10, bottom: 10)),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color(0xff666565), // Border color
+                          ),
+                          borderRadius: BorderRadius.circular(5), // Rounded corners
                         ),
-                        borderRadius: BorderRadius.circular(5), // Rounded corners
+                        child: Obx(() => CustomNewField(
+                          obscureText: false,
+                          controller: _emailController,
+                          hint: languageController.getTranslation('email'),
+                          textStyle: TextStyle(fontSize: 13),
+                        )),
                       ),
-                      child: Obx(() => CustomNewField(
-                        obscureText: false,
-                        controller: _emailController,
-                        hint: languageController.getTranslation('email'),
-                        textStyle: TextStyle(fontSize: 13),
-                      )),
-                    ),
-                    Obx(() => Text(
-                      languageController.getTranslation('first_name'),
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10)),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xff666565), // Border color
+                      Obx(() => Text(
+                        languageController.getTranslation('first_name'),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            color: Color(0xff484848),
+                            fontFamily: 'Nunito'),
+                      ).paddingOnly(top: 10, bottom: 10)),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color(0xff666565), // Border color
+                          ),
+                          borderRadius: BorderRadius.circular(5), // Rounded corners
                         ),
-                        borderRadius: BorderRadius.circular(5), // Rounded corners
+                        child: Obx(() => CustomNewField(
+                          obscureText: false,
+                          controller: _firstNameController,
+                          hint: languageController.getTranslation('first_name'),
+                          textStyle: TextStyle(fontSize: 13),
+                        )),
                       ),
-                      child: Obx(() => CustomNewField(
-                        obscureText: false,
-                        controller: _firstNameController,
-                        hint: languageController.getTranslation('first_name'),
-                        textStyle: TextStyle(fontSize: 13),
-                      )),
-                    ),
-                    Obx(() => Text(
-                      languageController.getTranslation('last_name'),
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10)),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xff666565), // Border color
+                      Obx(() => Text(
+                        languageController.getTranslation('last_name'),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            color: Color(0xff484848),
+                            fontFamily: 'Nunito'),
+                      ).paddingOnly(top: 10, bottom: 10)),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color(0xff666565), // Border color
+                          ),
+                          borderRadius: BorderRadius.circular(5), // Rounded corners
                         ),
-                        borderRadius: BorderRadius.circular(5), // Rounded corners
+                        child: Obx(() => CustomNewField(
+                          obscureText: false,
+                          controller: _lastNameController,
+                          hint: languageController.getTranslation('last_name'),
+                          textStyle: TextStyle(fontSize: 13),
+                        )),
                       ),
-                      child: Obx(() => CustomNewField(
-                        obscureText: false,
-                        controller: _lastNameController,
-                        hint: languageController.getTranslation('last_name'),
-                        textStyle: TextStyle(fontSize: 13),
-                      )),
-                    ),
-                    Obx(() => Text(
-                      languageController.getTranslation('phone_number'),
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10)),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xff666565), // Border color
+                      Obx(() => Text(
+                        languageController.getTranslation('phone_number'),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            color: Color(0xff484848),
+                            fontFamily: 'Nunito'),
+                      ).paddingOnly(top: 10, bottom: 10)),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color(0xff666565), // Border color
+                          ),
+                          borderRadius: BorderRadius.circular(5), // Rounded corners
                         ),
-                        borderRadius: BorderRadius.circular(5), // Rounded corners
+                        child: Obx(() => CustomNewField(
+                          obscureText: false,
+                          controller: _phoneController,
+                          hint: languageController.getTranslation('phone_number'),
+                          textStyle: TextStyle(fontSize: 13),
+                        )),
                       ),
-                      child: Obx(() => CustomNewField(
-                        obscureText: false,
-                        controller: _phoneController,
-                        hint: languageController.getTranslation('phone'),
-                        textStyle: TextStyle(fontSize: 13),
-                      )),
-                    ),
-                    Obx(() => Text(
-                      languageController.getTranslation('password'),
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10)),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xff666565), // Border color
+                      Obx(() => Text(
+                        languageController.getTranslation('password'),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            color: Color(0xff484848),
+                            fontFamily: 'Nunito'),
+                      ).paddingOnly(top: 10, bottom: 10)),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color(0xff666565), // Border color
+                          ),
+                          borderRadius: BorderRadius.circular(5), // Rounded corners
                         ),
-                        borderRadius: BorderRadius.circular(5), // Rounded corners
+                        child: Obx(() => CustomNewField(
+                          obscureText: true,
+                          controller: _passwordController,
+                          hint: languageController.getTranslation('password'),
+                          textStyle: TextStyle(fontSize: 13),
+                        )),
                       ),
-                      child: Obx(() => CustomNewField(
-                        obscureText: false,
-                        controller: _passwordController,
-                        hint: languageController.getTranslation('password'),
-                        textStyle: TextStyle(fontSize: 13),
-                        isPasswordField: true,
-                      )),
-                    ),
-                    Obx(() => Text(
-                      languageController.getTranslation('confirm_password'),
-                      style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: Color(0xff484848),
-                          fontFamily: 'Nunito'),
-                    ).paddingOnly(top: 10, bottom: 10)),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xff666565),
+                      Obx(() => Text(
+                        languageController.getTranslation('confirm_password'),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            color: Color(0xff484848),
+                            fontFamily: 'Nunito'),
+                      ).paddingOnly(top: 10, bottom: 10)),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color(0xff666565), // Border color
+                          ),
+                          borderRadius: BorderRadius.circular(5), // Rounded corners
                         ),
-                        borderRadius: BorderRadius.circular(5),
+                        child: Obx(() => CustomNewField(
+                          obscureText: true,
+                          controller: _confPasswordController,
+                          hint: languageController.getTranslation('confirm_password'),
+                          textStyle: TextStyle(fontSize: 13),
+                        )),
                       ),
-                      child: Obx(() => CustomNewField(
-                        obscureText: false,
-                        controller: _confPasswordController,
-                        hint: languageController.getTranslation('confirm_password'),
-                        textStyle: TextStyle(fontSize: 13),
-                        isPasswordField: true,
-                      )),
-                    ),
-                    Obx(() => FFButtonWidget(
-                      onPressed: () async {
-                       await managersController.editManager(
-                          id: widget.manager!.id.toString(),
-                          email: _emailController.text,
-                          firstName: _firstNameController.text,
-                          lastName: _lastNameController.text,
-                          password: _passwordController.text,
-                          confPassword: _confPasswordController.text,
-                          phone: _phoneController.text,
-                        );
-                      },
-                      text: languageController.getTranslation('update_manager'),
-                      options: FFButtonOptions(
-                        width: Get.width,
-                        height: 45.0,
-                        padding: EdgeInsetsDirectional.fromSTEB(
-                            0.0, 0.0, 0.0, 0.0),
-                        iconPadding: EdgeInsetsDirectional.fromSTEB(
-                            0.0, 0.0, 0.0, 0.0),
-                        color: DamaspayTheme.of(context).primary,
-                        textStyle:
-                        DamaspayTheme.of(context).titleSmall.override(
-                          fontFamily: 'Poppins',
-                          color: Colors.white,
+                      
+                      // Applications Section
+                      Obx(() {
+                        if (managersController.applicationsList.isNotEmpty) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                languageController.getTranslation('assign_sub_accounts'),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: Color(0xff484848),
+                                  fontFamily: 'Nunito',
+                                ),
+                              ).paddingOnly(top: 20, bottom: 10),
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: const Color(0xff666565),
+                                  ),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: Column(
+                                  children: managersController.applicationsList.map<Widget>((app) {
+                                    return CheckboxListTile(
+                                      title: Text(
+                                        app.name,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'Nunito',
+                                        ),
+                                      ),
+                                      value: managersController.selectedApplicationIds.contains(app.id),
+                                      onChanged: (bool? value) {
+                                        managersController.toggleApplicationSelection(app.id);
+                                      },
+                                      controlAffinity: ListTileControlAffinity.leading,
+                                      contentPadding: EdgeInsets.zero,
+                                      dense: true,
+                                      visualDensity: VisualDensity.compact,
+                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          );
+                        } else if (managersController.isApplicationsLoading.value) {
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        } else {
+                          return SizedBox.shrink();
+                        }
+                      }),
+                      
+                      SizedBox(height: 20), // Add extra bottom spacing
+                      
+                      Obx(() => FFButtonWidget(
+                        onPressed: () async {
+                         await managersController.editManager(
+                            id: widget.manager!.id.toString(),
+                            email: _emailController.text,
+                            firstName: _firstNameController.text,
+                            lastName: _lastNameController.text,
+                            password: _passwordController.text,
+                            confPassword: _confPasswordController.text,
+                            phone: _phoneController.text,
+                          );
+                        },
+                        text: languageController.getTranslation('update_manager'),
+                        options: FFButtonOptions(
+                          width: Get.width,
+                          height: 45.0,
+                          padding: EdgeInsetsDirectional.fromSTEB(
+                              0.0, 0.0, 0.0, 0.0),
+                          iconPadding: EdgeInsetsDirectional.fromSTEB(
+                              0.0, 0.0, 0.0, 0.0),
+                          color: DamaspayTheme.of(context).primary,
+                          textStyle:
+                          DamaspayTheme.of(context).titleSmall.override(
+                            fontFamily: 'Poppins',
+                            color: Colors.white,
+                          ),
+                          elevation: 2.0,
+                          borderSide: BorderSide(
+                            color: Colors.transparent,
+                            width: 1.0,
+                          ),
+                          borderRadius: BorderRadius.circular(8.0),
                         ),
-                        elevation: 2.0,
-                        borderSide: BorderSide(
-                          color: Colors.transparent,
-                          width: 1.0,
-                        ),
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                    ).paddingOnly(top: 20)),
-                  ],
-                ).paddingSymmetric(horizontal: 15),
+                      ).paddingOnly(top: 20)),
+                     
+                     SizedBox(height: 30), // Add extra spacing after button
+                   ],
+                  ).paddingSymmetric(horizontal: 15),
+                ),
               ).paddingOnly(top: 20, bottom: 15),
+              SizedBox(height: 20), // Add space between main container and footer
               CustomBottomContainerPostLogin()
             ],
           ),
         ),
       ),
     );
-
   }
 
   Widget _buildTextField({
