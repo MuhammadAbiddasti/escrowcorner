@@ -14,11 +14,13 @@ import '../../../widgets/language_selector/language_selector_widget.dart';
 import '../../controller/language_controller.dart'; // Added for language selection
 import 'package:shared_preferences/shared_preferences.dart';
 import '../login/screen_login.dart';
+import '../settings/setting_controller.dart';
 
 class ScreenSignUp extends StatelessWidget {
   final SignUpController signUpController = Get.put(SignUpController());
   final LogoController logoController = Get.put(LogoController());
   final LanguageController languageController = Get.find<LanguageController>();
+  final SettingController settingController = Get.find<SettingController>();
 
   @override
   Widget build(BuildContext context) {
@@ -226,14 +228,29 @@ class ScreenSignUp extends StatelessWidget {
             },
           ),
         ),
-        RichText(
-          text: TextSpan(
-            style: TextStyle(color: Color(0xff666565), fontSize: 16.0),
-            children: <TextSpan>[
-              TextSpan(text: languageController.getTranslation('i_read_and_agree_to_the')),
-              TextSpan(
-                text: languageController.getTranslation('terms_of_usage'),
-                style: TextStyle(fontWeight: FontWeight.bold),
+        Expanded(
+          child: Wrap(
+            children: [
+              Text(
+                languageController.getTranslation('i_read_and_agree_to_the'),
+                style: TextStyle(color: Color(0xff666565), fontSize: 16.0),
+              ),
+              Text(' '), // Add space between "the" and "Terms"
+              GestureDetector(
+                onTap: () {
+                  print('=== TERMS AND CONDITIONS CLICKED ===');
+                  print('SettingController instance: $settingController');
+                  print('termConditionPath: ${settingController.termConditionPath.value}');
+                  settingController.openTermsAndConditions();
+                },
+                child: Text(
+                  languageController.getTranslation('terms_of_usage'),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                    fontSize: 16.0,
+                  ),
+                ),
               ),
             ],
           ),

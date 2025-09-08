@@ -4,9 +4,11 @@ import 'package:get/get.dart';
 import '../../widgets/custom_appbar/custom_appbar.dart';
 import '../../widgets/custom_button/custom_button.dart';
 import '../screens/user_profile/user_profile_controller.dart';
+import '../screens/settings/setting_controller.dart';
 
 class ScreenKyc4 extends StatelessWidget {
   final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final SettingController settingController = Get.find<SettingController>();
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +81,18 @@ class ScreenKyc4 extends StatelessWidget {
                 });
               },
             ),
-            Text("I agree to the terms and conditions"),
+            GestureDetector(
+              onTap: () {
+                settingController.openTermsAndConditions();
+              },
+              child: Text(
+                "I agree to the terms and conditions",
+                style: TextStyle(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
           ],
         );
       },

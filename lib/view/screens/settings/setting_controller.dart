@@ -3,11 +3,13 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../widgets/custom_token/constant_token.dart';
 import '../../../widgets/custom_api_url/constant_url.dart';
 import '../user_profile/user_profile_controller.dart';
 import 'package:escrowcorner/view/controller/language_controller.dart';
+import '../pdf_viewer_screen.dart';
 
 class SettingController extends GetxController {
   var isLoading = false.obs;
@@ -34,6 +36,9 @@ class SettingController extends GetxController {
   var siteOpeningHours = 'Monday - Friday 9:00 AM - 6:00 PM'.obs;
   var siteNewsletterTitle = 'Stay Updated'.obs;
   var siteNewsletter = 'Stay updated with our latest news and offers.'.obs;
+  var termConditionPath = ''.obs;
+  var privacyPolicyPath = ''.obs;
+  var escrowDetailsPath = ''.obs;
   var socialLinks = <Map<String, dynamic>>[].obs;
   
   final UserProfileController userController = Get.put(UserProfileController());
@@ -65,7 +70,13 @@ class SettingController extends GetxController {
       final currentLocale = languageController.getCurrentLanguageLocale();
       
       final url = Uri.parse('$baseUrl/api/get_site_details/$currentLocale');
+      print('=== FETCHING SITE DETAILS ===');
+      print('URL: $url');
+      print('Current locale: $currentLocale');
+      
       final response = await http.get(url);
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
       
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
@@ -82,6 +93,15 @@ class SettingController extends GetxController {
           siteOpeningHours.value = data['opening_hours'] ?? 'Monday - Friday 9:00 AM - 6:00 PM';
           siteNewsletterTitle.value = data['newsletter_title'] ?? 'Stay Updated';
           siteNewsletter.value = data['newsletter'] ?? 'Stay updated with our latest news and offers.';
+          termConditionPath.value = data['term_condition_path'] ?? '';
+          privacyPolicyPath.value = data['privacy_policy_path'] ?? '';
+          escrowDetailsPath.value = data['escrow_details_path'] ?? '';
+          
+          print('=== TERMS AND CONDITIONS DEBUG ===');
+          print('term_condition_path from API: "${data['term_condition_path']}"');
+          print('termConditionPath.value after assignment: "${termConditionPath.value}"');
+          print('privacy_policy_path from API: "${data['privacy_policy_path']}"');
+          print('privacyPolicyPath.value after assignment: "${privacyPolicyPath.value}"');
           
                      // Parse social links - handle both possible field names
            if (data['social_links'] != null) {
@@ -110,9 +130,13 @@ class SettingController extends GetxController {
            }
            
            print('Site details loaded: ${siteName.value}');
+        } else {
+          print('API response success is false or data is null');
+          print('Response: $jsonResponse');
         }
       } else {
         print('Failed to load site details: ${response.statusCode}');
+        print('Response body: ${response.body}');
       }
     } catch (e) {
       print('Error fetching site details: $e');
@@ -133,6 +157,225 @@ class SettingController extends GetxController {
           );
         }
     );
+  }
+
+  // Method to open terms and conditions PDF in-app
+  Future<void> openTermsAndConditions() async {
+    print('=== TERMS AND CONDITIONS DEBUG ===');
+    print('termConditionPath.value: "${termConditionPath.value}"');
+    print('termConditionPath.isEmpty: ${termConditionPath.value.isEmpty}');
+    
+    // Always ensure we have the latest data
+    if (termConditionPath.value.isEmpty) {
+      print('Terms and conditions path is empty, fetching site details...');
+      // Show loading indicator
+      Get.dialog(
+        Center(
+          child: Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff2E7D32)),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Loading...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xff666565),
+                    fontFamily: 'Nunito',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+      
+      // Try to fetch site details first
+      await fetchSiteDetails();
+      
+      // Close loading dialog
+      Get.back();
+      
+      if (termConditionPath.value.isEmpty) {
+        // Use a fallback URL if API doesn't provide one
+        termConditionPath.value = 'https://escrowcorner.com/assets/uploads/terms_conditions/17557707298000.pdf';
+        print('Using fallback URL: ${termConditionPath.value}');
+      }
+    }
+
+    try {
+      print('Attempting to open PDF in-app: ${termConditionPath.value}');
+      final Uri url = Uri.parse(termConditionPath.value);
+      
+      // Navigate to PDF viewer screen
+      final languageController = Get.find<LanguageController>();
+      Get.to(() => PDFViewerScreen(pdfUrl: termConditionPath.value, title: languageController.getTranslation('terms_and_conditions')));
+      
+    } catch (e) {
+      print('Error opening terms and conditions: $e');
+      Get.snackbar(
+        'Error',
+        'Could not open terms and conditions: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Method to open privacy policy PDF in-app
+  Future<void> openPrivacyPolicy() async {
+    print('=== PRIVACY POLICY DEBUG ===');
+    print('privacyPolicyPath.value: "${privacyPolicyPath.value}"');
+    print('privacyPolicyPath.isEmpty: ${privacyPolicyPath.value.isEmpty}');
+    
+    // Always ensure we have the latest data
+    if (privacyPolicyPath.value.isEmpty) {
+      print('Privacy policy path is empty, fetching site details...');
+      // Show loading indicator
+      Get.dialog(
+        Center(
+          child: Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff2E7D32)),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Loading...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xff666565),
+                    fontFamily: 'Nunito',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+      
+      // Try to fetch site details first
+      await fetchSiteDetails();
+      
+      // Close loading dialog
+      Get.back();
+      
+      if (privacyPolicyPath.value.isEmpty) {
+        // Use a fallback URL if API doesn't provide one
+        privacyPolicyPath.value = 'https://escrowcorner.com/assets/uploads/privacy_policy/privacy_policy.pdf';
+        print('Using fallback URL: ${privacyPolicyPath.value}');
+      }
+    }
+
+    try {
+      print('Attempting to open privacy policy PDF in-app: ${privacyPolicyPath.value}');
+      final Uri url = Uri.parse(privacyPolicyPath.value);
+      
+      // Navigate to PDF viewer screen
+      final languageController = Get.find<LanguageController>();
+      Get.to(() => PDFViewerScreen(pdfUrl: privacyPolicyPath.value, title: languageController.getTranslation('privacy_policy')));
+      
+    } catch (e) {
+      print('Error opening privacy policy: $e');
+      Get.snackbar(
+        'Error',
+        'Could not open privacy policy: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Method to open escrow details PDF in-app
+  Future<void> openEscrowDetails() async {
+    print('=== ESCROW DETAILS DEBUG ===');
+    print('escrowDetailsPath.value: "${escrowDetailsPath.value}"');
+    print('escrowDetailsPath.isEmpty: ${escrowDetailsPath.value.isEmpty}');
+    
+    // Always ensure we have the latest data
+    if (escrowDetailsPath.value.isEmpty) {
+      print('Escrow details path is empty, fetching site details...');
+      // Show loading indicator
+      Get.dialog(
+        Center(
+          child: Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff2E7D32)),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Loading...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xff666565),
+                    fontFamily: 'Nunito',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+      
+      // Try to fetch site details first
+      await fetchSiteDetails();
+      
+      // Close loading dialog
+      Get.back();
+      
+      if (escrowDetailsPath.value.isEmpty) {
+        // Use a fallback URL if API doesn't provide one
+        escrowDetailsPath.value = 'https://escrowcorner.com/assets/uploads/escrow_details/escrow_guide.pdf';
+        print('Using fallback URL: ${escrowDetailsPath.value}');
+      }
+    }
+
+    try {
+      print('Attempting to open escrow details PDF in-app: ${escrowDetailsPath.value}');
+      final Uri url = Uri.parse(escrowDetailsPath.value);
+      
+      // Navigate to PDF viewer screen
+      final languageController = Get.find<LanguageController>();
+      Get.to(() => PDFViewerScreen(pdfUrl: escrowDetailsPath.value, title: languageController.getTranslation('what_is_escrow_and_how_does_it_work')));
+      
+    } catch (e) {
+      print('Error opening escrow details: $e');
+      Get.snackbar(
+        'Error',
+        'Could not open escrow details: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
 

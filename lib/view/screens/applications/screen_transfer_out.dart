@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../widgets/common_header/common_header.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
@@ -172,7 +173,10 @@ class _ScreenTransferOutState extends State<ScreenTransferOut> {
                           SizedBox(height: 8),
                           TextFormField(
                             controller: amountController,
-                            keyboardType: TextInputType.number,
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                            ],
                             decoration: InputDecoration(
                               contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
                               hintText: languageController.getTranslation('enter_amount'),

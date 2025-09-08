@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../widgets/common_header/common_header.dart';
 import '../../../widgets/custom_bottom_container/custom_bottom_container.dart';
@@ -173,7 +174,10 @@ class _ScreenTransferInState extends State<ScreenTransferIn> {
                           SizedBox(height: 8),
                           TextFormField(
                             controller: amountController,
-                            keyboardType: TextInputType.number,
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                            ],
                             decoration: InputDecoration(
                               contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
                               hintText: languageController.getTranslation('enter_amount'),
@@ -193,21 +197,21 @@ class _ScreenTransferInState extends State<ScreenTransferIn> {
                           SizedBox(height: 30),
                           
                           // Submit Button
-                                                     Obx(() {
-                             return CustomButton(
-                               text: isLoading.value ? languageController.getTranslation('processing') + "..." : languageController.getTranslation('submit'),
-                               onPressed: isLoading.value ? () {} : () {
-                                 // Use debouncing to prevent rapid clicks
-                                 RateLimiter.debounceVoid(
-                                   key: 'submit_transfer_in',
-                                   function: () async {
-                                     await _handleTransferIn();
-                                   },
-                                   delay: Duration(milliseconds: 500),
-                                 );
-                               },
-                             );
-                           }),
+                          Obx(() {
+                            return CustomButton(
+                              text: isLoading.value ? languageController.getTranslation('processing') + "..." : languageController.getTranslation('submit'),
+                              onPressed: isLoading.value ? () {} : () {
+                                // Prevent double-click by immediately checking loading state
+                                if (isLoading.value) return;
+                                
+                                // Close the mobile keypad
+                                FocusScope.of(context).unfocus();
+                                
+                                // Call the handler directly
+                                _handleTransferIn();
+                              },
+                            );
+                          }),
                         ],
                       ),
                     ),
@@ -224,6 +228,13 @@ class _ScreenTransferInState extends State<ScreenTransferIn> {
   }
 
   Future<void> _handleTransferIn() async {
+    // Prevent multiple simultaneous calls
+    if (isLoading.value) {
+      print("_handleTransferIn already in progress, ignoring call");
+      return;
+    }
+    
+    print("_handleTransferIn called");
     // Validate fields
          if (selectedPaymentMethod.value == null) {
        Get.snackbar(

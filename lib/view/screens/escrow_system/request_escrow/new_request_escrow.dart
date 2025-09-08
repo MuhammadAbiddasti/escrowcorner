@@ -15,6 +15,7 @@ import '../../../../widgets/common_header/common_header.dart';
 import '../../../theme/damaspay_theme/Damaspay_theme.dart';
 import '../../user_profile/user_profile_controller.dart';
 import '../escrow_controller.dart';
+import '../../settings/setting_controller.dart';
 
 class ScreenNewRequestEscrow extends StatefulWidget {
   @override
@@ -31,6 +32,7 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
   final UserEscrowsController escrowController = Get.put(UserEscrowsController());
   final RequestEscrowController requestEscrowController = Get.put(RequestEscrowController());
   final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final SettingController settingController = Get.find<SettingController>();
   String? selectedCategory;
   String? selectedCurrency;
   final ImagePicker _picker = ImagePicker();
@@ -144,7 +146,8 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                     children: [
                       TextButton(
                         onPressed: () {
-                          Get.to(ScreenEscrowDetails());
+                          final settingController = Get.find<SettingController>();
+                          settingController.openTermsAndConditions();
                         },
                         child: Text(
                           "What is Escrow and How does it work ?",
@@ -547,13 +550,19 @@ class _ScreenNewRequestEscrowState extends State<ScreenNewRequestEscrow> {
                               fontSize: 14,
                               color: Color(0xff484848),
                               fontFamily: 'Nunito'),),
-                          Text(
-                            "Terms & Conditions",
-                            style: TextStyle(
-                                fontWeight: FontWeight.w400,
-                                fontSize: 14,
-                                color: Colors.blue,
-                                fontFamily: 'Nunito'),
+                          GestureDetector(
+                            onTap: () {
+                              settingController.openTermsAndConditions();
+                            },
+                            child: Text(
+                              "Terms & Conditions",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 14,
+                                  color: Colors.blue,
+                                  fontFamily: 'Nunito',
+                                  decoration: TextDecoration.underline),
+                            ),
                           ),
                         ],
                       ),

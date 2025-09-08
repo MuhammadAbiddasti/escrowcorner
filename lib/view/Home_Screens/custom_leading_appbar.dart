@@ -4,11 +4,13 @@ import 'package:escrowcorner/view/Home_Screens/screen_home.dart';
 import 'package:escrowcorner/view/screens/login/screen_login.dart';
 import 'package:escrowcorner/view/Home_Screens/screen_services.dart';
 import 'package:escrowcorner/view/screens/register/screen_signup.dart';
+import 'package:escrowcorner/view/screens/dashboard/screen_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../screens/settings/setting_controller.dart';
 import '../../widgets/custom_api_url/constant_url.dart';
+import '../../widgets/custom_token/constant_token.dart';
 
 import '../../widgets/custom_button/custom_button.dart';
 import '../controller/language_controller.dart';
@@ -27,170 +29,147 @@ class CustomLeadingAppbar extends StatelessWidget {
         offset: Offset(0, 50),
         onSelected: (String result) {
         },
-        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-          PopupMenuItem<String>(
-            value: 'option1',
-            child: Column(
-              children: [
-                TextButton(child:Obx(() => Text(languageController.getTranslation('home'),
-                  style: TextStyle(
-                      color: Colors.white
-                  ),)), onPressed: () {
-                  Get.to(ScreenHome());
-                },),
-                SizedBox(width: 10),
-                Divider(
-                  color: Color(0xffCDE0EF),
-                )
-              ],
-            ),
-          ),
-          // PopupMenuItem<String>(
-          //   value: 'option2',
-          //   child:  Column(
-          //     children: [
-          //       TextButton(child:Text("API Docs", style: TextStyle(
-          //           color: Colors.white
-          //       )), onPressed: () async {
-          //         final Uri url = Uri.parse('https://damaspay.readme.io');
-          //         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-          //           throw 'Could not launch $url';
-          //         }
-          //       },),
-          //       SizedBox(width: 10),
-          //       Divider(
-          //         color: Color(0xffCDE0EF),
-          //       )
-          //     ],
-          //   ),
-          // ),
-          PopupMenuItem<String>(
-            value: 'option3',
-            child:  Column(
-              children: [
-                TextButton(child:Obx(() => Text(languageController.getTranslation('services'), style: TextStyle(
-                  color: Colors.white,
-                ))), onPressed: () {
-                  Get.to(ScreenServices());
-                },),
-                SizedBox(width: 10),
-                Divider(
-                  color: Color(0xffCDE0EF),
-                )
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'option4',
-            child:  Column(
-              children: [
-                TextButton(child:Obx(() => Text(languageController.getTranslation('about_us'), style: TextStyle(
-                    color: Colors.white
-                ))), onPressed: () {
-                  Get.to(ScreenAbout());
-                },),
-                SizedBox(width: 10),
-                Divider(
-                  color: Color(0xffCDE0EF),
-                )
-              ],
-            ),
-          ),
-          // PopupMenuItem<String>(
-          //   value: 'option5',
-          //   child:  Column(
-          //     children: [
-          //       TextButton(child:Text("Our Team", style: TextStyle(
-          //           color: Colors.white
-          //       )), onPressed: () {
-          //         Get.to(ScreenTeam());
-          //       },),
-          //       SizedBox(width: 10),
-          //       Divider(
-          //         color: Color(0xffCDE0EF),
-          //       )
-          //     ],
-          //   ),
-          // ),
-          // PopupMenuItem<String>(
-          //   value: 'option6',
-          //   child:  Column(
-          //     children: [
-          //       TextButton(child:Text("Our Client", style: TextStyle(
-          //           color: Colors.white
-          //       )), onPressed: () {
-          //         Get.to(ScreenClient());
-          //       },),
-          //       SizedBox(width: 10),
-          //       Divider(
-          //         color: Color(0xffCDE0EF),
-          //       )
-          //     ],
-          //   ),
-          // ),
-          PopupMenuItem<String>(
-            value: 'option5',
-            child:  Column(
-              children: [
-                TextButton(child:Obx(() => Text(languageController.getTranslation('contact_us'), style: TextStyle(
-                    color: Colors.white
-                ))), onPressed: () {
-                  Get.to(ScreenContact());
-                },),
-                SizedBox(width: 10),
-                Divider(
-                  color: Color(0xffCDE0EF),
-                )
-              ],
-            ),
-          ),
-          // PopupMenuItem<String>(
-          //   value: 'option8',
-          //   child:  Column(
-          //     children: [
-          //       TextButton(child:Text("NewsLetter", style: TextStyle(
-          //           color: Colors.white
-          //       )), onPressed: () async {
-          //         final Uri url = Uri.parse('https://damaspay.readme.io');
-          //         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-          //           throw 'Could not launch $url';
-          //         }
-          //       },),
-          //       SizedBox(width: 10),
-          //       Divider(
-          //         color: Color(0xffCDE0EF),
-          //       )
-          //
-          //     ],
-          //   ),
-          // ),
-          PopupMenuItem<String>(
-            value: 'option6',
-            child:  Column(
-              children: [
-                TextButton(child:Obx(() => Text(languageController.getTranslation('register'), style: TextStyle(
-                    color: Colors.white
-                ))), onPressed: () {
-                  Get.to(ScreenSignUp());
-                },),
-                SizedBox(width: 10),
-                Divider(
-                  color: Color(0xffCDE0EF),
-                )
-
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-              value: 'option7',
-              child: CustomButton(
-                  text: languageController.getTranslation('login'), onPressed: (){
-                Get.to(ScreenLogin());
-              })
-          ),
-        ],
+        itemBuilder: (BuildContext context) => _buildMenuItems(languageController),
       ),
     );
+  }
+
+  List<PopupMenuEntry<String>> _buildMenuItems(LanguageController languageController) {
+    return <PopupMenuEntry<String>>[
+      // Home
+      PopupMenuItem<String>(
+        value: 'option1',
+        child: Column(
+          children: [
+            TextButton(
+              child: Obx(() => Text(
+                languageController.getTranslation('home'),
+                style: TextStyle(color: Colors.white),
+              )),
+              onPressed: () {
+                Get.to(ScreenHome());
+              },
+            ),
+            SizedBox(width: 10),
+            Divider(color: Color(0xffCDE0EF)),
+          ],
+        ),
+      ),
+      // Services
+      PopupMenuItem<String>(
+        value: 'option3',
+        child: Column(
+          children: [
+            TextButton(
+              child: Obx(() => Text(
+                languageController.getTranslation('services'),
+                style: TextStyle(color: Colors.white),
+              )),
+              onPressed: () {
+                Get.to(ScreenServices());
+              },
+            ),
+            SizedBox(width: 10),
+            Divider(color: Color(0xffCDE0EF)),
+          ],
+        ),
+      ),
+      // About Us
+      PopupMenuItem<String>(
+        value: 'option4',
+        child: Column(
+          children: [
+            TextButton(
+              child: Obx(() => Text(
+                languageController.getTranslation('about_us'),
+                style: TextStyle(color: Colors.white),
+              )),
+              onPressed: () {
+                Get.to(ScreenAbout());
+              },
+            ),
+            SizedBox(width: 10),
+            Divider(color: Color(0xffCDE0EF)),
+          ],
+        ),
+      ),
+      // Contact Us
+      PopupMenuItem<String>(
+        value: 'option5',
+        child: Column(
+          children: [
+            TextButton(
+              child: Obx(() => Text(
+                languageController.getTranslation('contact_us'),
+                style: TextStyle(color: Colors.white),
+              )),
+              onPressed: () {
+                Get.to(ScreenContact());
+              },
+            ),
+            SizedBox(width: 10),
+            Divider(color: Color(0xffCDE0EF)),
+          ],
+        ),
+      ),
+      // Conditional items based on login status - using StatefulBuilder for dynamic content
+      PopupMenuItem<String>(
+        value: 'conditional',
+        child: FutureBuilder<bool>(
+          future: isUserLoggedIn(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Column(
+                children: [
+                  Text(
+                    'Loading...',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  SizedBox(width: 10),
+                  Divider(color: Color(0xffCDE0EF)),
+                ],
+              );
+            }
+            
+            final isLoggedIn = snapshot.data ?? false;
+            
+            if (isLoggedIn) {
+              // User is logged in, show Dashboard
+              return CustomButton(
+                text: languageController.getTranslation('dashboard'),
+                onPressed: () {
+                  Get.to(ScreenDashboard());
+                },
+              );
+            } else {
+              // User is not logged in, show Register and Login
+              return Column(
+                children: [
+                  TextButton(
+                    child: Obx(() => Text(
+                      languageController.getTranslation('register'),
+                      style: TextStyle(color: Colors.white),
+                    )),
+                    onPressed: () {
+                      Get.to(ScreenSignUp());
+                    },
+                  ),
+                  SizedBox(width: 10),
+                  Divider(color: Color(0xffCDE0EF)),
+                  SizedBox(height: 10),
+                  CustomButton(
+                    text: languageController.getTranslation('login'),
+                    onPressed: () {
+                      Get.to(ScreenLogin());
+                    },
+                  ),
+                ],
+              );
+            }
+          },
+        ),
+      ),
+    ];
   }
 }
 
@@ -368,6 +347,10 @@ class CustomHomeBottomContainer extends StatelessWidget {
           ),
 
           GestureDetector(
+            onTap: () {
+              final settingController = Get.find<SettingController>();
+              settingController.openPrivacyPolicy();
+            },
             child: Row(
               children: [
                 Icon(Icons.arrow_forward_ios,size: 16,
@@ -382,6 +365,10 @@ class CustomHomeBottomContainer extends StatelessWidget {
             ),
           ),
           GestureDetector(
+            onTap: () {
+              final settingController = Get.find<SettingController>();
+              settingController.openTermsAndConditions();
+            },
             child: Row(
               children: [
                 Icon(Icons.arrow_forward_ios,size: 16,

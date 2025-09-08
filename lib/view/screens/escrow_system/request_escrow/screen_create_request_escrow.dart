@@ -19,6 +19,7 @@ import '../escrow_controller.dart';
 import '../../../../view/controller/language_controller.dart';
 import '../../../../widgets/custom_api_url/constant_url.dart';
 import 'package:flutter/services.dart'; // Added for inputFormatters
+import '../../settings/setting_controller.dart';
 
 class ScreenCreateRequestEscrow extends StatefulWidget {
   @override
@@ -37,6 +38,7 @@ class _ScreenCreateRequestEscrowState extends State<ScreenCreateRequestEscrow> {
   final RequestEscrowController controller = Get.put(RequestEscrowController());
   final UserProfileController userProfileController = Get.find<UserProfileController>();
   final LanguageController languageController = Get.find<LanguageController>();
+  final SettingController settingController = Get.find<SettingController>();
 
   String? selectedCategory;
   String? selectedCurrency;
@@ -178,7 +180,8 @@ class _ScreenCreateRequestEscrowState extends State<ScreenCreateRequestEscrow> {
                   children: [
                      TextButton(
                        onPressed: () {
-                         Get.to(ScreenEscrowDetails());
+                         final settingController = Get.find<SettingController>();
+                         settingController.openTermsAndConditions();
                        },
                        child: Text(
                          languageController.getTranslation('what_is_escrow_and_how_does_it_work'),
@@ -599,13 +602,19 @@ class _ScreenCreateRequestEscrowState extends State<ScreenCreateRequestEscrow> {
                              fontSize: 14,
                              color: Color(0xff484848),
                              fontFamily: 'Nunito'),),
-                         Text(
-                           languageController.getTranslation('terms_and_conditions'),
-                           style: TextStyle(
-                               fontWeight: FontWeight.w400,
-                               fontSize: 14,
-                               color: Colors.blue,
-                               fontFamily: 'Nunito'),
+                         GestureDetector(
+                           onTap: () {
+                             settingController.openTermsAndConditions();
+                           },
+                           child: Text(
+                             languageController.getTranslation('terms_and_conditions'),
+                             style: TextStyle(
+                                 fontWeight: FontWeight.w400,
+                                 fontSize: 14,
+                                 color: Colors.blue,
+                                 fontFamily: 'Nunito',
+                                 decoration: TextDecoration.underline),
+                           ),
                          ),
                       ],
                     ),

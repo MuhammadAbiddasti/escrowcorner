@@ -1,5 +1,6 @@
 import 'package:escrowcorner/view/screens/login/screen_login.dart';
 import 'package:escrowcorner/view/screens/register/screen_signup.dart';
+import 'package:escrowcorner/view/screens/dashboard/screen_dashboard.dart';
 import 'package:escrowcorner/widgets/custom_button/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -202,17 +203,34 @@ class _ScreenHomeState extends State<ScreenHome> with SingleTickerProviderStateM
                          textAlign: TextAlign.center,
                        ).paddingOnly(top: 15),
                   
-                      // Custom button
-                      CustomButton(
-                        height: 34,
-                        width: MediaQuery.of(context).size.width * 0.5,
-                        text: languageController.getTranslation('get_started'),
-                        onPressed: () {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            Get.to(() => ScreenSignUp());
-                          });
+                      // Conditional Get Started button - only show when user is NOT logged in
+                      FutureBuilder<bool>(
+                        future: isUserLoggedIn(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return SizedBox(height: 50); // Placeholder while loading
+                          }
+                          
+                          final isLoggedIn = snapshot.data ?? false;
+                          
+                          if (!isLoggedIn) {
+                            // User is not logged in, show Get Started button that goes to SignUp
+                            return CustomButton(
+                              height: 34,
+                              width: MediaQuery.of(context).size.width * 0.5,
+                              text: languageController.getTranslation('get_started'),
+                              onPressed: () {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  Get.to(() => ScreenSignUp());
+                                });
+                              },
+                            ).paddingOnly(top: 40);
+                          } else {
+                            // User is logged in, don't show the button
+                            return SizedBox.shrink();
+                          }
                         },
-                      ).paddingOnly(top: 40),
+                      ),
                     ],
                   ).paddingSymmetric(horizontal: 15),
                 ), // Padding for the column

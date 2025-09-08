@@ -23,6 +23,7 @@ import '../../../../view/controller/language_controller.dart';
 import '../../../../widgets/custom_api_url/constant_url.dart';
 import '../../../../widgets/custom_token/constant_token.dart'; // Added for getToken
 import 'package:flutter/services.dart'; // Added for inputFormatters
+import '../../settings/setting_controller.dart';
 
 class ScreenCreateEscrow extends StatefulWidget {
   @override
@@ -43,6 +44,7 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
     final SendEscrowsController controller = Get.put(SendEscrowsController());
     final UserProfileController userProfileController =Get.find<UserProfileController>();
     final LanguageController languageController = Get.find<LanguageController>();
+    final SettingController settingController = Get.find<SettingController>();
 
   String? selectedCategory;
     String? selectedCurrency;
@@ -365,10 +367,10 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // What is Escrow button
+                    // What is Escrow button - now opens Terms and Conditions PDF
                     TextButton(
                       onPressed: () {
-                        Get.to(ScreenEscrowDetails());
+                        settingController.openTermsAndConditions();
                       },
                       child: Text(
                         languageController.getTranslation('what_is_escrow_and_how_does_it_work'),
@@ -905,13 +907,19 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
                           ),
                         ),
                         SizedBox(width: 4), // Add space between the two texts
-                        Text(
-                          languageController.getTranslation('terms_and_conditions'),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w400,
-                            fontSize: 14,
-                            color: Colors.blue,
-                            fontFamily: 'Nunito',
+                        GestureDetector(
+                          onTap: () {
+                            settingController.openTermsAndConditions();
+                          },
+                          child: Text(
+                            languageController.getTranslation('terms_and_conditions'),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w400,
+                              fontSize: 14,
+                              color: Colors.blue,
+                              fontFamily: 'Nunito',
+                              decoration: TextDecoration.underline,
+                            ),
                           ),
                         ),
                       ],
