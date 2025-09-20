@@ -117,6 +117,7 @@ class _ScreenChangePasswordState extends State<ScreenChangePassword> {
                             onPressed: () {
                               controller.changePassword();
                             },
+                            loading: controller.isLoading.value,
                           ).paddingOnly(top: 20, bottom: 20)),
                         ],
                       ).paddingSymmetric(horizontal: 20),

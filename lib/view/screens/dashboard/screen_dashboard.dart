@@ -899,10 +899,6 @@ class _ScreenDashboardState extends State<ScreenDashboard> {
                       DataColumn(
                           label: Text(languageController.getTranslation('net'),
                               style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text(languageController.getTranslation('status'),
-                              style: TextStyle(fontWeight: FontWeight.bold))),
-                      // Added status column
                     ],
                     rows: homeController.pendingTransactions
                         .asMap()
@@ -941,19 +937,7 @@ class _ScreenDashboardState extends State<ScreenDashboard> {
                           DataCell(Text(
                               '${transaction.currencySymbol} ${transaction.fee.toString()}')),
                           DataCell(Text(
-                              '${transaction.moneyFlow}${transaction.currencySymbol} ${transaction.net}')),
-                          DataCell(Container(
-                              height: 30,
-                              width: 80,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Color(0xff18CE0F)),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Center(
-                                  child: Text(
-                                languageController.getTranslation('confirm'),
-                                style: TextStyle(color: Color(0xff18CE0F)),
-                              ))))
+                              '${transaction.moneyFlow}${transaction.currencySymbol} ${transaction.net}'))
                         ],
                       );
                     }).toList(),

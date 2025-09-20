@@ -9,6 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controller/language_controller.dart';
 import 'package:path/path.dart';
+import 'package:escrowcorner/view/controller/logout_controller.dart';
+import 'package:escrowcorner/view/screens/login/screen_login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChangePasswordController extends GetxController {
   final TextEditingController oldPasswordController = TextEditingController();
@@ -65,7 +68,7 @@ class ChangePasswordController extends GetxController {
       );
 
       if (response.statusCode == 200) {
-        var jsonResponse = jsonDecode(response.body);
+var jsonResponse = jsonDecode(response.body);
 
         if (jsonResponse['status'] == 'success') {
           final languageController = Get.find<LanguageController>();
@@ -73,10 +76,14 @@ class ChangePasswordController extends GetxController {
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,);
-          //Get.off(ScreenSettingsPortion());
+          
+          // Clear form fields
           oldPasswordController.clear();
           newPasswordController.clear();
           confirmNewPasswordController.clear();
+          
+          // Logout user and redirect to login screen
+          await _logoutAndRedirectToLogin();
         } else {
           final languageController = Get.find<LanguageController>();
           Get.snackbar(languageController.getTranslation('error'), jsonResponse['message'] ?? 'Failed to change password',
@@ -104,6 +111,26 @@ class ChangePasswordController extends GetxController {
         colorText: Colors.white,);
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // Method to logout user and redirect to login screen
+  Future<void> _logoutAndRedirectToLogin() async {
+    try {
+      // Clear all stored data
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      
+      // Wait a moment for the user to see the success message
+      await Future.delayed(Duration(seconds: 2));
+      
+      // Navigate to login screen and clear all previous routes
+      Get.offAll(() => ScreenLogin());
+      
+    } catch (e) {
+      print('Error during logout: $e');
+      // Even if logout fails, still redirect to login
+      Get.offAll(() => ScreenLogin());
     }
   }
 

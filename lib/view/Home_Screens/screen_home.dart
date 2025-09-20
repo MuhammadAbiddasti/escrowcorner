@@ -85,6 +85,25 @@ class _ScreenHomeState extends State<ScreenHome> with SingleTickerProviderStateM
         ],
       ),
       body: Obx(() {
+        // Check if translations are still loading
+        if (languageController.isLoading.value || languageController.isLoadingLanguageKeys.value) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Loading translations...',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        }
+        
         if (homeController.isLoading.value) {
           return Center(child: CircularProgressIndicator());
         } else if (homeController.hasError.value || homeController.homeContent.value == null) {
@@ -94,21 +113,21 @@ class _ScreenHomeState extends State<ScreenHome> with SingleTickerProviderStateM
               children: [
                 Icon(Icons.error_outline, color: Colors.white, size: 64),
                 SizedBox(height: 16),
-                Text(
+                Obx(() => Text(
                   languageController.getTranslation('error_loading_home_content'),
                   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                )),
                 SizedBox(height: 8),
-                Text(
+                Obx(() => Text(
                   languageController.getTranslation('check_internet_connection'),
                   style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
+                )),
                 SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
                     homeController.fetchHomeContent();
                   },
-                  child: Text(languageController.getTranslation('retry')),
+                  child: Obx(() => Text(languageController.getTranslation('retry'))),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xff0f9373),
                     foregroundColor: Colors.white,
@@ -215,7 +234,7 @@ class _ScreenHomeState extends State<ScreenHome> with SingleTickerProviderStateM
                           
                           if (!isLoggedIn) {
                             // User is not logged in, show Get Started button that goes to SignUp
-                            return CustomButton(
+                            return Obx(() => CustomButton(
                               height: 34,
                               width: MediaQuery.of(context).size.width * 0.5,
                               text: languageController.getTranslation('get_started'),
@@ -224,7 +243,7 @@ class _ScreenHomeState extends State<ScreenHome> with SingleTickerProviderStateM
                                   Get.to(() => ScreenSignUp());
                                 });
                               },
-                            ).paddingOnly(top: 40);
+                            ).paddingOnly(top: 40));
                           } else {
                             // User is logged in, don't show the button
                             return SizedBox.shrink();

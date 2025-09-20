@@ -166,10 +166,10 @@ class _GetRejectedEscrowState extends State<GetRejectedEscrow> {
                                           Expanded(
                                             flex: 1,
                                             child: SizedBox(
-                                              height: 35,
+                                              height: 28,
                                               child: CustomButton(
                                                 text: languageController.getTranslation('view'),
-                                                textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                                                                  onPressed: () async {
                                                    // Navigate to rejected escrow detail screen
                                                    Get.to(() => RejectedEscrowDetailScreen(escrowId: rejectEscrow.id));
@@ -182,10 +182,10 @@ class _GetRejectedEscrowState extends State<GetRejectedEscrow> {
                                           Expanded(
                                             flex: 1,
                                             child: SizedBox(
-                                              height: 35,
+                                              height: 28,
                                               child: CustomButton(
                                                 text: languageController.getTranslation('information'),
-                                                textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                 backGroundColor: Colors.blue,
                                                 onPressed: () async {
                                                   // Navigate to rejected escrow information screen

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../widgets/custom_appbar/custom_appbar.dart';
 import '../user_profile/user_profile_controller.dart';
+import 'request_escrow/request_escrow.dart';
 
 class ScreenEscrowDetails extends StatelessWidget {
 
@@ -67,7 +68,8 @@ class ScreenEscrowDetails extends StatelessWidget {
                     style: TextStyle(fontSize: 14,fontWeight: FontWeight.w300, color: Color(0xff484848),
                     )),
                   CustomButton(text: "Back To Escrow Page", onPressed: (){
-                    Get.back();
+                    // Navigate back to request_escrow screen
+                    Get.off(() => GetRequestEscrow());
                   }).paddingOnly(top: 40,bottom: 20)
                 ],
               ).paddingSymmetric(horizontal: 10,vertical: 5),

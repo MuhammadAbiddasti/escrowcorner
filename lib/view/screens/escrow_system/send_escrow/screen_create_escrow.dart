@@ -30,7 +30,7 @@ class ScreenCreateEscrow extends StatefulWidget {
   State<ScreenCreateEscrow> createState() => _ScreenCreateEscrowState();
 }
 
-class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
+class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> with WidgetsBindingObserver {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
@@ -40,6 +40,9 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
   final TextEditingController escrowFeeController = TextEditingController();
   final TextEditingController totalAmountController = TextEditingController();
   bool acceptTerms = false;
+  bool isSubmitting = false; // Add loading state for submission
+  bool isDataLoaded = false; // Track if all data is loaded
+  static bool _shouldClearForm = false; // Static flag to track if form should be cleared
     final UserEscrowsController escrowController = Get.put(UserEscrowsController());
     final SendEscrowsController controller = Get.put(SendEscrowsController());
     final UserProfileController userProfileController =Get.find<UserProfileController>();
@@ -278,6 +281,12 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
     super.initState();
     print('INIT STATE - Starting...');
     
+    // Add observer for lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Clear all form data to show fresh form
+    _clearFormData();
+    
     // Add listener to amount controller to update fee calculations
     amountController.addListener(() {
       setState(() {
@@ -310,17 +319,69 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
     escrowController.fetchCategories();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed && _shouldClearForm) {
+      // Clear form data when returning to screen after successful submission
+      _clearFormData();
+      _shouldClearForm = false; // Reset flag
+    }
+  }
+
+  // Clear all form data to show fresh form
+  void _clearFormData() {
+    print('_clearFormData - Clearing all form data...');
+    
+    // Clear all text controllers
+    titleController.clear();
+    emailController.clear();
+    amountController.clear();
+    productNameController.clear();
+    noteController.clear();
+    escrowFeeController.clear();
+    totalAmountController.clear();
+    
+    // Reset form state
+    acceptTerms = false;
+    isSubmitting = false;
+    isDataLoaded = false;
+    selectedFiles.clear();
+    
+    // Reset controller selections
+    escrowController.selectedCategory.value = null;
+    escrowController.selectedCurrencyId.value = null;
+    escrowController.selectedPaymentMethodId.value = null;
+    
+    // Reset local variables
+    selectedCategory = null;
+    selectedCurrency = null;
+    
+    print('_clearFormData - All form data cleared');
+  }
+
   // Initialize all data
   Future<void> _initializeData() async {
     print('_initializeData - Starting...');
+    setState(() {
+      isDataLoaded = false;
+    });
+    
     // Fetch escrow fees first
     await _fetchEscrowFees();
     print('_initializeData - Escrow fees fetched, now fetching other data...');
+    
     // Then fetch other data
-    escrowController.fetchCategories();
-    escrowController.fetchCurrencies();
-    escrowController.fetchPaymentMethods();
+    await Future.wait([
+      escrowController.fetchCategories(),
+      escrowController.fetchCurrencies(),
+      escrowController.fetchPaymentMethods(),
+    ]);
+    
     print('_initializeData - All data fetch completed');
+    setState(() {
+      isDataLoaded = true;
+    });
   }
 
   // Force refresh escrow fees
@@ -333,6 +394,8 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
 
   @override
   void dispose() {
+    // Remove observer
+    WidgetsBinding.instance.removeObserver(this);
     // Remove language change listener
     languageController.removeListener(() {});
     super.dispose();
@@ -926,10 +989,23 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
                     ),
                     SizedBox(height: 20),
                     FFButtonWidget(
-                      onPressed: () async {
-                        print("${escrowController.selectedCategory.value?.id}");
-                        print("${escrowController.selectedCurrencyId.value}");
-                        if (titleController.text.isEmpty) {
+                      onPressed: (isSubmitting || !isDataLoaded) ? null : () async {
+                        if (isSubmitting) return; // Prevent multiple submissions
+                        
+                        print("=== ESCROW SUBMISSION DEBUG ===");
+                        print("Data loaded: $isDataLoaded");
+                        print("Is submitting: $isSubmitting");
+                        print("Selected category: ${escrowController.selectedCategory.value?.id}");
+                        print("Selected currency: ${escrowController.selectedCurrencyId.value}");
+                        print("Selected payment method: ${escrowController.selectedPaymentMethodId.value}");
+                        print("===============================");
+                        
+                        setState(() {
+                          isSubmitting = true;
+                        });
+                        
+                        try {
+                          if (titleController.text.isEmpty) {
                           Get.snackbar(
                             languageController.getTranslation('error'),
                             languageController.getTranslation('title_is_required'),
@@ -1003,8 +1079,34 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
                           return;
                         }
                         print("${selectedCurrency}");
-                        // Adding a delay of 3 seconds before the API call
-                        await Future.delayed(Duration(seconds: 3));
+                        // Adding a delay before the API call to prevent rate limiting
+                        print("Waiting before API call to prevent rate limiting...");
+                        await Future.delayed(Duration(seconds: 2));
+                        print("Starting escrow creation API call...");
+                        
+                        // Additional validation to ensure all required data is present
+                        if (escrowController.selectedCategory.value == null) {
+                          Get.snackbar(
+                            languageController.getTranslation('error'),
+                            'Please select a category',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.BOTTOM,
+                          );
+                          return;
+                        }
+                        
+                        if (escrowController.selectedCurrencyId.value == null || escrowController.selectedCurrencyId.value == 0) {
+                          Get.snackbar(
+                            languageController.getTranslation('error'),
+                            'Please select a currency',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.BOTTOM,
+                          );
+                          return;
+                        }
+                        
                         // If all validations pass, proceed to store the escrow.
                         final result = await escrowController.storeEscrow(
                           title: titleController.text,
@@ -1031,6 +1133,9 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
                              colorText: Colors.white,
                            );
                            
+                           // Set flag to clear form when returning to this screen
+                           _shouldClearForm = true;
+                           
                            // Navigate to Send Escrow screen
                            Get.off(() => ScreenEscrowList());
                            
@@ -1049,8 +1154,25 @@ class _ScreenCreateEscrowState extends State<ScreenCreateEscrow> {
                             colorText: Colors.white,
                           );
                         }
+                        } catch (e) {
+                          print("Error in escrow creation: $e");
+                          Get.snackbar(
+                            languageController.getTranslation('error'),
+                            languageController.getTranslation('an_error_occurred'),
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        } finally {
+                          setState(() {
+                            isSubmitting = false;
+                          });
+                        }
                       },
-                      text: languageController.getTranslation('start_escrow'),
+                      text: !isDataLoaded
+                        ? languageController.getTranslation('loading_data') ?? 'Loading...'
+                        : isSubmitting 
+                          ? languageController.getTranslation('creating_escrow') ?? 'Creating Escrow...'
+                          : languageController.getTranslation('start_escrow'),
                       options: FFButtonOptions(
                         width: Get.width,
                         height: 45.0,

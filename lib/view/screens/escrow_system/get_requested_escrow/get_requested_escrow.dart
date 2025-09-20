@@ -181,10 +181,10 @@ class _GetRequestedEscrowState extends State<GetRequestedEscrow> {
                                           Expanded(
                                             flex: 1,
                                             child: SizedBox(
-                                              height: 35,
+                                              height: 28,
                                               child: CustomButton(
                                                 text: languageController.getTranslation('view'),
-                                                textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                 onPressed: () {
                                                   // Navigate first, then fetch data
                                                   Get.to(() => RequestedEscrowDetailScreen(escrowId: requestEscrow.id));
@@ -204,10 +204,10 @@ class _GetRequestedEscrowState extends State<GetRequestedEscrow> {
                                           Expanded(
                                             flex: 1,
                                             child: SizedBox(
-                                              height: 35,
+                                              height: 28,
                                               child: CustomButton(
                                                 text: languageController.getTranslation('information'),
-                                                textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                 backGroundColor: Colors.blue,
                                                 onPressed: () {
                                                   // Navigate to information screen
@@ -229,12 +229,12 @@ class _GetRequestedEscrowState extends State<GetRequestedEscrow> {
                                             Expanded(
                                               flex: 1,
                                               child: SizedBox(
-                                                height: 35,
+                                                height: 28,
                                                 child: Obx(() => CustomButton(
                                                   text: controller.isRejecting.value 
                                                     ? languageController.getTranslation('rejecting') 
                                                     : languageController.getTranslation('reject'),
-                                                  textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                  textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                   backGroundColor: Colors.red,
                                                   onPressed: () {
                                                     // Don't allow action if already processing
@@ -255,12 +255,10 @@ class _GetRequestedEscrowState extends State<GetRequestedEscrow> {
                                                             ),
                                                             Obx(() => TextButton(
                                                               onPressed: controller.isRejecting.value ? null : () async {
-                                                                // Call reject API
+                                                                // Call reject API - controller will handle refresh
                                                                 await controller.rejectRequest(requestEscrow.id);
                                                                 // Close dialog after API call
                                                                 Navigator.of(context).pop(true);
-                                                                // Refresh the list after rejection
-                                                                await controller.fetchRequestedEscrows();
                                                               },
                                                               child: controller.isRejecting.value
                                                                 ? Row(
@@ -299,12 +297,12 @@ class _GetRequestedEscrowState extends State<GetRequestedEscrow> {
                                             Expanded(
                                               flex: 1,
                                               child: SizedBox(
-                                                height: 35,
+                                                height: 28,
                                                 child: Obx(() => CustomButton(
                                                   text: controller.isApproving.value 
                                                     ? languageController.getTranslation('approving') 
                                                     : languageController.getTranslation('approve'),
-                                                  textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                  textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                   backGroundColor: Colors.green,
                                                                                                      onPressed: () async {
                                                      // Don't allow action if already processing
@@ -356,24 +354,24 @@ class _GetRequestedEscrowState extends State<GetRequestedEscrow> {
                                           padding: EdgeInsets.only(top: 15),
                                           child: SizedBox(
                                             width: double.infinity,
-                                            height: 35,
+                                            height: 28,
                                             child: Obx(() => CustomButton(
                                               text: controller.isReleasing.value 
                                                 ? '' 
                                                 : languageController.getTranslation('release_request'),
-                                              textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                              textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                               backGroundColor: Colors.blue,
                                               loading: controller.isReleasing.value,
                                               onPressed: () async {
                                                 if (!controller.isReleasing.value) {
                                                   try {
                                                     await controller.releaseRequest(requestEscrow.id);
-                                                    if (controller.isReleaseSuccessful.value) {
-                                                      // Refresh the data after successful release
-                                                      await controller.fetchRequestedEscrows();
-                                                    }
+                                                    // Always refresh the data regardless of success/failure
+                                                    await controller.fetchRequestedEscrows();
                                                   } catch (e) {
                                                     print('Error releasing request: $e');
+                                                    // Refresh even on error to show current state
+                                                    await controller.fetchRequestedEscrows();
                                                   }
                                                 }
                                               },

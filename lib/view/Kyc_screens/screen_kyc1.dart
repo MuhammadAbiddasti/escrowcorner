@@ -76,10 +76,12 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
                           fontWeight: FontWeight.w700,
                           color: Colors.black87),
                     ).paddingOnly(bottom: 20, top: 10),
+                    
                     Obx(() {
                       final kycValue = controller.kyc.value ?? '';
                       print("KYC Status: $kycValue");
 
+                      // Reuse the same status styles for consistency
                       final Map<String, dynamic> statusStyles = {
                         '0': {
                           'message': languageController.getTranslation('kyc_status_pending'),
@@ -124,7 +126,7 @@ class _ScreenKyc1State extends State<ScreenKyc1> {
                             child: Column(
                               children: [
                                 Text(
-                                  languageController.getTranslation('please_complete_kyc_visit_the_website'),
+                                  languageController.getTranslation('please_visit_and_login_on_the_website_url_below_to_complete_your_kyc_there'),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,

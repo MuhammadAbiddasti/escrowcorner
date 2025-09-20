@@ -162,6 +162,7 @@ class RequestedEscrowController extends GetxController {
       return;
     }
     
+    print('RequestedEscrowController: fetchEscrowAgreementDetail called for escrowId: $escrowId');
     isLoadingAgreementDetail.value = true;
     String? token = await getToken();
     
@@ -172,14 +173,17 @@ class RequestedEscrowController extends GetxController {
     }
     
     try {
+      print('RequestedEscrowController: Making API call to requestedEscrowDetail/$escrowId');
       final response = await http.get(
         Uri.parse("$baseUrl/api/requestedEscrowDetail/$escrowId"),
         headers: {
           "Authorization": "Bearer $token",
           "Content-Type": "application/json",
         },
-      );
-      print("Requested Escrow Detail Response: ${response.body}");
+      ).timeout(Duration(seconds: 30)); // Add timeout
+      
+      print("Requested Escrow Detail Response Status: ${response.statusCode}");
+      print("Requested Escrow Detail Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
@@ -194,22 +198,36 @@ class RequestedEscrowController extends GetxController {
         if (responseData['status'] == 'success') {
           // Check if controller is still active before updating state
           if (Get.isRegistered<RequestedEscrowController>()) {
-            escrowAgreementDetail.assignAll([EscrowAgreementDetail.fromJson(responseData)]);
-            print('Requested Escrow Detail API Response: $responseData');
-            print('Parsed EscrowAgreementDetail: ${escrowAgreementDetail.first}');
+            try {
+              escrowAgreementDetail.assignAll([EscrowAgreementDetail.fromJson(responseData)]);
+              print('Requested Escrow Detail API Response: $responseData');
+              print('Parsed EscrowAgreementDetail: ${escrowAgreementDetail.first}');
+              print('RequestedEscrowController: Data successfully loaded and assigned');
+            } catch (parseError) {
+              print('Error parsing EscrowAgreementDetail: $parseError');
+              // Clear data if parsing fails
+              escrowAgreementDetail.clear();
+            }
           }
         } else {
           print('API Error: ${responseData['message']}');
+          // Clear data if API returns error
+          escrowAgreementDetail.clear();
         }
       } else {
         print('HTTP Error: ${response.statusCode}');
+        // Clear data on HTTP error
+        escrowAgreementDetail.clear();
       }
     } catch (e) {
       print('Exception in fetchEscrowAgreementDetail: $e');
+      // Clear data on exception
+      escrowAgreementDetail.clear();
     } finally {
       // Check if controller is still active before updating state
       if (Get.isRegistered<RequestedEscrowController>()) {
         isLoadingAgreementDetail.value = false;
+        print('RequestedEscrowController: fetchEscrowAgreementDetail completed. Data length: ${escrowAgreementDetail.length}');
       }
     }
   }
@@ -247,10 +265,8 @@ class RequestedEscrowController extends GetxController {
           duration: Duration(seconds: 4),
         );
         
-        // If successful, refresh the escrow agreement details
-        if (isSuccess) {
-          await fetchEscrowAgreementDetail(escrowId);
-        }
+        // Refresh the main list regardless of success/failure to show current state
+        await fetchRequestedEscrows();
       } else {
         // Handle non-200 status codes
         final Map<String, dynamic> errorData = json.decode(response.body);
@@ -263,6 +279,9 @@ class RequestedEscrowController extends GetxController {
           colorText: Colors.white,
           duration: Duration(seconds: 4),
         );
+        
+        // Refresh the main list even on error to show current state
+        await fetchRequestedEscrows();
       }
     } catch (e) {
       print('Exception in rejectRequest: $e');
@@ -273,6 +292,9 @@ class RequestedEscrowController extends GetxController {
         colorText: Colors.white,
         duration: Duration(seconds: 4),
       );
+      
+      // Refresh the main list even on exception to show current state
+      await fetchRequestedEscrows();
     } finally {
       isRejecting.value = false;
     }
@@ -314,6 +336,7 @@ class RequestedEscrowController extends GetxController {
         // If successful, refresh the escrow agreement details
         if (isSuccess) {
           isApproveSuccessful.value = true;
+          // Don't clear existing data, just refresh it
           await fetchEscrowAgreementDetail(escrowId);
         }
       } else if (response.statusCode == 301 || response.statusCode == 302) {
@@ -397,11 +420,14 @@ class RequestedEscrowController extends GetxController {
           duration: Duration(seconds: 4),
         );
         
-        // If successful, refresh the escrow agreement details and allow redirect
+        // Refresh the main list regardless of success/failure to show current state
+        await fetchRequestedEscrows();
+        
+        // Always refresh the escrow agreement details regardless of success/failure
+        await fetchEscrowAgreementDetail(escrowId);
+        
+        // If successful, set flag to indicate successful release
         if (isSuccess) {
-          // Fetch the updated escrow details before redirect
-          await fetchEscrowAgreementDetail(escrowId);
-          // Set flag to indicate successful release
           isReleaseSuccessful.value = true;
         }
       } else if (response.statusCode == 301 || response.statusCode == 302) {
@@ -446,6 +472,10 @@ class RequestedEscrowController extends GetxController {
         colorText: Colors.white,
         duration: Duration(seconds: 4),
       );
+      // Refresh the main list even on exception to show current state
+      await fetchRequestedEscrows();
+      // Also refresh the detail screen even on exception
+      await fetchEscrowAgreementDetail(escrowId);
     } finally {
       isReleasing.value = false;
     }

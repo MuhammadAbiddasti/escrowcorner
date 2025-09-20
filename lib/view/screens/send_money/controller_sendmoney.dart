@@ -19,7 +19,6 @@ class SendMoneyController extends GetxController {
   var perPage = 10.obs;
   var totalEntries = 0.obs;
   var totalPages = 0.obs;
-  var unreadTransferMoneyCount = 0.obs;
   var unreadRequestMoneyCount = 0.obs;
   var unreadSupportTicketCount = 0.obs;
 
@@ -322,47 +321,12 @@ class SendMoneyController extends GetxController {
     }
   }
 
-  Future<void> fetchUnreadTransferMoneyCount() async {
-    String url = "$baseUrl/api/countUnReadTransferMoney";
-    String? token = await getToken(); // Ensure you have a method to get the Bearer token
-    if (token == null) {
-      Get.snackbar('Error', 'Token is null');
-      isLoading.value = false; // Stop loading
-      return;
-    }
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          "Authorization": "Bearer $token",
-        },
-      );
-
-      print("Response status: ${response.statusCode}");
-      print("Response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data != null && data is Map<String, dynamic> && data.containsKey('total_count')) {
-          unreadTransferMoneyCount.value = data['total_count']; // Update to handle `total_count`
-        } else {
-          throw Exception("Invalid response format: ${response.body}");
-        }
-      } else {
-        throw Exception("Failed to fetch data: ${response.reasonPhrase}");
-      }
-    } catch (e) {
-      print("Error fetching unread transfer money count: $e");
-      Get.snackbar('Error', e.toString());
-    }
-  }
 
   Future<void> fetchUnreadRequestMoneyCount() async {
     String url = "$baseUrl/api/countUnreadRequestMoney";
     String? token = await getToken(); // Ensure you have a method to get the Bearer token
     if (token == null) {
-      Get.snackbar('Error', 'Token is null');
-      isLoading.value = false;  // Stop loading
+      print("Token is null, skipping unread request money count fetch");
       return;
     }
     try {
@@ -371,21 +335,22 @@ class SendMoneyController extends GetxController {
         headers: {
           "Authorization": "Bearer $token",
         },
-      );
+      ).timeout(Duration(seconds: 10)); // Add timeout to prevent hanging
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data != null && data is Map<String, dynamic> && data.containsKey('total_count')) {
           unreadRequestMoneyCount.value = data['total_count']; // Update to handle `total_count`
         } else {
-          throw Exception("Invalid response format: ${response.body}");
+          print("Invalid response format for unread request money count: ${response.body}");
         }
       } else {
-        throw Exception("Failed to fetch data: ${response.reasonPhrase}");
+        print("Failed to fetch unread request money count: ${response.reasonPhrase}");
       }
     } catch (e) {
-      print("Error fetching unread request money count: $e");
-      rethrow; // Handle this in your UI as needed
+      print("Error fetching unread request money count (silent): $e");
+      // Don't show error snackbar for network issues - this is a background operation
+      // Just log the error and continue
     }
   }
 
@@ -393,8 +358,7 @@ class SendMoneyController extends GetxController {
     String url = "$baseUrl/api/countUnreadTickets";
     String? token = await getToken(); // Ensure you have a method to get the Bearer token
     if (token == null) {
-      Get.snackbar('Error', 'Token is null');
-      isLoading.value = false;  // Stop loading
+      print("Token is null, skipping unread support ticket count fetch");
       return;
     }
     try {
@@ -403,21 +367,22 @@ class SendMoneyController extends GetxController {
         headers: {
           "Authorization": "Bearer $token",
         },
-      );
+      ).timeout(Duration(seconds: 10)); // Add timeout to prevent hanging
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data != null && data is Map<String, dynamic> && data.containsKey('total_count')) {
           unreadSupportTicketCount.value = data['total_count']; // Update to handle `total_count`
         } else {
-          throw Exception("Invalid response format: ${response.body}");
+          print("Invalid response format for unread support ticket count: ${response.body}");
         }
       } else {
-        throw Exception("Failed to fetch data: ${response.reasonPhrase}");
+        print("Failed to fetch unread support ticket count: ${response.reasonPhrase}");
       }
     } catch (e) {
-      print("Error fetching unread support ticket count: $e");
-      rethrow; // Handle this in your UI as needed
+      print("Error fetching unread support ticket count (silent): $e");
+      // Don't show error snackbar for network issues - this is a background operation
+      // Just log the error and continue
     }
   }
 

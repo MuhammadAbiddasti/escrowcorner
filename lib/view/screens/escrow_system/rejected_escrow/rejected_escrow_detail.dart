@@ -1,4 +1,5 @@
 import 'package:escrowcorner/view/screens/escrow_system/rejected_escrow/rejected_escrow_controller.dart';
+import 'package:escrowcorner/view/screens/escrow_system/rejected_escrow/get_rejected_escrow.dart';
 import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
 import 'package:escrowcorner/view/controller/language_controller.dart';
 import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
@@ -177,6 +178,21 @@ class _RejectedEscrowDetailScreenState extends State<RejectedEscrowDetailScreen>
                                             '${agreementDetails.currencySymbol ?? ''} ${agreementDetails.gross}'
                                           ),
                                           
+                                          // Go Back button
+                                          SizedBox(height: 20),
+                                          SizedBox(
+                                            height: 40,
+                                            width: double.infinity,
+                                            child: CustomButton(
+                                              text: languageController.getTranslation('go_back'),
+                                              textStyle: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                              backGroundColor: Colors.grey[200],
+                                              onPressed: () {
+                                                // Navigate back to get_rejected_escrow screen
+                                                Get.off(() => GetRejectedEscrow());
+                                              },
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),

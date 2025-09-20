@@ -311,6 +311,10 @@ class ReceivedEscrowsController extends GetxController {
               backgroundColor: Colors.red,
               colorText: Colors.white,
             );
+            // Refresh the received escrow list even on error
+            await fetchReceiverEscrows();
+            // Also refresh the detail screen even on error
+            await fetchEscrowAgreementDetail(escrowId);
           }
         } else {
           print('Invalid response format');
@@ -321,6 +325,10 @@ class ReceivedEscrowsController extends GetxController {
             backgroundColor: Colors.red,
             colorText: Colors.white,
           );
+          // Refresh the received escrow list even on invalid response
+          await fetchReceiverEscrows();
+          // Also refresh the detail screen even on invalid response
+          await fetchEscrowAgreementDetail(escrowId);
         }
       } else {
         print('Failed to reject escrow: ${response.statusCode}');
@@ -346,6 +354,10 @@ class ReceivedEscrowsController extends GetxController {
           colorText: Colors.white,
           duration: Duration(seconds: 5),
         );
+        // Refresh the received escrow list even on HTTP error
+        await fetchReceiverEscrows();
+        // Also refresh the detail screen even on HTTP error
+        await fetchEscrowAgreementDetail(escrowId);
       }
     } catch (e) {
       print('Error rejecting escrow: $e');
@@ -357,6 +369,10 @@ class ReceivedEscrowsController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
+      // Refresh the received escrow list even on exception
+      await fetchReceiverEscrows();
+      // Also refresh the detail screen even on exception
+      await fetchEscrowAgreementDetail(escrowId);
     } finally {
       isRejecting.value = false;
       print('=== rejectEscrow completed ===');

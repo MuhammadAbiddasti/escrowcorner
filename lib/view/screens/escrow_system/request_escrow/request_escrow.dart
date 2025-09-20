@@ -124,10 +124,12 @@ class _GetRequestEscrowState extends State<GetRequestEscrow> with WidgetsBinding
                       children: [
                         CustomButton(
                           text: languageController.getTranslation('add_new'),
+                          height: 30,
+                          textStyle: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w500),
                           onPressed: () {
                             Get.to(ScreenCreateRequestEscrow());
                           },
-                        ).paddingSymmetric(horizontal: 20, vertical: 15),
+                        ).paddingSymmetric(horizontal: 20, vertical: 10),
                       ],
                     ),
                   ).paddingOnly(top: 20)
@@ -145,10 +147,12 @@ class _GetRequestEscrowState extends State<GetRequestEscrow> with WidgetsBinding
                       children: [
                                                  CustomButton(
                            text: languageController.getTranslation('add_new'),
+                           height: 30,
+                           textStyle: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w500),
                            onPressed: () {
                              Get.to(ScreenCreateRequestEscrow());
                            },
-                         ).paddingSymmetric(horizontal: 20, vertical: 15)
+                         ).paddingSymmetric(horizontal: 20, vertical: 10)
                       ],
                     ),
                   ).paddingOnly(top: 20),
@@ -250,10 +254,10 @@ class _GetRequestEscrowState extends State<GetRequestEscrow> with WidgetsBinding
                                           Expanded(
                                             flex: 2,
                                             child: SizedBox(
-                                              height: 35,
+                                              height: 28,
                                               child: CustomButton(
                                                 text: languageController.getTranslation('view'),
-                                                textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                 onPressed: () async {
                                                   controller.fetchRequestEscrowDetail(requestEscrow.id);
                                                   await Future.delayed(Duration(milliseconds: 500));
@@ -267,10 +271,10 @@ class _GetRequestEscrowState extends State<GetRequestEscrow> with WidgetsBinding
                                           Expanded(
                                             flex: 3,
                                             child: SizedBox(
-                                              height: 35,
+                                              height: 28,
                                               child: CustomButton(
                                                 text: languageController.getTranslation('information'),
-                                                textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                 backGroundColor: Colors.blue,
                                                                                                                                                                                                                                             onPressed: () async {
                                                    print("=== Information Button Clicked ===");
@@ -323,24 +327,22 @@ class _GetRequestEscrowState extends State<GetRequestEscrow> with WidgetsBinding
                                         ],
                                       ),
                                       
-                                                                             // Cancel Request button - show when status is NOT completed
-                                       if (requestEscrow.statusLabel.toString().toLowerCase() != 'completed') ...[
+                                                                             // Cancel Request button - show when status is NOT completed and NOT rejected
+                                       if (requestEscrow.statusLabel.toString().toLowerCase() != 'completed' && 
+                                           requestEscrow.statusLabel.toString().toLowerCase() != 'rejected') ...[
                                          SizedBox(height: 12),
                                          SizedBox(
                                            width: double.infinity,
-                                           height: 35,
+                                           height: 28,
                                            child: Obx(() => CustomButton(
                                              text: languageController.getTranslation('cancel_request'),
-                                             textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                             textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                              backGroundColor: Colors.red,
                                              loading: controller.getCancelLoading(requestEscrow.id),
                                              onPressed: () {
                                                if (!controller.getCancelLoading(requestEscrow.id)) {
-                                                 // Call the cancel API
-                                                 controller.cancelRequestEscrow('${requestEscrow.id}').then((_) {
-                                                   // Refresh the list after cancellation
-                                                   controller.fetchRequestEscrows();
-                                                 });
+                                                 // Call the cancel API - controller will handle refresh
+                                                 controller.cancelRequestEscrow('${requestEscrow.id}');
                                                }
                                              },
                                            )).paddingSymmetric(horizontal: 8),

@@ -1,4 +1,5 @@
 import 'package:escrowcorner/view/screens/escrow_system/received_escrow/received_escrow_controller.dart';
+import 'package:escrowcorner/view/screens/escrow_system/received_escrow/get_received_escrow.dart';
 import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
 import 'package:escrowcorner/view/controller/language_controller.dart';
 import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
@@ -190,13 +191,31 @@ class _ReceivedEscrowDetailScreenState extends State<ReceivedEscrowDetailScreen>
                                                      backGroundColor: Colors.red,
                                                      loading: controller.isRejecting.value,
                                                      onPressed: () async {
-                                                       // Call the reject API
+                                                       // Call the reject API and wait for completion
                                                        await controller.rejectEscrow(widget.escrowId);
+                                                       // Refresh the detail screen with fresh data regardless of success/failure
+                                                       await controller.fetchEscrowAgreementDetail(widget.escrowId);
                                                      },
                                                    )),
                                                  ),
                                                ),
                                              ],
+                                             
+                                             // Go Back button
+                                             SizedBox(height: 20),
+                                             SizedBox(
+                                               height: 40,
+                                               width: double.infinity,
+                                               child: CustomButton(
+                                                 text: languageController.getTranslation('go_back'),
+                                                 textStyle: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                                 backGroundColor: Colors.grey[200],
+                                                 onPressed: () {
+                                                // Navigate back to get_received_escrow screen
+                                                Get.off(() => ScreenReceivedEscrow());
+                                                 },
+                                               ),
+                                             ),
                                         ],
                                       ),
                                     ),

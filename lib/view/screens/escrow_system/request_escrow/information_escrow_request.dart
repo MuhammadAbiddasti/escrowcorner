@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:escrowcorner/view/screens/escrow_system/request_escrow/request_escrow_controller.dart';
+import 'package:escrowcorner/view/screens/escrow_system/request_escrow/request_escrow.dart';
 
 import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
 import 'package:escrowcorner/view/controller/language_controller.dart';
@@ -207,6 +208,30 @@ class _InformationEscrowRequestScreenState extends State<InformationEscrowReques
                                                 _buildAttachmentsSection(escrowInfo.attachment!),
                                               if (escrowInfo.description.isNotEmpty)
                                                 _buildDescriptionRow(languageController.getTranslation('description'), escrowInfo.description),
+                                                
+                                              // Go Back button
+                                              SizedBox(height: 20),
+                                              SizedBox(
+                                                height: 40,
+                                                width: double.infinity,
+                                                child: ElevatedButton(
+                                                  onPressed: () {
+                                                    // Navigate back to request_escrow screen
+                                                    Get.off(() => GetRequestEscrow());
+                                                  },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.grey[200],
+                                                    foregroundColor: Colors.grey[700],
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    languageController.getTranslation('go_back'),
+                                                    style: TextStyle(fontSize: 14),
+                                                  ),
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),

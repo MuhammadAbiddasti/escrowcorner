@@ -351,7 +351,7 @@ class _ScreenMerchantState extends State<ScreenMerchant> {
                                                               merchantName: merchant.name,
                                                             ));
                                                           },
-                                                          child: Text(
+                                                          child: Obx(() => Text(
                                                             languageController.getTranslation('transfer_in'),
                                                             style: TextStyle(
                                                               color: Colors.white,
@@ -359,7 +359,7 @@ class _ScreenMerchantState extends State<ScreenMerchant> {
                                                               fontSize: 10,
                                                             ),
                                                             overflow: TextOverflow.ellipsis,
-                                                          ),
+                                                          )),
                                                         ),
                                                       ),
                                                     ),
@@ -381,7 +381,7 @@ class _ScreenMerchantState extends State<ScreenMerchant> {
                                                               merchantName: merchant.name,
                                                             ));
                                                           },
-                                                          child: Text(
+                                                          child: Obx(() => Text(
                                                             languageController.getTranslation('transfer_out'),
                                                             style: TextStyle(
                                                               color: Colors.white,
@@ -389,7 +389,7 @@ class _ScreenMerchantState extends State<ScreenMerchant> {
                                                               fontSize: 10,
                                                             ),
                                                             overflow: TextOverflow.ellipsis,
-                                                          ),
+                                                          )),
                                                         ),
                                                       ),
                                                     ),

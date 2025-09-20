@@ -1,4 +1,5 @@
 import 'package:escrowcorner/view/screens/escrow_system/request_escrow/request_escrow_controller.dart';
+import 'package:escrowcorner/view/screens/escrow_system/request_escrow/request_escrow.dart';
 import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
 import 'package:escrowcorner/view/controller/language_controller.dart';
 import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
@@ -216,11 +217,28 @@ class _RequestEscrowDetailScreenState extends State<RequestEscrowDetailScreen> {
                                              '${agreementDetails.currencySymbol ?? ''} ${agreementDetails.gross}'
                                            ),
                                            
-                                           // Add some spacing before the buttons
+                                           // Go Back button - Just below amount
+                                           SizedBox(height: 20),
+                                           SizedBox(
+                                             height: 40,
+                                             width: double.infinity,
+                                             child: CustomButton(
+                                               text: languageController.getTranslation('go_back'),
+                                               textStyle: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                               backGroundColor: Colors.grey[200],
+                                               onPressed: () {
+                                                 // Navigate back to request_escrow screen
+                                                 Get.off(() => GetRequestEscrow());
+                                               },
+                                             ),
+                                           ),
+                                           
+                                           // Add some spacing before the other buttons
                                            SizedBox(height: 20),
                                            
-                                           // Cancel Request button - show when status is NOT completed
-                                           if (agreementDetails.statusLabel.toString().toLowerCase() != 'completed')
+                                           // Cancel Request button - show when status is NOT completed and NOT rejected
+                                           if (agreementDetails.statusLabel.toString().toLowerCase() != 'completed' && 
+                                               agreementDetails.statusLabel.toString().toLowerCase() != 'rejected')
                                              ...[
                                                Center(
                                                  child: SizedBox(
@@ -235,18 +253,20 @@ class _RequestEscrowDetailScreenState extends State<RequestEscrowDetailScreen> {
                                                      
                                                      return CustomButton(
                                                        text: languageController.getTranslation('cancel_request'),
-                                                       textStyle: TextStyle(fontSize: 16, color: Colors.white),
+                                                       textStyle: TextStyle(fontSize: 12, color: Colors.white),
                                                        backGroundColor: Colors.red,
                                                        loading: isLoading,
-                                                       onPressed: () {
+                                                       onPressed: () async {
                                                          print("=== Cancel Request Button Clicked ===");
                                                          print("Escrow ID: ${widget.escrowId}");
                                                          print("Current loading state: ${controller.getCancelLoading(widget.escrowId)}");
                                                          
                                                          if (!controller.getCancelLoading(widget.escrowId)) {
                                                            print("Calling cancelRequestEscrow API...");
-                                                           // Call the cancel API
-                                                           controller.cancelRequestEscrow('${widget.escrowId}');
+                                                           // Call the cancel API and wait for completion
+                                                           await controller.cancelRequestEscrow('${widget.escrowId}');
+                                                           // Redirect to main request escrow screen with fresh data
+                                                           Get.off(() => GetRequestEscrow());
                                                          } else {
                                                            print("Button is already loading, ignoring click");
                                                          }
@@ -256,26 +276,20 @@ class _RequestEscrowDetailScreenState extends State<RequestEscrowDetailScreen> {
                                                  ),
                                                ),
                                                SizedBox(height: 16),
-                                             ],
-                                           
-                                           // Reject button - only show when status is "on hold"
-                                           if (agreementDetails.statusLabel.toString().toLowerCase() == 'on hold' ||
-                                               agreementDetails.statusLabel.toString().toLowerCase() == 'onhold')
-                                             ...[
-                                               Center(
-                                                 child: SizedBox(
-                                                   width: 200,
-                                                   height: 40,
-                                                   child: Obx(() => CustomButton(
-                                                     text: languageController.getTranslation('reject'),
-                                                     textStyle: TextStyle(fontSize: 16, color: Colors.white),
-                                                     backGroundColor: Colors.red,
-                                                     loading: false,
-                                                     onPressed: () async {
-                                                       // Call the reject API
-                                                       await controller.rejectRequestEscrow('${widget.escrowId}');
-                                                     },
-                                                   )),
+                                               
+                                               // Go Back button
+                                               SizedBox(height: 20),
+                                               SizedBox(
+                                                 height: 40,
+                                                 width: double.infinity,
+                                                 child: CustomButton(
+                                                   text: languageController.getTranslation('go_back'),
+                                                   textStyle: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                                   backGroundColor: Colors.grey[200],
+                                                   onPressed: () {
+                                                     // Navigate back to request_escrow screen
+                                                     Get.off(() => GetRequestEscrow());
+                                                   },
                                                  ),
                                                ),
                                              ],

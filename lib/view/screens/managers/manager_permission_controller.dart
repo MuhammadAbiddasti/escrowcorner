@@ -99,6 +99,7 @@ class ManagersPermissionController extends GetxController {
 
         // Define the custom order you want
         List<String> customOrder = [
+          'Home',
           'Dashboard',
           'Transfer Money',
           'Request Money',
@@ -129,6 +130,7 @@ class ManagersPermissionController extends GetxController {
       print("Error extracting allowed modules: $e");
       // Set default modules if extraction fails
       allowedModules.value = [
+        'Home',
         'Dashboard',
         'Transfer Money',
         'Request Money',
@@ -190,11 +192,14 @@ class ManagersPermissionController extends GetxController {
         // Log the success status from the response
         print("API success: ${responseData['success']}");
 
-        // Show success Snackbar
+        // Get the message from API response
+        String apiMessage = responseData['message'] ?? 'Permission updated successfully!';
+
+        // Show success Snackbar with API message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            duration: Duration(microseconds: 300),
-            content: Text('Permission updated successfully!'),
+            duration: Duration(seconds: 3),
+            content: Text(apiMessage),
             backgroundColor: Colors.green, // Green for success
             behavior: SnackBarBehavior
                 .fixed, // To keep the Snackbar at the bottom
@@ -208,7 +213,7 @@ class ManagersPermissionController extends GetxController {
         // Show failure Snackbar
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            duration: Duration(microseconds: 600),
+            duration: Duration(seconds: 3),
             content: Text('Failed to update permission.'),
             backgroundColor: Colors.red, // Red for failure
             behavior: SnackBarBehavior
@@ -224,7 +229,7 @@ class ManagersPermissionController extends GetxController {
       // Show error Snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          duration: Duration(microseconds: 600),
+          duration: Duration(seconds: 3),
           content: Text('An error occurred while updating permission.'),
           backgroundColor: Colors.red, // Red for error
           behavior: SnackBarBehavior
@@ -266,11 +271,13 @@ class ManagerPermission {
 class Module {
   final int id;
   final String moduleName;
+  final String? fr; // French translation field
   final Map<String, Permission> permissions;
 
   Module({
     required this.id,
     required this.moduleName,
+    this.fr,
     required this.permissions,
   });
 
@@ -286,6 +293,7 @@ class Module {
     return Module(
       id: json['id'],
       moduleName: json['module_name'],
+      fr: json['fr'], // Parse the French translation field
       permissions: permissions,
     );
   }

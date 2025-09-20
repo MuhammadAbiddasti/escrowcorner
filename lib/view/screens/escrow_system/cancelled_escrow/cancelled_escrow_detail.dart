@@ -1,4 +1,5 @@
 import 'package:escrowcorner/view/screens/escrow_system/cancelled_escrow/cancelled_escrow_controller.dart';
+import 'package:escrowcorner/view/screens/escrow_system/cancelled_escrow/get_cancelled_escrow.dart';
 import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
 import 'package:escrowcorner/view/controller/language_controller.dart';
 import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
@@ -194,6 +195,22 @@ class _CancelledEscrowDetailScreenState extends State<CancelledEscrowDetailScree
                                            _buildDetailRow(
                                              languageController.getTranslation('amount'),
                                              '${cancelledDetails.currencySymbol ?? ''} ${cancelledDetails.gross}'
+                                           ),
+                                           
+                                           // Go Back button
+                                           SizedBox(height: 20),
+                                           SizedBox(
+                                             height: 40,
+                                             width: double.infinity,
+                                             child: CustomButton(
+                                               text: languageController.getTranslation('go_back'),
+                                               textStyle: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                               backGroundColor: Colors.grey[200],
+                                               onPressed: () {
+                                                 // Navigate back to get_cancelled_escrow screen
+                                                 Get.off(() => GetCancelledEscrow());
+                                               },
+                                             ),
                                            ),
                                         ],
                                       ),

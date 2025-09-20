@@ -180,10 +180,12 @@ class _ScreenEscrowListState extends State<ScreenEscrowList> with WidgetsBinding
                           children: [
                             CustomButton(
                               text: languageController.getTranslation('add_escrow'),
+                              height: 30,
+                              textStyle: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w500),
                               onPressed: () {
                                 Get.to(ScreenCreateEscrow());
                               },
-                            ).paddingSymmetric(horizontal: 20, vertical: 15),
+                            ).paddingSymmetric(horizontal: 20, vertical: 10),
                           ],
                         ),
                       ).paddingOnly(top: 20),
@@ -289,10 +291,10 @@ class _ScreenEscrowListState extends State<ScreenEscrowList> with WidgetsBinding
                                               Expanded(
                                                 flex: 2,
                                                 child: SizedBox(
-                                                  height: 35,
+                                                  height: 28,
                                                   child: CustomButton(
                                                     text: languageController.getTranslation('view'),
-                                                    textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                    textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                     onPressed: () async {
                                                       print("View button clicked for escrow ID: ${escrow.id}");
                                                       try {
@@ -326,10 +328,10 @@ class _ScreenEscrowListState extends State<ScreenEscrowList> with WidgetsBinding
                                               Expanded(
                                                 flex: 3,
                                                 child: SizedBox(
-                                                  height: 35,
+                                                  height: 28,
                                                   child: CustomButton(
                                                     text: languageController.getTranslation('information'),
-                                                    textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                    textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                     onPressed: () async {
                                                       controller.fetchEscrowInformation(escrow.id);
                                                       await Future.delayed(Duration(milliseconds: 500));
@@ -353,10 +355,10 @@ class _ScreenEscrowListState extends State<ScreenEscrowList> with WidgetsBinding
                                                 print("Loading value passed to CustomButton: $isLoading");
                                                 return SizedBox(
                                                   width: double.infinity,
-                                                  height: 35,
+                                                  height: 28,
                                                   child: CustomButton(
                                                     text: languageController.getTranslation('release'),
-                                                    textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                    textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                     backGroundColor: Colors.blue,
                                                     loading: _releaseLoadingStates[escrow.id] == true,
                                                     onPressed: () async {

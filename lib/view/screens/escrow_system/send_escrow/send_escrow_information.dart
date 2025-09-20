@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:escrowcorner/view/screens/escrow_system/send_escrow/send_escrow_controller.dart';
+import 'package:escrowcorner/view/screens/escrow_system/send_escrow/screen_escrow_list.dart';
 import 'package:escrowcorner/view/screens/escrow_system/models/escrow_models.dart';
 import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
 import 'package:escrowcorner/view/controller/language_controller.dart';
@@ -153,6 +154,103 @@ class _SendEscrowInformationScreenState extends State<SendEscrowInformationScree
                                                  _buildDescriptionRow('${languageController.getTranslation('note_for_the_seller')} | ${languageController.getTranslation('your_agreement')}', escrowInfo.description!),
                                               if (escrowInfo.agreement != null && escrowInfo.agreement! > 0)
                                                 _buildInfoRow(languageController.getTranslation('agreement'), escrowInfo.agreement!.toString()),
+                                              
+                                              // Go Back Button - positioned after note for seller
+                                              Center(
+                                                child: Container(
+                                                  margin: const EdgeInsets.only(top: 25.0, bottom: 20.0),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(12.0),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.grey.withOpacity(0.2),
+                                                        spreadRadius: 1,
+                                                        blurRadius: 6,
+                                                        offset: Offset(0, 3),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: Material(
+                                                    elevation: 0,
+                                                    borderRadius: BorderRadius.circular(12.0),
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        gradient: LinearGradient(
+                                                          colors: [
+                                                            Color(0xFF6C757D), // Grey gradient start
+                                                            Color(0xFF5A6268), // Grey gradient end
+                                                          ],
+                                                          begin: Alignment.topLeft,
+                                                          end: Alignment.bottomRight,
+                                                        ),
+                                                        borderRadius: BorderRadius.circular(12.0),
+                                                        border: Border.all(
+                                                          color: Color(0xFF495057).withOpacity(0.3),
+                                                          width: 1.0,
+                                                        ),
+                                                      ),
+                                                      child: ElevatedButton(
+                                                        onPressed: () async {
+                                                          print("=== GO BACK BUTTON CLICKED ===");
+                                                          
+                                                          try {
+                                                            // Refresh the current screen data first
+                                                            print("Refreshing escrow information data...");
+                                                            await controller.fetchEscrowInformation(widget.escrowId);
+                                                            print("Escrow information data refreshed successfully");
+                                                            
+                                                            // Clear and force refresh the send escrow list data
+                                                            print("Clearing and force refreshing send escrow list...");
+                                                            final listController = Get.find<SendEscrowsController>();
+                                                            listController.clearData(); // Clear existing data first
+                                                            await listController.fetchSendEscrows(forceRefresh: true);
+                                                            print("Send escrow list cleared and force refreshed successfully");
+                                                            
+                                                            // Navigate back to send_escrow_list
+                                                            Get.off(() => ScreenEscrowList());
+                                                            
+                                                          } catch (e) {
+                                                            print("Error refreshing data: $e");
+                                                            // Still navigate back even if refresh fails
+                                                            Get.off(() => ScreenEscrowList());
+                                                          }
+                                                          
+                                                          print("=== GO BACK PROCESS COMPLETED ===");
+                                                        },
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: Colors.transparent,
+                                                          shadowColor: Colors.transparent,
+                                                          padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(12.0),
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            Icon(
+                                                              Icons.arrow_back,
+                                                              color: Colors.white,
+                                                              size: 20.0,
+                                                            ),
+                                                            SizedBox(width: 8.0),
+                                                            Text(
+                                                              languageController.getTranslation('go_back'),
+                                                              style: TextStyle(
+                                                                color: Colors.white,
+                                                                fontSize: 16.0,
+                                                                fontWeight: FontWeight.w600,
+                                                                fontFamily: 'Nunito',
+                                                                letterSpacing: 0.5,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),

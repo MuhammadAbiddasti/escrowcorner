@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:escrowcorner/view/screens/escrow_system/cancelled_escrow/cancelled_escrow_controller.dart';
+import 'package:escrowcorner/view/screens/escrow_system/cancelled_escrow/get_cancelled_escrow.dart';
 import 'package:escrowcorner/view/screens/user_profile/user_profile_controller.dart';
 import 'package:escrowcorner/view/controller/language_controller.dart';
 import 'package:escrowcorner/widgets/custom_bottom_container/custom_bottom_container.dart';
@@ -199,6 +200,30 @@ class _CancelledEscrowInformationScreenState extends State<CancelledEscrowInform
                                                 _buildAttachmentsSection(agreementDetails.attachment!),
                                               if (agreementDetails.description != null && agreementDetails.description!.isNotEmpty)
                                                 _buildDescriptionRow('${languageController.getTranslation('note_for_the_seller')} | ${languageController.getTranslation('your_agreement')}', agreementDetails.description!),
+                                                
+                                              // Go Back button
+                                              SizedBox(height: 20),
+                                              SizedBox(
+                                                height: 40,
+                                                width: double.infinity,
+                                                child: ElevatedButton(
+                                                  onPressed: () {
+                                                    // Navigate back to get_cancelled_escrow screen
+                                                    Get.off(() => GetCancelledEscrow());
+                                                  },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.grey[200],
+                                                    foregroundColor: Colors.grey[700],
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    languageController.getTranslation('go_back'),
+                                                    style: TextStyle(fontSize: 14),
+                                                  ),
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),

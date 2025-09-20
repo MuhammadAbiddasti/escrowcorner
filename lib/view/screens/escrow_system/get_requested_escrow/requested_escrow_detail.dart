@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import 'package:escrowcorner/view/screens/escrow_system/get_requested_escrow/confirm_escrow_request.dart';
+import 'package:escrowcorner/view/screens/escrow_system/get_requested_escrow/get_requested_escrow.dart';
 
 class RequestedEscrowDetailScreen extends StatefulWidget {
   final int escrowId;
@@ -41,14 +42,11 @@ class _RequestedEscrowDetailScreenState extends State<RequestedEscrowDetailScree
     print('RequestedEscrowDetailScreen initState - escrowId: ${widget.escrowId}');
     print('Current escrowAgreementDetail length: ${controller.escrowAgreementDetail.length}');
     
-    // Don't clear data immediately, just fetch if needed
-    if (controller.escrowAgreementDetail.isEmpty) {
-      print('No data found, fetching escrow agreement details...');
-      // Fetch escrow agreement details when screen initializes
+    // Always fetch fresh data when screen initializes to ensure we have the latest state
+    print('Fetching fresh escrow agreement details...');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.fetchEscrowAgreementDetail(widget.escrowId);
-    } else {
-      print('Data already loaded, using existing data');
-    }
+    });
   }
 
   @override
@@ -211,14 +209,22 @@ class _RequestedEscrowDetailScreenState extends State<RequestedEscrowDetailScree
                                                  SizedBox(
                                                    height: 40,
                                                    width: double.infinity,
-                                                   child: CustomButton(
-                                                     text: languageController.getTranslation('reject_request'),
+                                                   child: Obx(() => CustomButton(
+                                                     text: controller.isRejecting.value 
+                                                       ? '' 
+                                                       : languageController.getTranslation('reject_request'),
                                                      textStyle: TextStyle(fontSize: 14, color: Colors.white),
                                                      backGroundColor: Colors.red,
-                                                     onPressed: () {
-                                                       controller.rejectRequest(widget.escrowId);
+                                                     loading: controller.isRejecting.value,
+                                                     onPressed: () async {
+                                                       if (!controller.isRejecting.value) {
+                                                         // Call reject API and wait for completion
+                                                         await controller.rejectRequest(widget.escrowId);
+                                                         // Refresh the screen with fresh data
+                                                         await controller.fetchEscrowAgreementDetail(widget.escrowId);
+                                                       }
                                                      },
-                                                   ),
+                                                   )),
                                                  ),
                                                  SizedBox(height: 16),
                                                                                                    // Approve Request button on second row
@@ -285,18 +291,34 @@ class _RequestedEscrowDetailScreenState extends State<RequestedEscrowDetailScree
                                                        if (!controller.isReleasing.value) {
                                                          try {
                                                            await controller.releaseRequest(widget.escrowId);
-                                                           if (controller.isReleaseSuccessful.value) {
-                                                             // Refresh the data after successful release
-                                                             await controller.fetchEscrowAgreementDetail(widget.escrowId);
-                                                           }
+                                                           // Always refresh the data regardless of success/failure
+                                                           await controller.fetchEscrowAgreementDetail(widget.escrowId);
                                                          } catch (e) {
                                                            print('Error releasing request: $e');
+                                                           // Refresh even on error to show current state
+                                                           await controller.fetchEscrowAgreementDetail(widget.escrowId);
                                                          }
                                                        }
                                                      },
                                                    )),
                                                  ),
                                                ],
+                                               
+                                               // Go Back button
+                                               SizedBox(height: 20),
+                                               SizedBox(
+                                                 height: 40,
+                                                 width: double.infinity,
+                                                 child: CustomButton(
+                                                   text: languageController.getTranslation('go_back'),
+                                                   textStyle: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                                   backGroundColor: Colors.grey[200],
+                                                   onPressed: () {
+                                                     // Navigate back to get_requested_escrow screen
+                                                     Get.off(() => GetRequestedEscrow());
+                                                   },
+                                                 ),
+                                               ),
                                                
                                                // Confirmation buttons
                                                SizedBox(height: 20),

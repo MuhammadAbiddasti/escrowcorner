@@ -385,7 +385,7 @@ class _WalletWidgetState extends State<CustomBtcContainer> {
                     }
                   },
                   child: Text(
-                    languageController.getTranslation('deposits'),
+                    languageController.getTranslation('deposit'),
                     style: TextStyle(color: Color(0xff18CE0F), fontSize: 9),
                   ),
                   style: ElevatedButton.styleFrom(

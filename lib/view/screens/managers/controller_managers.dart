@@ -185,58 +185,148 @@ class ManagersController extends GetxController {
   // Method to Fetch Managers Details
   Future<void> fetchManagerDetails(int id) async {
     try {
+      print('=== FETCHING MANAGER DETAILS FOR ID: $id ===');
       isLoading(true);
       String? token = await getToken(); // Fetch the auth token
       if (token == null) {
         throw Exception('Token is null');
       }
 
+      print('Token retrieved successfully');
+      final url = '$baseUrl/api/edit_manager/$id';
+      print('API URL: $url');
+
       final response = await http.get(
-        Uri.parse('$baseUrl/api/edit_manager/$id'),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
 
+      print('Response Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
+        print('JSON Response: $jsonResponse');
+        
         if (jsonResponse['success'] == true) {
-          var managerData = Manager.fromJson(jsonResponse['data']);
+          // Handle both List and Map responses
+          Map<String, dynamic> managerDataMap;
+          
+          if (jsonResponse['data'] is List) {
+            // If data is a list, take the first item
+            List<dynamic> dataList = jsonResponse['data'];
+            if (dataList.isNotEmpty) {
+              managerDataMap = dataList[0] as Map<String, dynamic>;
+              print('Data is a list, using first item: $managerDataMap');
+            } else {
+              throw Exception('Manager data list is empty');
+            }
+          } else if (jsonResponse['data'] is Map<String, dynamic>) {
+            // If data is already a map, use it directly
+            managerDataMap = jsonResponse['data'] as Map<String, dynamic>;
+            print('Data is a map: $managerDataMap');
+          } else {
+            throw Exception('Unexpected data format: ${jsonResponse['data'].runtimeType}');
+          }
+          
+          var managerData = Manager.fromJson(managerDataMap);
           
           // Handle assigned applications if present in response
           if (jsonResponse.containsKey('assign_application') && jsonResponse['assign_application'] != null) {
-            handleAssignedApplications(jsonResponse['assign_application']);
+            var assignAppData = jsonResponse['assign_application'];
+            print('Assign application data type: ${assignAppData.runtimeType}');
+            print('Assign application data: $assignAppData');
+            
+            if (assignAppData is Map<String, dynamic>) {
+              handleAssignedApplications(assignAppData);
+            } else if (assignAppData is List && assignAppData.isNotEmpty) {
+              // Convert list to map format if needed
+              Map<String, dynamic> assignAppMap = {};
+              for (int i = 0; i < assignAppData.length; i++) {
+                assignAppMap[i.toString()] = assignAppData[i];
+              }
+              handleAssignedApplications(assignAppMap);
+            } else {
+              // Empty array or null - just clear selections
+              print('Assign application is empty or null, clearing selections');
+              selectedApplicationIds.clear();
+            }
+          } else {
+            print('No assign_application data found, clearing selections');
+            selectedApplicationIds.clear();
           }
           
-          print('Manager Data: $managerData');
+          print('Manager Data parsed successfully: $managerData');
+          print('Navigating to ScreenUpdateManger...');
+          
+          // Navigate to update screen
           Get.to(() => ScreenUpdateManger(manager: managerData));
+          print('Navigation completed');
         } else {
-          throw Exception('Failed to load manager details');
+          print('API returned success: false');
+          final languageController = Get.find<LanguageController>();
+          Get.snackbar(
+            languageController.getTranslation('error'),
+            jsonResponse['message'] ?? 'Failed to load manager details',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
         }
       } else {
-        errorMessage('Failed to fetch manager details');
+        print('API call failed with status: ${response.statusCode}');
+        final languageController = Get.find<LanguageController>();
+        Get.snackbar(
+          languageController.getTranslation('error'),
+          'Failed to fetch manager details. Status: ${response.statusCode}',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
       }
     } catch (e) {
-      errorMessage(e.toString());
+      print('Exception in fetchManagerDetails: $e');
+      final languageController = Get.find<LanguageController>();
+      Get.snackbar(
+        languageController.getTranslation('error'),
+        'Error: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     } finally {
       isLoading(false);
+      print('=== FETCH MANAGER DETAILS COMPLETED ===');
     }
   }
   // Method to handle assigned applications from API response
   void handleAssignedApplications(Map<String, dynamic> assignApplicationData) {
-    selectedApplicationIds.clear();
-    
-    if (assignApplicationData.isNotEmpty) {
-      // Extract application IDs from the assign_application data
-      assignApplicationData.forEach((key, value) {
-        if (value is Map<String, dynamic> && value.containsKey('application_id')) {
-          int applicationId = int.tryParse(value['application_id'].toString()) ?? 0;
-          if (applicationId > 0) {
-            selectedApplicationIds.add(applicationId);
+    try {
+      print('Handling assigned applications: $assignApplicationData');
+      selectedApplicationIds.clear();
+      
+      if (assignApplicationData.isNotEmpty) {
+        // Extract application IDs from the assign_application data
+        assignApplicationData.forEach((key, value) {
+          if (value is Map<String, dynamic> && value.containsKey('application_id')) {
+            int applicationId = int.tryParse(value['application_id'].toString()) ?? 0;
+            if (applicationId > 0) {
+              selectedApplicationIds.add(applicationId);
+              print('Added application ID: $applicationId');
+            }
           }
-        }
-      });
+        });
+        print('Total selected application IDs: ${selectedApplicationIds.length}');
+      } else {
+        print('Assign application data is empty, cleared selections');
+      }
+    } catch (e) {
+      print('Error in handleAssignedApplications: $e');
+      // Clear selections on error to prevent issues
+      selectedApplicationIds.clear();
     }
   }
 

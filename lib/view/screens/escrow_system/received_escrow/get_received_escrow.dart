@@ -164,10 +164,10 @@ class _ScreenEscrowListState extends State<ScreenReceivedEscrow> {
                                            Expanded(
                                              flex: 1,
                                              child: SizedBox(
-                                               height: 35,
+                                               height: 28,
                                                child: CustomButton(
                                                  text: languageController.getTranslation('view'),
-                                                 textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                 textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                                                                    onPressed: () async {
                                                     controller.fetchEscrowAgreementDetail(receivedEscrow.id);
                                                     await Future.delayed(Duration(milliseconds: 500));
@@ -181,10 +181,10 @@ class _ScreenEscrowListState extends State<ScreenReceivedEscrow> {
                                            Expanded(
                                              flex: 1,
                                              child: SizedBox(
-                                               height: 35,
+                                               height: 28,
                                                child: CustomButton(
                                                  text: languageController.getTranslation('information'),
-                                                 textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                 textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                  backGroundColor: Colors.blue,
                                                                                                  onPressed: () async {
                                                   Get.to(() => ReceivedEscrowInformationScreen(escrowId: receivedEscrow.id));
@@ -202,15 +202,17 @@ class _ScreenEscrowListState extends State<ScreenReceivedEscrow> {
                                             receivedEscrow.statusLabel.toString().toLowerCase() == 'onhold')
                                           SizedBox(
                                             width: double.infinity,
-                                            height: 35,
+                                            height: 28,
                                                                                            child: Obx(() => CustomButton(
                                                  text: languageController.getTranslation('reject'),
-                                                 textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                 textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                  backGroundColor: Colors.red,
                                                  loading: controller.isRejecting.value,
                                                  onPressed: () async {
-                                                   // Call the reject API
+                                                   // Call the reject API and wait for completion
                                                    await controller.rejectEscrow(receivedEscrow.id);
+                                                   // Refresh the screen with fresh data regardless of success/failure
+                                                   await controller.fetchReceiverEscrows();
                                                  },
                                                )).paddingSymmetric(horizontal: 8),
                                           ),

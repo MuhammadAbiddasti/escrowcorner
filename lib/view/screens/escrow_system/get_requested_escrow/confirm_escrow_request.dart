@@ -244,13 +244,38 @@ class _ConfirmEscrowRequestScreenState extends State<ConfirmEscrowRequestScreen>
                                               onPressed: () async {
                                                 if (!controller.isApproving.value) {
                                                   try {
-                                                    // Call the approve_request API directly
-                                                    final response = await controller.approveRequest(widget.escrowId);
-                                                    if (response) {
-                                                      Get.off(() => RequestedEscrowDetailScreen(escrowId: widget.escrowId));
-                                                    }
+                                                    print('Starting approve request for escrowId: ${widget.escrowId}');
+                                                    
+                                                    // Call the approve_request API and wait for completion
+                                                    bool success = await controller.approveRequest(widget.escrowId);
+                                                    
+                                                    print('Approve request completed. Success: $success');
+                                                    
+                                                    // Wait a moment for any data updates to complete
+                                                    await Future.delayed(Duration(milliseconds: 500));
+                                                    
+                                                    // Always navigate to detail screen regardless of success/failure
+                                                    print('Navigating to RequestedEscrowDetailScreen...');
+                                                    Get.off(() => RequestedEscrowDetailScreen(escrowId: widget.escrowId));
+                                                    
                                                   } catch (e) {
                                                     print('Error approving request: $e');
+                                                    
+                                                    // Show error message to user
+                                                    Get.snackbar(
+                                                      languageController.getTranslation('error'),
+                                                      'Failed to approve request: $e',
+                                                      backgroundColor: Colors.red,
+                                                      colorText: Colors.white,
+                                                      duration: Duration(seconds: 3),
+                                                    );
+                                                    
+                                                    // Wait a moment before navigation
+                                                    await Future.delayed(Duration(milliseconds: 500));
+                                                    
+                                                    // Navigate to detail screen even on error
+                                                    print('Navigating to RequestedEscrowDetailScreen after error...');
+                                                    Get.off(() => RequestedEscrowDetailScreen(escrowId: widget.escrowId));
                                                   }
                                                 }
                                               },

@@ -195,10 +195,12 @@ class SendEscrowsController extends GetxController {
   }
 
   Future<Map<String, dynamic>?> escrowRelease(String eid) async {
+    print("=== escrowRelease called with ID: $eid ===");
     final String? token = await getToken(); // Ensure getToken() fetches your auth token
     final Uri url = Uri.parse("$baseUrl/api/escrowRelease");
     
     if (token == null) {
+      print("Token is null, returning error");
       return {'status': 'error', 'message': 'Token not found'};
     }
 
@@ -217,9 +219,11 @@ class SendEscrowsController extends GetxController {
       final data = json.decode(response.body);
       
       if (response.statusCode == 200) {
+        print("Release API success: $data");
         // Return the API response for the UI to handle
         return data;
       } else {
+        print("Release API error: ${response.statusCode} - ${data['message']}");
         // Return error response
         return {
           'status': 'error',
@@ -227,6 +231,7 @@ class SendEscrowsController extends GetxController {
         };
       }
     } catch (e) {
+      print("Release API exception: $e");
       return {
         'status': 'error',
         'message': 'An error occurred: ${e.toString()}'
@@ -236,7 +241,6 @@ class SendEscrowsController extends GetxController {
 
   Future<void> escrowReject(String eid) async {
     final String? token = await getToken(); // Ensure getToken() fetches your auth token
-    final Uri url = Uri.parse("$baseUrl/api/reject?eid=$eid");
     final languageController = Get.find<LanguageController>();
     
     if (token == null) {
@@ -250,12 +254,15 @@ class SendEscrowsController extends GetxController {
     }
 
     try {
-      final response = await http.get(
-        url,
+      final response = await http.post(
+        Uri.parse("$baseUrl/api/reject"),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
+        body: json.encode({
+          'eid': eid,
+        }),
       );
       print("response body: ${response.body}");
       print("response code: ${response.statusCode}");
@@ -267,9 +274,12 @@ class SendEscrowsController extends GetxController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
-        Get.off(GetRejectedEscrow());
+        // Refresh the detail screen instead of navigating away
+        print("=== REFRESHING DETAIL SCREEN AFTER SUCCESS ===");
+        await fetchEscrowDetail(int.parse(eid));
+        print("=== DETAIL SCREEN REFRESHED AFTER SUCCESS ===");
+        // Also refresh the rejected escrows list
         await rejectController.fetchRejectedEscrows();
-        // Handle the response data as needed
       } else {
         final data = json.decode(response.body);
         String message = data['message'] ?? languageController.getTranslation('failed_to_process_escrow_reject');
@@ -280,6 +290,10 @@ class SendEscrowsController extends GetxController {
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
+        // Refresh the detail screen even on error
+        print("=== REFRESHING DETAIL SCREEN AFTER ERROR ===");
+        await fetchEscrowDetail(int.parse(eid));
+        print("=== DETAIL SCREEN REFRESHED AFTER ERROR ===");
       }
     } catch (e) {
       Get.snackbar(
@@ -289,6 +303,10 @@ class SendEscrowsController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
+      // Refresh the detail screen even on exception
+      print("=== REFRESHING DETAIL SCREEN AFTER EXCEPTION ===");
+      await fetchEscrowDetail(int.parse(eid));
+      print("=== DETAIL SCREEN REFRESHED AFTER EXCEPTION ===");
     }
   }
 

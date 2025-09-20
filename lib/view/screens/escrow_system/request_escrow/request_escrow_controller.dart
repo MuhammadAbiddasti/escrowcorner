@@ -320,7 +320,7 @@ class RequestEscrowController extends GetxController {
 
   Future<void> rejectRequestEscrow(String eid) async {
     final String? token = await getToken(); // Ensure getToken() fetches your auth token
-    final Uri url = Uri.parse("$baseUrl/api/reject_request?eid=$eid");
+    final Uri url = Uri.parse("$baseUrl/api/reject_request");
     final languageController = Get.find<LanguageController>();
     
     if (token == null) {
@@ -334,12 +334,15 @@ class RequestEscrowController extends GetxController {
     }
 
     try {
-      final response = await http.get(
+      final response = await http.post(
         url,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
+        body: json.encode({
+          'eid': eid,
+        }),
       );
       print("response body: ${response.body}");
       print("response code: ${response.statusCode}");
@@ -422,9 +425,8 @@ class RequestEscrowController extends GetxController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
-        Get.off(GetCancelledEscrow());
-        //await rejectController.fetchRejectedEscrows();
-        // Handle the response data as needed
+        // Refresh the current screen instead of navigating away
+        await fetchRequestEscrows();
       } else {
         final data = json.decode(response.body);
         // Show the actual error message from API response
@@ -436,6 +438,8 @@ class RequestEscrowController extends GetxController {
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
+        // Refresh the screen even on error to show current state
+        await fetchRequestEscrows();
       }
     } catch (e) {
       Get.snackbar(
@@ -445,6 +449,8 @@ class RequestEscrowController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
+      // Refresh the screen even on exception to show current state
+      await fetchRequestEscrows();
     } finally {
       // Always reset loading state for this specific escrow
       setCancelLoading(escrowId, false);

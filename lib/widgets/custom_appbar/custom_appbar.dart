@@ -28,6 +28,7 @@ import '../../view/screens/tickets/screen_support_tickets.dart';
 import '../../view/screens/user_profile/screen_person_info.dart';
 import '../../view/Home_Screens/screen_home.dart';
 import '../../widgets/custom_api_url/constant_url.dart';
+import '../../utils/navigation_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Custom App Bar Leading
@@ -491,11 +492,23 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
   void initState() {
     super.initState();
     //controller.fetchManagerPermissions(widget.managerId);
-    sendController.fetchUnreadTransferMoneyCount();
-    sendController.fetchUnreadRequestMoneyCount();
-    sendController.fetchUnreadSupportTicketCount();
+    
+    // Fetch notification counts silently without blocking the UI
+    _fetchNotificationCountsSilently();
+    
     controller.onPermissionUpdateNotification(
         userProfileController.userId.value);
+  }
+
+  // Helper method to fetch notification counts without blocking UI
+  void _fetchNotificationCountsSilently() {
+    try {
+      sendController.fetchUnreadRequestMoneyCount();
+      sendController.fetchUnreadSupportTicketCount();
+    } catch (e) {
+      print("Error fetching notification counts (silent): $e");
+      // Don't show error to user - these are background operations
+    }
   }
   @override
   Widget build(BuildContext context) {
@@ -524,7 +537,10 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
         icon: Icon(Icons.menu, color: Colors.white),
         offset: Offset(0, 50),
         onSelected: (String result) {
-
+          print('=== POPUP MENU DEBUG ===');
+          print('PopupMenuButton onSelected called with: $result');
+          print('========================');
+          _handleMenuSelection(result);
         },
         itemBuilder: (BuildContext context) {
           return isManager
@@ -546,28 +562,44 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
         subMenuItems.add(_buildEscrowMenuItem(
           icon: Icons.arrow_forward,
           label: languageController.getTranslation('received_escrow'),
-          onTap: () => Get.off(() => ScreenReceivedEscrow()),
+          onTap: () => NavigationHelper.navigateWithDebounce(
+            key: 'received_escrow_navigation',
+            screenBuilder: () => ScreenReceivedEscrow(),
+            showLoadingIndicator: false,
+          ),
         ));
       }
       if (allowedModules.contains('Rejected Escrow')) {
         subMenuItems.add(_buildEscrowMenuItem(
           icon: Icons.arrow_forward,
           label: languageController.getTranslation('rejected_escrow'),
-          onTap: () => Get.off(() => GetRejectedEscrow()),
+          onTap: () => NavigationHelper.navigateWithDebounce(
+            key: 'rejected_escrow_navigation',
+            screenBuilder: () => GetRejectedEscrow(),
+            showLoadingIndicator: false,
+          ),
         ));
       }
       if (allowedModules.contains('Requested Escrow')) {
         subMenuItems.add(_buildEscrowMenuItem(
           icon: Icons.arrow_forward,
           label: languageController.getTranslation('requested_escrow'),
-          onTap: () => Get.off(() => GetRequestedEscrow()),
+          onTap: () => NavigationHelper.navigateWithDebounce(
+            key: 'requested_escrow_navigation',
+            screenBuilder: () => GetRequestedEscrow(),
+            showLoadingIndicator: false,
+          ),
         ));
       }
       if (allowedModules.contains('Cancelled Escrow')) {
         subMenuItems.add(_buildEscrowMenuItem(
           icon: Icons.arrow_forward,
           label: languageController.getTranslation('cancelled_escrow'),
-          onTap: () => Get.off(() => GetCancelledEscrow()),
+          onTap: () => NavigationHelper.navigateWithDebounce(
+            key: 'cancelled_escrow_navigation',
+            screenBuilder: () => GetCancelledEscrow(),
+            showLoadingIndicator: false,
+          ),
         ));
       }
       return subMenuItems;
@@ -609,7 +641,6 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
                 child: _buildMenuItem(
                   icon: Icons.home,
                   label: languageController.getTranslation('home'),
-                  onTap: () => Get.off(() => ScreenHome()),
                 ),
               );
             case 'Dashboard':
@@ -618,7 +649,6 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
                 child: _buildMenuItem(
                   icon: Icons.stacked_bar_chart,
                   label: languageController.getTranslation('dashboard'),
-                  onTap: () => Get.off(() => ScreenDashboard()),
                 ),
               );
             case 'Send Escrow':
@@ -627,7 +657,6 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
                 child: _buildMenuItem(
                   icon: Icons.arrow_forward,
                   label: languageController.getTranslation('send_escrow'),
-                  onTap: () => Get.off(() => ScreenEscrowList()),
                 ),
               );
             case 'Request Escrow':
@@ -636,7 +665,6 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
                 child: _buildMenuItem(
                   icon: Icons.arrow_forward,
                   label: languageController.getTranslation('request_escrow'),
-                  onTap: () => Get.off(() => GetRequestEscrow()),
                 ),
               );
             case 'Escrow History':
@@ -735,7 +763,6 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
                 child: _buildMenuItem(
                   icon: Icons.link,
                   label: languageController.getTranslation('my_sub_accounts'),
-                  onTap: () => Get.off(() => ScreenMerchant()),
                 ),
               );
             case 'Managers':
@@ -744,7 +771,6 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
                 child: _buildMenuItem(
                   icon: Icons.supervisor_account_outlined,
                   label: languageController.getTranslation('managers'),
-                  onTap: () => Get.off(() => ScreenManagers()),
                 ),
               );
             case 'Settings':
@@ -753,7 +779,6 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
                 child: _buildMenuItem(
                   icon: Icons.settings_outlined,
                   label: languageController.getTranslation('settings'),
-                  onTap: () => Get.off(() => ScreenSettingsPortion()),
                 ),
               );
               case 'Customers Support':
@@ -762,7 +787,6 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
                 child:_buildNotificationMenuItem(
                   icon: Icons.link,
                   label: languageController.getTranslation('customer_support'),
-                  onTap: () => Get.off(() => ScreenSupportTicket()),
                   unreadCount: sendController.unreadSupportTicketCount.value,
                 ),
               );
@@ -779,7 +803,6 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
           child: _buildMenuItem(
             icon: Icons.home,
             label: languageController.getTranslation('home'),
-            onTap: () => Get.off(() => ScreenHome()),
           ),
         ),
         PopupMenuItem<String>(
@@ -873,98 +896,30 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
       // Home menu item - always available for logged-in users
       PopupMenuItem<String>(
         value: 'home',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.home, color: Colors.white),
-                TextButton(
-                  child: Text(
-                    languageController.getTranslation('home'),
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onPressed: () {
-                    Get.off(() => ScreenHome());
-                  },
-                ),
-              ],
-            ),
-            Divider(
-              color: Color(0xffCDE0EF),
-            )
-          ],
+        child: _buildMenuItem(
+          icon: Icons.home,
+          label: languageController.getTranslation('home'),
         ),
       ),
       PopupMenuItem<String>(
         value: 'option1',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.stacked_bar_chart, color: Colors.white),
-                TextButton(
-                  child: Text(
-                    languageController.getTranslation('dashboard'),
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onPressed: () {
-                    Get.off(() => ScreenDashboard());
-                  },
-                ),
-              ],
-            ),
-            Divider(
-              color: Color(0xffCDE0EF),
-            )
-          ],
+        child: _buildMenuItem(
+          icon: Icons.stacked_bar_chart,
+          label: languageController.getTranslation('dashboard'),
         ),
       ),
       PopupMenuItem<String>(
         value: 'send_escrow',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.arrow_forward, color: Colors.white),
-                TextButton(
-                  child: Text(languageController.getTranslation('send_escrow'),
-                      style: TextStyle(color: Colors.white)),
-                  onPressed: () {
-                    Get.off(() => ScreenEscrowList());
-                  },
-                ),
-              ],
-            ),
-            Divider(
-              color: Color(0xffCDE0EF),
-            )
-          ],
+        child: _buildMenuItem(
+          icon: Icons.arrow_forward,
+          label: languageController.getTranslation('send_escrow'),
         ),
       ),
       PopupMenuItem<String>(
         value: 'request_escrow',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.arrow_forward, color: Colors.white),
-                TextButton(
-                  child: Text(languageController.getTranslation('request_escrow'),
-                      style: TextStyle(color: Colors.white)),
-                  onPressed: () {
-                    Get.off(() => GetRequestEscrow());
-                  },
-                ),
-              ],
-            ),
-            Divider(
-              color: Color(0xffCDE0EF),
-            )
-          ],
+        child: _buildMenuItem(
+          icon: Icons.arrow_forward,
+          label: languageController.getTranslation('request_escrow'),
         ),
       ),
       PopupMenuItem<String>(
@@ -1228,76 +1183,173 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
         ),
       ),
       PopupMenuItem<String>(
-        value: 'option19',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.speed, color: Colors.white),
-                TextButton(
-                  child: Text(languageController.getTranslation('customer_support'),
-                      style: TextStyle(color: Colors.white)),
-                  onPressed: () {
-                    Get.off(() => ScreenSupportTicket());
-                  },
-                ),
-                SizedBox(width: 10),
-                Obx(() {
-                  // Check if the value is greater than 0
-                  if (sendController.unreadSupportTicketCount.value > 0) {
-                    return Container(
-                      height: 30,
-                      width: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        // The container's background remains transparent
-                        border: Border.all(
-                          color: Colors.red, // White border
-                          width: 2.0, // Adjust the thickness of the border
-                        ),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: Center(
-                        child: Text(
-                          "${sendController.unreadSupportTicketCount.value}",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    );
-                  } else {
-                    return SizedBox
-                        .shrink(); // Return an empty widget if the value is 0
-                  }
-                })
-              ],
-            ),
-          ],
+        value: 'support_ticket',
+        child: _buildNotificationMenuItem(
+          icon: Icons.speed,
+          label: languageController.getTranslation('customer_support'),
+          unreadCount: sendController.unreadSupportTicketCount.value,
         ),
       ),
       // Add more static menu items for non-managers...
     ];
   }
 
+  void _handleMenuSelection(String result) {
+    print('=== MENU SELECTION DEBUG ===');
+    print('Selected menu item: $result');
+    print('============================');
+    switch (result) {
+      case 'home':
+        print('Navigating to Home screen');
+        Get.off(() => ScreenHome());
+        break;
+      case 'dashboard':
+        print('Navigating to Dashboard screen');
+        Get.off(() => ScreenDashboard());
+        break;
+      case 'option1': // Non-manager dashboard
+        print('Navigating to Dashboard screen (non-manager)');
+        Get.off(() => ScreenDashboard());
+        break;
+      case 'send_escrow':
+        print('Navigating to Send Escrow screen');
+        Get.off(() => ScreenEscrowList());
+        break;
+      case 'request_escrow':
+        print('Navigating to Request Escrow screen');
+        Get.off(() => GetRequestEscrow());
+        break;
+      case 'my_sub_accounts':
+        NavigationHelper.navigateWithDebounce(
+          key: 'sub_accounts_navigation',
+          screenBuilder: () => ScreenMerchant(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'manager':
+        NavigationHelper.navigateWithDebounce(
+          key: 'managers_navigation',
+          screenBuilder: () => ScreenManagers(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'settings':
+        NavigationHelper.navigateWithDebounce(
+          key: 'settings_navigation',
+          screenBuilder: () => ScreenSettingsPortion(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'support_ticket':
+        print('=== CUSTOMER SUPPORT DEBUG ===');
+        print('Navigating to Support Ticket screen');
+        print('===============================');
+        Get.off(() => ScreenSupportTicket());
+        break;
+      case 'received_escrow':
+        NavigationHelper.navigateWithDebounce(
+          key: 'received_escrow_navigation',
+          screenBuilder: () => ScreenReceivedEscrow(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'rejected_escrow':
+        NavigationHelper.navigateWithDebounce(
+          key: 'rejected_escrow_navigation',
+          screenBuilder: () => GetRejectedEscrow(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'requested_escrow':
+        NavigationHelper.navigateWithDebounce(
+          key: 'requested_escrow_navigation',
+          screenBuilder: () => GetRequestedEscrow(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'cancelled_escrow':
+        NavigationHelper.navigateWithDebounce(
+          key: 'cancelled_escrow_navigation',
+          screenBuilder: () => GetCancelledEscrow(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'my_deposits':
+        NavigationHelper.navigateWithDebounce(
+          key: 'my_deposits_navigation',
+          screenBuilder: () => ScreenMyDeposit(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'my_withdrawals':
+        NavigationHelper.navigateWithDebounce(
+          key: 'my_withdrawals_navigation',
+          screenBuilder: () => ScreenMyWithDraw(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'all_transactions':
+        NavigationHelper.navigateWithDebounce(
+          key: 'all_transactions_navigation',
+          screenBuilder: () => ScreenAllTransactions(),
+          showLoadingIndicator: false,
+        );
+        break;
+      // Non-manager specific cases
+      case 'home_navigation_non_manager':
+        NavigationHelper.navigateWithDebounce(
+          key: 'home_navigation_non_manager',
+          screenBuilder: () => ScreenHome(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'dashboard_navigation_non_manager':
+        NavigationHelper.navigateWithDebounce(
+          key: 'dashboard_navigation_non_manager',
+          screenBuilder: () => ScreenDashboard(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'send_escrow_navigation_non_manager':
+        NavigationHelper.navigateWithDebounce(
+          key: 'send_escrow_navigation_non_manager',
+          screenBuilder: () => ScreenEscrowList(),
+          showLoadingIndicator: false,
+        );
+        break;
+      case 'request_escrow_navigation_non_manager':
+        NavigationHelper.navigateWithDebounce(
+          key: 'request_escrow_navigation_non_manager',
+          screenBuilder: () => GetRequestEscrow(),
+          showLoadingIndicator: false,
+        );
+        break;
+      default:
+        print('Unknown menu selection: $result');
+        break;
+    }
+  }
+
   Widget _buildMenuItem({
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
   }) {
     return Column(
       children: [
-        Row(
-          children: [
-            Icon(icon, color: Colors.white),
-            TextButton(
-              onPressed: onTap,
-              child: Text(
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
                 label,
                 style: TextStyle(color: Colors.white),
               ),
-            ),
-            SizedBox(width: 10),
-          ],
+              Spacer(),
+            ],
+          ),
         ),
         Divider(
           color: Color(0xffCDE0EF),
@@ -1309,44 +1361,45 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
   Widget _buildNotificationMenuItem({
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
     required int unreadCount, // Add a parameter for the unread count
   }) {
     if (unreadCount > 0) {
       // Show the container when the count is greater than zero
       return Column(
         children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.white),
-              TextButton(
-                onPressed: onTap,
-                child: Text(
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
                   label,
                   style: TextStyle(color: Colors.white),
                 ),
-              ),
-              SizedBox(width: 10),
-              Container(
-                height: 30,
-                width: 30,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  // The container's background remains transparent
-                  border: Border.all(
-                    color: Colors.red, // White border
-                    width: 2.0, // Adjust the thickness of the border
+                Spacer(),
+                Container(
+                  height: 30,
+                  width: 30,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    // The container's background remains transparent
+                    border: Border.all(
+                      color: Colors.red, // White border
+                      width: 2.0, // Adjust the thickness of the border
+                    ),
+                    borderRadius: BorderRadius.circular(5),
                   ),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Center(
-                  child: Text(
-                    unreadCount.toString(),
-                    style: TextStyle(color: Colors.red),
+                  child: Center(
+                    child: Text(
+                      unreadCount.toString(),
+                      style: TextStyle(color: Colors.red),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           Divider(
             color: Color(0xffCDE0EF),
@@ -1357,18 +1410,20 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
       // Show the standard menu item when the count is zero
       return Column(
         children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.white),
-              TextButton(
-                onPressed: onTap,
-                child: Text(
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
                   label,
                   style: TextStyle(color: Colors.white),
                 ),
-              ),
-              SizedBox(width: 10),
-            ],
+                Spacer(),
+              ],
+            ),
           ),
           Divider(
             color: Color(0xffCDE0EF),
@@ -1385,18 +1440,23 @@ class _CustomPopupMenuState extends State<CustomPopupMenu> {
   }) {
     return Column(
       children: [
-        Row(
-          children: [
-            Icon(icon, color: Colors.white),
-            SizedBox(width: 8),
-            TextButton(
-              onPressed: onTap,
-              child: Text(
-                label,
-                style: TextStyle(color: Colors.white),
-              ),
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(color: Colors.white),
+                ),
+                Spacer(),
+              ],
             ),
-          ],
+          ),
         ),
       ],
     );
@@ -1552,18 +1612,20 @@ class AppBarProfileButton extends StatelessWidget {
             Divider(
               color: Color(0xffDDDDDD),
             ),
-            Container(
-              height: 35,
-              child: ListTile(
-                onTap: () {
-                  Get.to(ScreenDashboard());
-                },
-                leading: Icon(Icons.dashboard_outlined, size: 25),
-                title: Text(
-                  languageController.getTranslation('dashboard'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
+            GestureDetector(
+              onTap: () {
+                Get.to(ScreenDashboard());
+              },
+              child: Container(
+                height: 35,
+                child: ListTile(
+                  leading: Icon(Icons.dashboard_outlined, size: 25),
+                  title: Text(
+                    languageController.getTranslation('dashboard'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
               ),
@@ -1574,114 +1636,164 @@ class AppBarProfileButton extends StatelessWidget {
             Divider(
               color: Color(0xffDDDDDD),
             ),
-            Container(
-              height: 35,
-              child: ListTile(
-                onTap: () async {
-                  await userProfileController.fetchUserDetails();
-                  Get.to(ScreenKyc1());
-                },
-                leading: Icon(Icons.verified_outlined, size: 25),
-                title: Text(
-                  languageController.getTranslation('general_kyc'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
+            GestureDetector(
+              onTap: () async {
+                await userProfileController.fetchUserDetails();
+                Get.to(ScreenKyc1());
+              },
+              child: Container(
+                height: 35,
+                child: ListTile(
+                  leading: Icon(Icons.verified_outlined, size: 25),
+                  title: Text(
+                    languageController.getTranslation('general_kyc'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
               ),
+            ),
+            SizedBox(
+              height: 10,
+            ),
+            Divider(
+              color: Color(0xffDDDDDD),
             )
           ],
         )),
         PopupMenuItem<String>(
-          child: Container(
-            height: 35,
-            child: ListTile(
-              onTap: () async {
-                await userProfileController.fetchUserDetails();
-                Get.to(ScreenPersonInfo());
-              },
-              leading: Icon(
-                Icons.person_outline,
-                size: 30,
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  await userProfileController.fetchUserDetails();
+                  Get.to(ScreenPersonInfo());
+                },
+                child: Container(
+                  height: 35,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.person_outline,
+                      size: 30,
+                    ),
+                    //Image.asset('assets/images/user.png'),
+                    title: Text(languageController.getTranslation('profile'),
+                        style: TextStyle(
+                            //color: Color(0xff18CE0F),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400)),
+                  ),
+                ),
               ),
-              //Image.asset('assets/images/user.png'),
-              title: Text(languageController.getTranslation('profile'),
-                  style: TextStyle(
-                      //color: Color(0xff18CE0F),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400)),
-            ),
+              SizedBox(
+                height: 10,
+              ),
+              Divider(
+                color: Color(0xffDDDDDD),
+              ),
+            ],
           ),
         ),
         if (isManager && allowedModules.contains('Settings'))
           PopupMenuItem<String>(
-            child: GestureDetector(
-              onTap: () {
-                Get.to(ScreenSettingsPortion());
-              },
-              child: Container(
-                height: 40,
-                child: ListTile(
-                  leading: Icon(
-                    Icons.settings_outlined,
-                    size: 26,
+            child: Column(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Get.to(ScreenSettingsPortion());
+                  },
+                  child: Container(
+                    height: 40,
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.settings_outlined,
+                        size: 26,
+                      ),
+                      title: Obx(() {
+                        final _ = languageController.selectedLanguage.value;
+                        return Text(
+                          languageController.getTranslation('settings'),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+                        );
+                      }),
+                    ),
                   ),
-                  title: Obx(() {
-                    final _ = languageController.selectedLanguage.value;
-                    return Text(
-                      languageController.getTranslation('settings'),
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-                    );
-                  }),
                 ),
-              ),
+                SizedBox(
+                  height: 10,
+                ),
+                Divider(
+                  color: Color(0xffDDDDDD),
+                ),
+              ],
             ),
           ),
         if (userProfileController.isManager.value == '0')
           PopupMenuItem<String>(
-            child: GestureDetector(
-              onTap: () {
-                Get.to(ScreenSettingsPortion());
-              },
-              child: Container(
-                height: 40,
-                child: ListTile(
-                  leading: Icon(
-                    Icons.settings_outlined,
-                    size: 26,
+            child: Column(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Get.to(ScreenSettingsPortion());
+                  },
+                  child: Container(
+                    height: 40,
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.settings_outlined,
+                        size: 26,
+                      ),
+                      title: Obx(() {
+                        final _ = languageController.selectedLanguage.value;
+                        return Text(
+                          languageController.getTranslation('settings'),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+                        );
+                      }),
+                    ),
                   ),
-                  title: Obx(() {
-                    final _ = languageController.selectedLanguage.value;
-                    return Text(
-                      languageController.getTranslation('settings'),
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-                    );
-                  }),
                 ),
-              ),
+                SizedBox(
+                  height: 10,
+                ),
+                Divider(
+                  color: Color(0xffDDDDDD),
+                ),
+              ],
             ),
           ),
         PopupMenuItem<String>(
-          child: GestureDetector(
-            onTap: () {
-              showDeleteConfirmationDialog(context);
-            },
-            child: Container(
-              height: 40,
-              child: ListTile(
-                leading: Image.asset(
-                  'assets/images/logout.png',
-                  height: 25,
-                  width: 25,
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  showDeleteConfirmationDialog(context);
+                },
+                child: Container(
+                  height: 40,
+                  child: ListTile(
+                    leading: Image.asset(
+                      'assets/images/logout.png',
+                      height: 25,
+                      width: 25,
+                    ),
+                    //Icon(Icons.logout, size: 26,)
+                    //color: Color(0xffFEAF39),),
+                    title: Text(languageController.getTranslation('logout'),
+                        style:
+                            TextStyle(fontSize: 16, fontWeight: FontWeight.w400)),
+                  ),
                 ),
-                //Icon(Icons.logout, size: 26,)
-                //color: Color(0xffFEAF39),),
-                title: Text(languageController.getTranslation('logout'),
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w400)),
               ),
-            ),
+              SizedBox(
+                height: 10,
+              ),
+              Divider(
+                color: Color(0xffDDDDDD),
+              ),
+            ],
           ),
         ),
       ],
@@ -1718,11 +1830,14 @@ class AppBarProfileButton extends StatelessWidget {
             text: languageController.getTranslation('cancel'), onPressed: (){
           Get.back();
         })),
-        Obx(() => CustomButton(width: 140,
+        Obx(() => CustomButton(
+          width: 140,
           backGroundColor: Colors.red,
-          text: languageController.getTranslation('yes_logout'), onPressed: () {
-    logoutController.logout(context);
-    },
+          text: languageController.getTranslation('yes_logout'),
+          loading: logoutController.isLoading.value,
+          onPressed: () {
+            logoutController.logout(context);
+          },
         ))
       ],
     );

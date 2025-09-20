@@ -15,6 +15,7 @@ class LanguageController extends GetxController {
   var selectedLanguage = Rx<Language?>(null);
   var isLoading = false.obs;
   var hasError = false.obs;
+  var isLoadingLanguageKeys = false.obs;
   
   // Default language
   static const String defaultLocale = 'en';
@@ -288,6 +289,9 @@ class LanguageController extends GetxController {
 
   // Fetch language keys for the selected language
   Future<void> fetchLanguageKeys(String locale) async {
+    if (isLoadingLanguageKeys.value) return;
+    
+    isLoadingLanguageKeys.value = true;
     try {
       print('Fetching language keys for locale: $locale');
       
@@ -367,6 +371,8 @@ class LanguageController extends GetxController {
       // Use translated error message
       final errorMessage = _translationCache[locale]?['error'] ?? 'error';
       print('$errorMessage fetching language keys: $e');
+    } finally {
+      isLoadingLanguageKeys.value = false;
     }
   }
 
@@ -482,13 +488,27 @@ class LanguageController extends GetxController {
           print('Translation found for "$key": "$translatedValue"');
           return translatedValue;
         } else {
-          print('Translation not found for "$key", returning key as fallback');
+          print('Translation not found for "$key" in cache, trying hardcoded fallback');
+          // Try hardcoded fallback
+          final hardcodedTranslation = _getHardcodedTranslation(key, targetLocale);
+          if (hardcodedTranslation != null) {
+            print('Hardcoded translation found for "$key": "$hardcodedTranslation"');
+            return hardcodedTranslation;
+          }
+          print('No hardcoded translation found for "$key", returning key as fallback');
           return key;
         }
       }
       
-      // If no fallback, return the key as fallback
-      print('No translations cached for locale "$targetLocale" and no fallback for "$key", returning key as fallback');
+      // If no cache, try hardcoded fallback
+      print('No translations cached for locale "$targetLocale", trying hardcoded fallback');
+      final hardcodedTranslation = _getHardcodedTranslation(key, targetLocale);
+      if (hardcodedTranslation != null) {
+        print('Hardcoded translation found for "$key": "$hardcodedTranslation"');
+        return hardcodedTranslation;
+      }
+      
+      print('No hardcoded translation found for "$key", returning key as fallback');
       return key;
     } catch (e) {
       // Use translated error message
@@ -497,6 +517,79 @@ class LanguageController extends GetxController {
       print('$errorMessage getting translation for $key: $e');
       return key;
     }
+  }
+  
+  // Get hardcoded translation as fallback
+  String? _getHardcodedTranslation(String key, String locale) {
+    // Hardcoded translations from main.dart
+    final hardcodedTranslations = {
+      'en': {
+        'get_started': 'Get Started',
+        'error_loading_home_content': 'Error loading home content',
+        'check_internet_connection': 'Please check your internet connection',
+        'retry': 'Retry',
+        'select_valid_method': 'Please select a valid method',
+        'enter_valid_amount': 'Enter a valid amount',
+        'enter_phone_number': 'Enter phone number',
+        'confirm_number': 'Confirm Number',
+        'enter_confirm_phone_number': 'Enter confirm phone number',
+        'phone_number_not_matched_with_confirm_phone_number': 'Phone number not matched with confirm phone number',
+        'submit': 'Submit',
+        'withdraw': 'Withdraw',
+        'from': 'from',
+        'payment_method': 'Payment Method',
+        'amount': 'Amount',
+        'phone_number': 'Phone Number',
+        'confirm_number': 'Confirm Number',
+        'error': 'Error',
+        'success': 'Success',
+        'home': 'Home',
+        'services': 'Services',
+        'about_us': 'About Us',
+        'contact_us': 'Contact Us',
+        'login': 'Login',
+        'register': 'Register',
+        'logout': 'Logout',
+        'profile': 'Profile',
+        'settings': 'Settings',
+        'dashboard': 'Dashboard',
+        'company': 'Company',
+      },
+      'fr': {
+        'get_started': 'Commencer',
+        'error_loading_home_content': 'Erreur lors du chargement du contenu de la page d\'accueil',
+        'check_internet_connection': 'Veuillez vérifier votre connexion internet',
+        'retry': 'Réessayer',
+        'select_valid_method': 'Veuillez sélectionner une méthode valide',
+        'enter_valid_amount': 'Entrez un montant valide',
+        'enter_phone_number': 'Entrez le numéro de téléphone',
+        'confirm_number': 'Confirmer le Numéro',
+        'enter_confirm_phone_number': 'Entrez le numéro de téléphone de confirmation',
+        'phone_number_not_matched_with_confirm_phone_number': 'Le numéro de téléphone ne correspond pas au numéro de confirmation',
+        'submit': 'Soumettre',
+        'withdraw': 'Retrait',
+        'from': 'de',
+        'payment_method': 'Méthode de Paiement',
+        'amount': 'Montant',
+        'phone_number': 'Numéro de Téléphone',
+        'confirm_number': 'Confirmer le Numéro',
+        'error': 'Erreur',
+        'success': 'Succès',
+        'home': 'Accueil',
+        'services': 'Services',
+        'about_us': 'À propos',
+        'contact_us': 'Nous Contacter',
+        'login': 'Connexion',
+        'register': 'S\'inscrire',
+        'logout': 'Déconnexion',
+        'profile': 'Profil',
+        'settings': 'Paramètres',
+        'dashboard': 'Tableau de bord',
+        'company': 'Entreprise',
+      },
+    };
+    
+    return hardcodedTranslations[locale]?[key];
   }
 
   // Get all available translation keys for the current language

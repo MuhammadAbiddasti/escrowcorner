@@ -200,10 +200,10 @@ class _GetCancelledEscrowState extends State<GetCancelledEscrow> with WidgetsBin
                                           Expanded(
                                             flex: 1,
                                             child: SizedBox(
-                                              height: 35,
+                                              height: 28,
                                               child: CustomButton(
                                                 text: languageController.getTranslation('view'),
-                                                textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                 onPressed: () async {
                                                   controller.fetchCancelledEscrowDetail(cancelledEscrow.id);
                                                   await Future.delayed(Duration(milliseconds: 500));
@@ -217,10 +217,10 @@ class _GetCancelledEscrowState extends State<GetCancelledEscrow> with WidgetsBin
                                           Expanded(
                                             flex: 1,
                                             child: SizedBox(
-                                              height: 35,
+                                              height: 28,
                                               child: CustomButton(
                                                 text: languageController.getTranslation('information'),
-                                                textStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                textStyle: TextStyle(fontSize: 10, color: Colors.white),
                                                 backGroundColor: Colors.blue,
                                                 onPressed: () async {
                                                   // Navigate to information screen

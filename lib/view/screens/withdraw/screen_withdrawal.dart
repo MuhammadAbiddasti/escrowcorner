@@ -65,7 +65,7 @@ class ScreenWithdrawal extends StatelessWidget {
       // Always set the first method if none is selected
       if (paymentLinkController.selectedMethod.value == null) {
         paymentLinkController.selectedMethod.value = firstMethod;
-        methodController.text = firstMethod.id.toString();
+        methodController.text = firstMethod.name; // Set the name for display
         print("Auto-selected first payment method: ${firstMethod.name} (ID: ${firstMethod.id})");
       } else {
         print("Payment method already selected: ${paymentLinkController.selectedMethod.value?.name}");
@@ -148,7 +148,7 @@ class ScreenWithdrawal extends StatelessWidget {
                          });
                        }
                        
-                       return TextFormField(
+                       return Obx(() => TextFormField(
                          onTap: () {
                            showMenu<PaymentMethod>(
                              context: context,
@@ -162,15 +162,15 @@ class ScreenWithdrawal extends StatelessWidget {
                            ).then((selectedMethod) {
                              if (selectedMethod != null) {
                                paymentLinkController.selectedMethod.value = selectedMethod;
-                               methodController.text = selectedMethod.id.toString();
+                               methodController.text = selectedMethod.name; // Set name for display
                              }
                            });
                          },
-                         controller: TextEditingController(text: paymentLinkController.selectedMethod.value?.name ?? ''),
+                         controller: methodController,
                          readOnly: true,
                          decoration: InputDecoration(
                            contentPadding: EdgeInsets.only(left: 5),
-                           hintText: paymentLinkController.selectedMethod.value?.name ?? "",
+                           hintText: paymentLinkController.selectedMethod.value?.name ?? languageController.getTranslation('select_valid_method'),
                            hintStyle: TextStyle(color: Color(0xffA9A9A9)),
                            border: OutlineInputBorder(
                              borderSide: BorderSide(color: Color(0xff666565)),
@@ -183,7 +183,7 @@ class ScreenWithdrawal extends StatelessWidget {
                            ),
                            suffixIcon: Icon(Icons.arrow_drop_down),
                          ),
-                       );
+                       ));
                      }
                    }),
                                      Obx(() => Text(
@@ -318,10 +318,11 @@ class ScreenWithdrawal extends StatelessWidget {
                            print("Submit button: Forcing payment method selection...");
                            final firstMethod = paymentLinkController.paymentMethods.first;
                            paymentLinkController.selectedMethod.value = firstMethod;
-                           methodController.text = firstMethod.id.toString();
+                           methodController.text = firstMethod.name; // Set name for display
                          }
                          
-                                                 if(methodController.text.isEmpty){
+                         // Check if a payment method is selected
+                         if(paymentLinkController.selectedMethod.value == null){
                            Get.snackbar(
                              languageController.getTranslation('error'),
                              languageController.getTranslation('select_valid_method'),
@@ -373,7 +374,7 @@ class ScreenWithdrawal extends StatelessWidget {
                         }
                                                                         // Call withdrawal API (OTP logic is handled in the controller)
                          bool success = await withdrawController.makeWithdrawRequest(
-                           methodId: methodController.text.toString(),
+                           methodId: paymentLinkController.selectedMethod.value!.id.toString(),
                            amount: amountController.text,
                            phoneNumber: phoneController.text,
                            confirmNumber: confirmNumberController.text,

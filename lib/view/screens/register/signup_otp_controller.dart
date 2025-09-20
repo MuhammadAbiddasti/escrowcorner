@@ -5,6 +5,24 @@ import 'dart:convert';
 import '../../../widgets/custom_api_url/constant_url.dart';
 import '../login/screen_login.dart';
 import '../../controller/language_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Helper method to extract user_id from JWT token
+int? extractUserIdFromToken(String token) {
+  try {
+    final parts = token.split('.');
+    if (parts.length == 3) {
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+      final resp = utf8.decode(base64Url.decode(normalized));
+      final payloadMap = json.decode(resp);
+      return payloadMap['user_id'] ?? payloadMap['sub'];
+    }
+  } catch (e) {
+    print("Error extracting user_id from token: $e");
+  }
+  return null;
+}
 
 class SignupOtpController extends GetxController {
   var isLoading = false.obs;
@@ -36,9 +54,45 @@ class SignupOtpController extends GetxController {
     print('Response body: ${response.body}');
     if (response.headers['content-type']?.contains('application/json') == true) {
       final data = jsonDecode(response.body);
+      print('Parsed response data: $data');
+      
       if (data['success'] == true) {
         final languageController = Get.find<LanguageController>();
         final successMessage = data['message'] ?? languageController.getTranslation('email_verified');
+        
+        // Store the token if it exists in the response
+        if (data.containsKey('token') && data['token'] != null) {
+          final token = data['token'].toString();
+          print('Token received from API: $token');
+          
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('auth_token', token);
+            print('Token stored successfully in SharedPreferences with key: auth_token');
+            
+            // Extract and store user_id if available
+            if (data.containsKey('user_id') && data['user_id'] != null) {
+              await prefs.setInt('user_id', data['user_id']);
+              print('User ID stored: ${data['user_id']}');
+            } else {
+              // Try to extract user_id from token as fallback
+              final userIdFromToken = extractUserIdFromToken(token);
+              if (userIdFromToken != null) {
+                await prefs.setInt('user_id', userIdFromToken);
+                print('User ID extracted from token: $userIdFromToken');
+              }
+            }
+            
+            // Verify token was stored
+            final storedToken = prefs.getString('auth_token');
+            print('Stored token verification: $storedToken');
+          } catch (e) {
+            print('Error storing token: $e');
+          }
+        } else {
+          print('No token found in API response');
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(successMessage), backgroundColor: Colors.green),
         );

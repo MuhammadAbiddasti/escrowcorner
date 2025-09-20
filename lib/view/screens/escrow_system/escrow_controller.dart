@@ -26,6 +26,18 @@ class UserEscrowsController extends GetxController {
   bool get receivedHasPreviousPage => receivedCurrentPage.value > 1;
   bool get receivedHasNextPage => receivedCurrentPage.value < receivedTotalPages.value;
 
+  // Helper function to safely parse JSON responses
+  Map<String, dynamic>? safeJsonDecode(String responseBody, {String? context}) {
+    try {
+      return jsonDecode(responseBody);
+    } catch (e) {
+      print("Error parsing JSON response${context != null ? ' in $context' : ''}: $e");
+      print("Response appears to be HTML or non-JSON format");
+      print("Response body: $responseBody");
+      return null;
+    }
+  }
+
 
   // Future<void> fetchSenderEscrows() async {
   //   isLoading.value = true;
@@ -331,9 +343,35 @@ class UserEscrowsController extends GetxController {
       // Send the request
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
-      final responseBody = jsonDecode(response.body);
+      
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Headers: ${response.headers}");
+      print("Response Body (raw): ${response.body}");
 
-      print("Response Body: $responseBody");
+      // Check if response is JSON before parsing
+      final responseBody = safeJsonDecode(response.body, context: 'storeEscrow');
+      if (responseBody == null) {
+        // Handle different types of non-JSON responses
+        String errorMessage;
+        if (response.statusCode == 429) {
+          errorMessage = languageController.getTranslation('too_many_requests') ?? 'Too many requests. Please wait a moment and try again.';
+          print("Rate limit exceeded. Consider implementing retry logic with exponential backoff.");
+        } else if (response.statusCode >= 500) {
+          errorMessage = languageController.getTranslation('server_error') ?? 'Server error. Please try again later.';
+        } else if (response.statusCode >= 400) {
+          errorMessage = languageController.getTranslation('request_failed') ?? 'Request failed. Please check your connection and try again.';
+        } else {
+          errorMessage = languageController.getTranslation('server_returned_invalid_response') ?? 'Server returned an invalid response. Please try again.';
+        }
+        
+        return {
+          'success': false,
+          'message': errorMessage,
+          'data': null
+        };
+      }
+      
+      print("Response Body (parsed): $responseBody");
 
       if (response.statusCode == 200) {
         // Success - return the API response data
@@ -386,7 +424,11 @@ class UserEscrowsController extends GetxController {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = safeJsonDecode(response.body, context: 'fetchEscrowCategories');
+        if (data == null) {
+          print("Failed to parse JSON response in fetchEscrowCategories");
+          return;
+        }
 
         if (data['escrow_categories'] != null) {
           final List<dynamic> categoryList = data['escrow_categories'];
@@ -423,7 +465,11 @@ class UserEscrowsController extends GetxController {
       // print('API Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = safeJsonDecode(response.body, context: 'fetchCurrencies');
+        if (data == null) {
+          print("Failed to parse JSON response in fetchCurrencies");
+          return;
+        }
         final List<dynamic> currencyList = data['currencies'] ?? [];
         currencies.value =
             currencyList.map((e) => EscrowCurrency.fromJson(e)).toList();
@@ -457,7 +503,11 @@ class UserEscrowsController extends GetxController {
       print('Payment Methods API Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        final Map<String, dynamic>? jsonResponse = safeJsonDecode(response.body, context: 'fetchPaymentMethods');
+        if (jsonResponse == null) {
+          print("Failed to parse JSON response in fetchPaymentMethods");
+          return;
+        }
         
         // Handle the correct response structure: data.payment_method
         List<dynamic> paymentMethodsList = [];

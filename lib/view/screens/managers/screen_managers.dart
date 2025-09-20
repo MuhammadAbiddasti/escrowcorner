@@ -71,12 +71,12 @@ class ScreenManagers extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        CustomButton(
+                        Obx(() => CustomButton(
                           text: languageController.getTranslation('add_new'),
                           onPressed: () {
                             Get.to(ScreenNewManager());
                           },
-                        ).paddingSymmetric(horizontal: 20, vertical: 15),
+                        )).paddingSymmetric(horizontal: 20, vertical: 15),
                       ],
                     ),
                   ).paddingOnly(top: 20)
@@ -93,12 +93,12 @@ class ScreenManagers extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        CustomButton(
+                        Obx(() => CustomButton(
                           text: languageController.getTranslation('add_new'),
                           onPressed: () {
                             Get.to(ScreenNewManager());
                           },
-                        ).paddingSymmetric(horizontal: 20, vertical: 15)
+                        )).paddingSymmetric(horizontal: 20, vertical: 15)
                       ],
                     ),
                   ).paddingOnly(top: 20),
@@ -242,17 +242,26 @@ class ScreenManagers extends StatelessWidget {
                                               SizedBox(
                                                 height: 28,
                                                 child: OutlinedButton(
-                                                  onPressed: () {
+                                                  onPressed: controller.isLoading.value ? null : () {
                                                     controller.fetchManagerDetails(manager.id);
                                                   },
                                                   style: OutlinedButton.styleFrom(
                                                     backgroundColor: Colors.blue,
                                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                                   ),
-                                                  child: Obx(() => Text(
-                                                    languageController.getTranslation('edit'),
-                                                    style: TextStyle(fontSize: 10, color: Colors.white),
-                                                  )),
+                                                  child: Obx(() => controller.isLoading.value
+                                                      ? SizedBox(
+                                                          width: 16,
+                                                          height: 16,
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                          ),
+                                                        )
+                                                      : Text(
+                                                          languageController.getTranslation('edit'),
+                                                          style: TextStyle(fontSize: 10, color: Colors.white),
+                                                        )),
                                                 ),
                                               )
                                             else if (isManager)
@@ -282,17 +291,26 @@ class ScreenManagers extends StatelessWidget {
                                               SizedBox(
                                                 height: 28,
                                                 child: OutlinedButton(
-                                                  onPressed: () {
+                                                  onPressed: controller.isLoading.value ? null : () {
                                                     controller.fetchManagerDetails(manager.id);
                                                   },
                                                   style: OutlinedButton.styleFrom(
                                                     backgroundColor: Colors.blue,
                                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                                   ),
-                                                  child: Obx(() => Text(
-                                                    languageController.getTranslation('edit'),
-                                                    style: TextStyle(fontSize: 10, color: Colors.white),
-                                                  )),
+                                                  child: Obx(() => controller.isLoading.value
+                                                      ? SizedBox(
+                                                          width: 16,
+                                                          height: 16,
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                          ),
+                                                        )
+                                                      : Text(
+                                                          languageController.getTranslation('edit'),
+                                                          style: TextStyle(fontSize: 10, color: Colors.white),
+                                                        )),
                                                 ),
                                               ),
                                             if (isManager &&
@@ -412,11 +430,11 @@ class ScreenManagers extends StatelessWidget {
         ],
       ),
       actions: [
-        CustomButton(width: 95,
+        Obx(() => CustomButton(width: 95,
             text: languageController.getTranslation('cancel'), onPressed: (){
               Get.back();
-            }),
-        CustomButton(width: 140,
+            })),
+        Obx(() => CustomButton(width: 140,
           backGroundColor: Colors.red,
           text: languageController.getTranslation('yes') + ', ' + languageController.getTranslation('delete_it'), onPressed: () {
             controller.deleteManager(
@@ -425,7 +443,7 @@ class ScreenManagers extends StatelessWidget {
             );
             Get.back();
           },
-        )
+        ))
       ],
     );
   }

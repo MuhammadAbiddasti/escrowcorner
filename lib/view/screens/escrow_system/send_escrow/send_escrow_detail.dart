@@ -28,6 +28,9 @@ class _SendEscrowDetailScreenState extends State<SendEscrowDetailScreen> {
   final UserProfileController userController = Get.put(UserProfileController());
   final LanguageController languageController = Get.find<LanguageController>();
   final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+  
+  // Loading state for release payment button
+  bool _isReleasingPayment = false;
 
   @override
   void initState() {
@@ -133,6 +136,270 @@ class _SendEscrowDetailScreenState extends State<SendEscrowDetailScreen> {
                                           _buildDetailRow(languageController.getTranslation('gross'), '${escrowDetails.currencySymbol} ${escrowDetails.gross}'),
                                           _buildDetailRow(languageController.getTranslation('fee'), '${escrowDetails.currencySymbol} ${escrowDetails.fee}'),
                                           _buildDetailRow(languageController.getTranslation('net'), '${escrowDetails.currencySymbol} ${escrowDetails.net}'),
+                                          
+                                          // Add Release Payment button centered below Net amount (conditional)
+                                          if (escrowDetails.senderEmail == userController.email.value &&
+                                              escrowDetails.statusLabel == "On Hold" &&
+                                              escrowDetails.attachment != null &&
+                                              escrowDetails.attachment!.isNotEmpty)
+                                            Center(
+                                              child: Container(
+                                                margin: const EdgeInsets.only(top: 25.0, bottom: 10.0),
+                                                decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(12.0),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.green.withOpacity(0.3),
+                                                      spreadRadius: 2,
+                                                      blurRadius: 8,
+                                                      offset: Offset(0, 4),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Material(
+                                                  elevation: 0,
+                                                  borderRadius: BorderRadius.circular(12.0),
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(
+                                                        colors: [
+                                                          Color(0xFF4CAF50), // Green gradient start
+                                                          Color(0xFF45A049), // Green gradient end
+                                                        ],
+                                                        begin: Alignment.topLeft,
+                                                        end: Alignment.bottomRight,
+                                                      ),
+                                                      borderRadius: BorderRadius.circular(12.0),
+                                                      border: Border.all(
+                                                        color: Color(0xFF2E7D32).withOpacity(0.3),
+                                                        width: 1.0,
+                                                      ),
+                                                    ),
+                                                    child: ElevatedButton(
+                                                      onPressed: _isReleasingPayment ? null : () async {
+                                                        print("=== RELEASE PAYMENT BUTTON CLICKED ===");
+                                                        print("Escrow ID: ${escrowDetails.id}");
+                                                        
+                                                        // Set loading state
+                                                        setState(() {
+                                                          _isReleasingPayment = true;
+                                                        });
+                                                        
+                                                        try {
+                                                          final result = await controller.escrowRelease('${escrowDetails.id}');
+                                                          
+                                                          if (result != null && result['status'] == 'success') {
+                                                            // Show success message
+                                                            Get.snackbar(
+                                                              languageController.getTranslation('success'),
+                                                              result['message'] ?? languageController.getTranslation('escrow_release_successful'),
+                                                              snackPosition: SnackPosition.BOTTOM,
+                                                              backgroundColor: Colors.green,
+                                                              colorText: Colors.white,
+                                                            );
+                                                            
+                                                            // Refresh the screen data
+                                                            await controller.fetchEscrowDetail(widget.escrowId);
+                                                            
+                                                            // Navigate back to the list screen and refresh it
+                                                            Get.back();
+                                                            
+                                                            // Refresh the parent list screen
+                                                            final listController = Get.find<SendEscrowsController>();
+                                                            await listController.fetchSendEscrows();
+                                                          } else {
+                                                            // Show error message
+                                                            Get.snackbar(
+                                                              languageController.getTranslation('error'),
+                                                              result?['message'] ?? languageController.getTranslation('failed_to_release_escrow'),
+                                                              snackPosition: SnackPosition.BOTTOM,
+                                                              backgroundColor: Colors.red,
+                                                              colorText: Colors.white,
+                                                            );
+                                                            
+                                                            // Refresh the screen data even on error
+                                                            await controller.fetchEscrowDetail(widget.escrowId);
+                                                          }
+                                                        } catch (e) {
+                                                          print("Error in release payment process: $e");
+                                                          // Show error message
+                                                          Get.snackbar(
+                                                            languageController.getTranslation('error'),
+                                                            languageController.getTranslation('an_error_occurred'),
+                                                            snackPosition: SnackPosition.BOTTOM,
+                                                            backgroundColor: Colors.red,
+                                                            colorText: Colors.white,
+                                                          );
+                                                          
+                                                          // Refresh the screen data even on exception
+                                                          await controller.fetchEscrowDetail(widget.escrowId);
+                                                        } finally {
+                                                          // Reset loading state
+                                                          if (mounted) {
+                                                            setState(() {
+                                                              _isReleasingPayment = false;
+                                                            });
+                                                          }
+                                                        }
+                                                        
+                                                        print("=== RELEASE PAYMENT PROCESS COMPLETED ===");
+                                                      },
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: Colors.transparent,
+                                                        shadowColor: Colors.transparent,
+                                                        padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(12.0),
+                                                        ),
+                                                      ),
+                                                      child: _isReleasingPayment
+                                                          ? Row(
+                                                              mainAxisSize: MainAxisSize.min,
+                                                              children: [
+                                                                SizedBox(
+                                                                  width: 20.0,
+                                                                  height: 20.0,
+                                                                  child: CircularProgressIndicator(
+                                                                    strokeWidth: 2.0,
+                                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                                  ),
+                                                                ),
+                                                                SizedBox(width: 12.0),
+                                                                Text(
+                                                                  languageController.getTranslation('releasing') ?? 'Releasing...',
+                                                                  style: TextStyle(
+                                                                    color: Colors.white,
+                                                                    fontSize: 16.0,
+                                                                    fontWeight: FontWeight.w600,
+                                                                    fontFamily: 'Nunito',
+                                                                    letterSpacing: 0.5,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            )
+                                                          : Row(
+                                                              mainAxisSize: MainAxisSize.min,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons.payment,
+                                                                  color: Colors.white,
+                                                                  size: 20.0,
+                                                                ),
+                                                                SizedBox(width: 8.0),
+                                                                Text(
+                                                                  languageController.getTranslation('release_payment'),
+                                                                  style: TextStyle(
+                                                                    color: Colors.white,
+                                                                    fontSize: 16.0,
+                                                                    fontWeight: FontWeight.w600,
+                                                                    fontFamily: 'Nunito',
+                                                                    letterSpacing: 0.5,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          
+                                          // Go Back Button - always visible
+                                          Center(
+                                            child: Container(
+                                              margin: const EdgeInsets.only(top: 15.0, bottom: 20.0),
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(12.0),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.grey.withOpacity(0.2),
+                                                    spreadRadius: 1,
+                                                    blurRadius: 6,
+                                                    offset: Offset(0, 3),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Material(
+                                                elevation: 0,
+                                                borderRadius: BorderRadius.circular(12.0),
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      colors: [
+                                                        Color(0xFF6C757D), // Grey gradient start
+                                                        Color(0xFF5A6268), // Grey gradient end
+                                                      ],
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment.bottomRight,
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(12.0),
+                                                    border: Border.all(
+                                                      color: Color(0xFF495057).withOpacity(0.3),
+                                                      width: 1.0,
+                                                    ),
+                                                  ),
+                                                  child: ElevatedButton(
+                                                    onPressed: () async {
+                                                      print("=== GO BACK BUTTON CLICKED ===");
+                                                      
+                                                      try {
+                                                        // Refresh the current screen data first
+                                                        print("Refreshing escrow detail data...");
+                                                        await controller.fetchEscrowDetail(widget.escrowId);
+                                                        print("Escrow detail data refreshed successfully");
+                                                        
+                                                        // Clear and force refresh the send escrow list data
+                                                        print("Clearing and force refreshing send escrow list...");
+                                                        final listController = Get.find<SendEscrowsController>();
+                                                        listController.clearData(); // Clear existing data first
+                                                        await listController.fetchSendEscrows(forceRefresh: true);
+                                                        print("Send escrow list cleared and force refreshed successfully");
+                                                        
+                                                        // Navigate back to send_escrow_list with refresh result
+                                                        Get.back(result: 'refresh');
+                                                        
+                                                      } catch (e) {
+                                                        print("Error refreshing data: $e");
+                                                        // Still navigate back even if refresh fails
+                                                        Get.back(result: 'refresh');
+                                                      }
+                                                      
+                                                      print("=== GO BACK PROCESS COMPLETED ===");
+                                                    },
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: Colors.transparent,
+                                                      shadowColor: Colors.transparent,
+                                                      padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(12.0),
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.arrow_back,
+                                                          color: Colors.white,
+                                                          size: 20.0,
+                                                        ),
+                                                        SizedBox(width: 8.0),
+                                                        Text(
+                                                          languageController.getTranslation('go_back'),
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 16.0,
+                                                            fontWeight: FontWeight.w600,
+                                                            fontFamily: 'Nunito',
+                                                            letterSpacing: 0.5,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -140,84 +407,15 @@ class _SendEscrowDetailScreenState extends State<SendEscrowDetailScreen> {
                                 );
                               }
                             }),
-                            // Removed agreement section
+                            // Reject Payment button for non-sender users
                             Obx(() {
                               final currentUserEmail = userController.email.value;
-                              print("user $currentUserEmail");
                               final escrowDetails = controller.escrowDetail.isNotEmpty
                                   ? controller.escrowDetail.first
                                   : null;
                               if (escrowDetails != null) {
-                                // Check if the current user is the sender
-                                if (escrowDetails.senderEmail == currentUserEmail &&
-                                    escrowDetails.statusLabel == "On Hold") {
-                                  return Column(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      if (escrowDetails.attachment != null &&
-                                          escrowDetails.attachment!.isNotEmpty)
-                                        Align(
-                                          alignment: Alignment.bottomRight,
-                                          child: FFButtonWidget(
-                                                                                      onPressed: () async {
-                                            print("id: ${escrowDetails.id}");
-                                            final result = await controller.escrowRelease('${escrowDetails.id}');
-                                            
-                                            if (result != null && result['status'] == 'success') {
-                                              // Show success message
-                                              Get.snackbar(
-                                                languageController.getTranslation('success'),
-                                                result['message'] ?? languageController.getTranslation('escrow_release_successful'),
-                                                snackPosition: SnackPosition.BOTTOM,
-                                                backgroundColor: Colors.green,
-                                                colorText: Colors.white,
-                                              );
-                                              
-                                              // Refresh the screen data
-                                              await controller.fetchEscrowDetail(widget.escrowId);
-                                              
-                                              // Navigate back to the list screen and refresh it
-                                              Get.back();
-                                              
-                                              // Refresh the parent list screen
-                                              final listController = Get.find<SendEscrowsController>();
-                                              await listController.fetchSendEscrows();
-                                            } else {
-                                              // Show error message
-                                              Get.snackbar(
-                                                languageController.getTranslation('error'),
-                                                result?['message'] ?? languageController.getTranslation('failed_to_release_escrow'),
-                                                snackPosition: SnackPosition.BOTTOM,
-                                                backgroundColor: Colors.red,
-                                                colorText: Colors.white,
-                                              );
-                                            }
-                                          },
-                                            text: languageController.getTranslation('release_payment'),
-                                            options: FFButtonOptions(
-                                              width: 170,
-                                              height: 45.0,
-                                              padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              iconPadding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              color: DamaspayTheme.of(context).primary,
-                                              textStyle: DamaspayTheme.of(context).titleSmall.override(
-                                                fontFamily: 'Poppins',
-                                                color: Colors.white,
-                                              ),
-                                              elevation: 2.0,
-                                              borderSide: BorderSide(
-                                                color: Colors.transparent,
-                                                width: 1.0,
-                                              ),
-                                              borderRadius: BorderRadius.circular(5.0),
-                                            ),
-                                          ).paddingOnly(bottom: 40),
-                                        ),
-                                    ],
-                                  );
-                                }
                                 // Check if the current user is NOT the sender
-                                else if (escrowDetails.senderEmail != currentUserEmail &&
+                                if (escrowDetails.senderEmail != currentUserEmail &&
                                     escrowDetails.statusLabel == "On Hold") {
                                   return Column(
                                     mainAxisAlignment: MainAxisAlignment.start,
@@ -226,15 +424,32 @@ class _SendEscrowDetailScreenState extends State<SendEscrowDetailScreen> {
                                         alignment: Alignment.topLeft,
                                         child: Text(escrowDetails.description ?? ''),
                                       ),
-                                      Align(
-                                        alignment: Alignment.bottomRight,
+                                      Center(
                                         child: FFButtonWidget(
-                                          onPressed: () async {
-                                            print("id: ${escrowDetails.id}");
-                                            await controller.escrowReject('${escrowDetails.id}'); // Handle rejection logic
-                                            await controller.fetchEscrowDetail(widget.escrowId);
-                                          },
                                           text: languageController.getTranslation('reject_payment'),
+                                          onPressed: () async {
+                                            print("=== REJECT BUTTON CLICKED ===");
+                                            print("Escrow ID: ${escrowDetails.id}");
+                                            print("Widget Escrow ID: ${widget.escrowId}");
+                                            
+                                            try {
+                                              // Call the reject API
+                                              print("Calling escrowReject API...");
+                                              await controller.escrowReject('${escrowDetails.id}');
+                                              print("escrowReject API completed");
+                                              
+                                              // Explicitly refresh the detail screen to ensure UI updates
+                                              print("Calling fetchEscrowDetail to refresh...");
+                                              await controller.fetchEscrowDetail(widget.escrowId);
+                                              print("fetchEscrowDetail completed");
+                                              
+                                              print("=== REJECT PROCESS COMPLETED ===");
+                                            } catch (e) {
+                                              print("Error in reject process: $e");
+                                              // Still try to refresh even if there's an error
+                                              await controller.fetchEscrowDetail(widget.escrowId);
+                                            }
+                                          },
                                           options: FFButtonOptions(
                                             width: 170,
                                             height: 45.0,
@@ -253,7 +468,7 @@ class _SendEscrowDetailScreenState extends State<SendEscrowDetailScreen> {
                                             ),
                                             borderRadius: BorderRadius.circular(5.0),
                                           ),
-                                        ).paddingOnly(top: 20, bottom: 40),
+                                        ),
                                       ),
                                     ],
                                   );

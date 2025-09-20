@@ -19,7 +19,7 @@ class CustomButton extends StatelessWidget {
     
     return Container(
       width: width??Get.width,
-      height: height??45,
+      height: height??35,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(5),
         // color: backGroundColor??Color(0xffE31C5D)
@@ -50,7 +50,7 @@ class CustomButton extends StatelessWidget {
                   style: textStyle ?? TextStyle(
                     color: textColor ?? Colors.white,
                     fontWeight: FontWeight.w500,
-                    fontSize: 14
+                    fontSize: 12
                   ),
                 ),
               )

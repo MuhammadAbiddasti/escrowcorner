@@ -3,8 +3,10 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 
 import '../../../widgets/custom_appbar/custom_appbar.dart';
+import '../../../widgets/common_header/common_header.dart';
 import '../user_profile/user_profile_controller.dart';
 import 'manager_permission_controller.dart';
+import '../../controller/language_controller.dart';
 
 class PermissionsScreen extends StatefulWidget {
   final String managerId;
@@ -18,7 +20,8 @@ class PermissionsScreen extends StatefulWidget {
 class _PermissionsScreenState extends State<PermissionsScreen> {
   final ManagersPermissionController controller = Get.put(ManagersPermissionController());
   late Future<ManagerPermission> permissionsFuture;
-  final UserProfileController userProfileController =Get.find<UserProfileController>();
+  final UserProfileController userProfileController = Get.find<UserProfileController>();
+  final LanguageController languageController = Get.find<LanguageController>();
 
 
   @override
@@ -30,20 +33,19 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Obx(() => Scaffold(
       backgroundColor: Color(0xffE6F0F7),
-      appBar: AppBar(
-        backgroundColor: Color(0xff191f28),
-        title: AppBarTitle(),
-        leading: CustomPopupMenu(managerId: userProfileController.userId.value,),
-        actions: [
-          PopupMenuButtonAction(),
-          AppBarProfileButton(),
-        ],
+      appBar: CommonHeader(
+        title: languageController.getTranslation('permissions'),
+        managerId: userProfileController.userId.value,
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          await controller.fetchManagerPermissions(widget.managerId);
+          // Fetch fresh data and update the future
+          permissionsFuture = controller.fetchManagerPermissions(widget.managerId)
+              .then((data) => ManagerPermission.fromJson(data['data']));
+          // Trigger a rebuild by calling setState
+          setState(() {});
         },
         child: FutureBuilder<ManagerPermission>(
           future: permissionsFuture,
@@ -57,16 +59,16 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                 ),
               );
             } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              return Center(child: Text('${languageController.getTranslation('error')}: ${snapshot.error}'));
             } else if (!snapshot.hasData) {
-              return const Center(child: Text('No data available'));
+              return Center(child: Text(languageController.getTranslation('no_data_available')));
             }
 
             final data = snapshot.data!;
             return Column(
               children: [
                 Text(
-                  "Assign Permission To Manager",
+                  languageController.getTranslation('assign_permission_to_manager'),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ).paddingOnly(top: 10),
                 Container(
@@ -81,21 +83,41 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                     itemBuilder: (context, index) {
                       final module = data.modules[index];
                       return ExpansionTile(
-                        title: Text(module.moduleName),
+                        title: Text(_getModuleDisplayName(module)),
                         children: module.permissions.entries.map((entry) {
                           final permission = entry.value;
+
+                          // Skip delete permission for specific modules
+                          if ((module.moduleName.toLowerCase().contains('support') ||
+                               module.moduleName.toLowerCase().contains('deposits') ||
+                               module.moduleName.toLowerCase().contains('withdrawals') ||
+                               module.moduleName.toLowerCase().contains('settings')) && 
+                              permission.name.toLowerCase().contains('delete')) {
+                            return SizedBox.shrink(); // Return empty widget to hide this permission
+                          }
 
                           // Determine the correct text to show based on permission name
                           String displayName = permission.name;
 
-                          if (displayName.contains('view')) {
-                            displayName = 'View';
+                          // Handle specific permission names
+                          if (displayName == 'transfer_in') {
+                            displayName = languageController.getTranslation('transfer_in');
+                          } else if (displayName == 'transfer_out') {
+                            displayName = languageController.getTranslation('transfer_out');
+                          } else if (displayName.contains('view')) {
+                            displayName = languageController.getTranslation('view');
                           } else if (displayName.contains('add')) {
-                            displayName = 'Add';
+                            displayName = languageController.getTranslation('add');
                           } else if (displayName.contains('edit')) {
-                            displayName = 'Edit';
+                            displayName = languageController.getTranslation('edit');
                           } else if (displayName.contains('delete')) {
-                            displayName = 'Delete';
+                            displayName = languageController.getTranslation('delete');
+                          } else {
+                            // Try to translate the permission name directly
+                            String translation = languageController.getTranslation(displayName);
+                            if (translation != displayName) {
+                              displayName = translation;
+                            }
                           }
 
                           return CheckboxListTile(
@@ -121,7 +143,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                                   permission.allow = permission.allow == 1 ? 0 : 1;
                                 });
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to update permission.')),
+                                  SnackBar(content: Text(languageController.getTranslation('failed_to_update_permission'))),
                                 );
                               }
                             },
@@ -138,6 +160,32 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
         ),
       ),
 
-    );
+    ));
+  }
+
+  // Helper method to get the correct module display name based on current language
+  String _getModuleDisplayName(Module module) {
+    final currentLocale = languageController.getCurrentLanguageLocale();
+    
+    // Check if we have a French translation from the API
+    if (currentLocale == 'fr' && module.fr?.isNotEmpty == true) {
+      return module.fr!;
+    }
+    
+    // Handle specific module names that need translation
+    String moduleName = module.moduleName;
+    if (moduleName == 'transfer_in') {
+      return languageController.getTranslation('transfer_in');
+    } else if (moduleName == 'transfer_out') {
+      return languageController.getTranslation('transfer_out');
+    }
+    
+    // For other modules, try to get translation or fall back to module name
+    String translation = languageController.getTranslation(moduleName);
+    if (translation != moduleName) {
+      return translation;
+    }
+    
+    return moduleName;
   }
 }
